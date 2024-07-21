@@ -1,0 +1,5 @@
+org:
+  source:
+    cache:
+      redis-ttl: 300
+      jvm-ttl: 300
