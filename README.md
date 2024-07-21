@@ -89,7 +89,7 @@
   }
   ```
 
-更多使用请见 [demo](http://)
+更多使用请见 [demo:spring-cache-configure-starter](https://github.com/Dao1230source/demo/tree/main/spring-cache-configure-starter)
 
 ### 辅助信息
 
