@@ -1,3 +1,6 @@
+> [!WARNING]
+> 部分代码未上传，暂时不可用
+
 ## spring-cache-configure-starter主要是对 `@Cacheable` 增强
 
 ### 注解属性介绍
