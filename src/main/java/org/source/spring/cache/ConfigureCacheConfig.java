@@ -2,10 +2,8 @@ package org.source.spring.cache;
 
 import com.fasterxml.jackson.databind.JavaType;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.source.pubsub.MessageDelegate;
 import org.source.spring.cache.configure.ConfigureCache;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
 import org.source.spring.cache.configure.ConfigureTtlProperties;
@@ -13,11 +11,12 @@ import org.source.spring.cache.configure.ReturnTypeEnum;
 import org.source.spring.cache.exception.CacheExceptionEnum;
 import org.source.spring.cache.pubsub.ConfigureCacheMessageDelegate;
 import org.source.spring.cache.strategy.PartialCacheStrategyEnum;
+import org.source.spring.expression.SpElUtil;
+import org.source.spring.redis.pubsub.MessageDelegate;
 import org.source.spring.scan.ScanConfig;
 import org.source.spring.scan.ScanProcessor;
 import org.source.utility.constant.Constants;
 import org.source.utility.enums.BaseExceptionEnum;
-import org.source.utility.spring.SpElUtil;
 import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
 import org.source.utility.utils.Strings;
@@ -27,6 +26,7 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.cache.CacheKeyPrefix;
@@ -49,8 +49,8 @@ import java.util.stream.Collectors;
 /**
  * @author zengfugen
  */
+@ConditionalOnProperty(prefix = "org.source.spring", name = "cache", matchIfMissing = true)
 @Slf4j
-@EqualsAndHashCode(callSuper = false)
 @Data
 @EnableCaching
 @AutoConfigureAfter({ScanConfig.class})

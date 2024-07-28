@@ -1,8 +1,8 @@
 package org.source.spring.cache.pubsub;
 
 import lombok.extern.slf4j.Slf4j;
-import org.source.pubsub.MessageDelegate;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
+import org.source.spring.redis.pubsub.MessageDelegate;
 import org.source.utility.utils.Jsons;
 
 import java.util.HashMap;

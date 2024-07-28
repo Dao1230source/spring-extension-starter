@@ -12,8 +12,8 @@ import org.source.spring.cache.pubsub.PublishTopic;
 import org.source.spring.cache.strategy.ConfigureCacheInterceptor;
 import org.source.spring.cache.strategy.PartialCacheResult;
 import org.source.spring.cache.strategy.PartialCacheStrategyEnum;
+import org.source.spring.expression.SpElUtil;
 import org.source.utility.enums.BaseExceptionEnum;
-import org.source.utility.spring.SpElUtil;
 import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
 import org.springframework.data.redis.cache.ConfigureRedisCacheWriter;
@@ -30,7 +30,6 @@ import java.util.*;
  */
 @Slf4j
 public class ConfigureRedisCache extends RedisCache {
-    private static final String AVAILABLE_NAME = "P";
     private final ConfigureRedisCacheWriter cacheWriter;
     private final Map<String, ConfigureCacheProperties> configureCacheExpendMap;
 
@@ -242,7 +241,7 @@ public class ConfigureRedisCache extends RedisCache {
             String keySpEl = cacheProperties.getCacheKeySpEl();
             BaseExceptionEnum.NOT_EMPTY.notEmpty(keySpEl, "方法返回为集合情况下，cacheKeySpEl必填。cacheName:{}", super.getName());
             // 方法返回为集合情况下,需要填写key的class类型
-            Object parsedKey = parseSpEl(keySpEl, v, cacheProperties.getJvmKeyClass());
+            Object parsedKey = SpElUtil.parseSpEl(keySpEl, v, cacheProperties.getJvmKeyClass());
             BaseExceptionEnum.NOT_NULL.nonNull(parsedKey, "方法返回为集合情况下，cacheKeySpEl解析结果为null. cacheName:{}", super.getName());
             return parsedKey;
         }, v -> v);
@@ -295,10 +294,6 @@ public class ConfigureRedisCache extends RedisCache {
                 cacheWriter.remove(cacheName, createAndConvertCacheKey2(key));
             }
         }
-    }
-
-    protected <T> @Nullable T parseSpEl(String keySpEl, Object value, Class<T> resultClass) {
-        return SpElUtil.parse(keySpEl, resultClass, context -> context.setVariable(AVAILABLE_NAME, value));
     }
 
     protected byte[] createAndConvertCacheKey2(Object key) {

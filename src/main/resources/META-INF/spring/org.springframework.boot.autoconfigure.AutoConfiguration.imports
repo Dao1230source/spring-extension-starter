@@ -1,4 +1,35 @@
+# cache
 org.source.spring.cache.ScanProcessorConfig
 org.source.spring.cache.ConfigureCacheConfig
 org.source.spring.cache.strategy.ConfigureInterceptorConfig
 org.source.spring.cache.configure.ConfigureTtlProperties
+# exception
+org.source.spring.exception.ExtendPackagesConfig
+# i18n
+org.source.spring.i18n.I18nConfig
+org.source.spring.i18n.I18nScanConfig
+# io
+org.source.spring.io.ValidateConfig
+# json
+org.source.spring.json.JacksonConfig
+# mq
+org.source.spring.mq.config.MqMessageConverter
+# properties
+org.source.spring.properties.EnableProperties
+org.source.spring.properties.SecurityProperties
+# redis
+org.source.spring.redis.config.RedisConfig
+org.source.spring.redis.pubsub.RedisPubsubConfig
+org.source.spring.redis.lock.DistributedLockAspect
+# request
+org.source.spring.request.RetrofitConfig
+org.source.spring.request.RequestProperties
+org.source.spring.request.BizRequestConfig
+# scan
+org.source.spring.scan.ScanConfig
+# uid
+org.source.spring.uid.IdConfig
+# utility
+org.source.spring.utility.SystemUtil
+org.source.spring.utility.SpringUtil
+

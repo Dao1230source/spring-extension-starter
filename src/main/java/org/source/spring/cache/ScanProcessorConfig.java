@@ -15,12 +15,14 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.List;
 
+@ConditionalOnProperty(prefix = "org.source.spring", name = "cache", matchIfMissing = true)
 @AutoConfigureBefore(ScanConfig.class)
 @AutoConfiguration
 public class ScanProcessorConfig implements BeanFactoryAware {
