@@ -6,12 +6,11 @@
     <parent>
         <groupId>io.github.dao1230source</groupId>
         <artifactId>parent</artifactId>
-        <version>0.0.3-beta</version>
+        <version>0.0.4</version>
         <relativePath/>
     </parent>
 
     <artifactId>spring-extension-starter</artifactId>
-    <version>0.0.3-beta</version>
     <name>spring-extension-starter</name>
     <description>
         Extensions based on springboot, including spring cache extensions, international components,

@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-@ConditionalOnProperty(prefix = "org.source.spring", name = "io", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "io", matchIfMissing = true)
 @AutoConfiguration(before = {ValidationAutoConfiguration.class})
 public class ValidateConfig {
 

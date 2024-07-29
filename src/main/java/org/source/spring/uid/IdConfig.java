@@ -20,7 +20,7 @@ import java.util.Collections;
 
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "org.source.spring", name = "uid", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "uid", matchIfMissing = true)
 @AutoConfigureBefore(ScanConfig.class)
 @EnableConfigurationProperties(IdProperties.class)
 @AutoConfiguration
@@ -52,12 +52,10 @@ public class IdConfig {
         LocalDateTime localDateTime = Dates.strToLocalDateTime(idProperties.getStartDate());
         long startTimestamp = Dates.localDateTimeToMilli(localDateTime);
         String nodeName = SystemUtil.getIp() + SystemUtil.getPort();
-        Long nodeId = redisTemplate.execute(RedisScript.of(NODE_ID_SCRIPT, Long.class), Collections.singletonList(NODE_ID_KEY), nodeName);
+        String nodeId = redisTemplate.execute(RedisScript.of(NODE_ID_SCRIPT, String.class), Collections.singletonList(NODE_ID_KEY), nodeName);
         Assert.notNull(nodeId, "get nodeId null from redis");
-        if (log.isDebugEnabled()) {
-            log.debug("nodeName:{}, nodeId:{}", nodeName, nodeId);
-        }
-        IdGenerator idGenerator = new IdGenerator(nodeId, startTimestamp, idProperties.getNodeIdBits(), idProperties.getSequenceBits());
+        log.debug("nodeName:{}, nodeId:{}", nodeName, nodeId);
+        IdGenerator idGenerator = new IdGenerator(Long.parseLong(nodeId), startTimestamp, idProperties.getNodeIdBits(), idProperties.getSequenceBits());
         Ids.setIdGenerator(idGenerator);
         return idGenerator;
     }

@@ -5,7 +5,6 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.source.spring.cache.configure.ConfigureCache;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
-import org.source.spring.cache.configure.ConfigureTtlProperties;
 import org.source.spring.scan.AbstractAnnotationScanProcessor;
 import org.source.spring.scan.ScanConfig;
 import org.source.spring.scan.ScanProcessor;
@@ -22,7 +21,7 @@ import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.List;
 
-@ConditionalOnProperty(prefix = "org.source.spring", name = "cache", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "cache", havingValue = "true", matchIfMissing = true)
 @AutoConfigureBefore(ScanConfig.class)
 @AutoConfiguration
 public class ScanProcessorConfig implements BeanFactoryAware {

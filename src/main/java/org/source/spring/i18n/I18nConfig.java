@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Locale;
 
 @Slf4j
-@ConditionalOnProperty(prefix = "org.source.web", name = "i18n", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "i18n", matchIfMissing = true)
 @AutoConfiguration(after = {ValidateConfig.class, ConfigureCacheConfig.class, ScanConfig.class})
 public class I18nConfig implements InitializingBean, BeanFactoryAware {
     private static final String WEB_HTTP_CLASS = "jakarta.servlet.http.HttpServletRequest";

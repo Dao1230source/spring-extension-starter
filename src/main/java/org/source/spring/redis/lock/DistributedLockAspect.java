@@ -12,8 +12,10 @@ import org.redisson.api.RedissonClient;
 import org.source.spring.expression.SpElUtil;
 import org.source.utility.utils.Strings;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -30,7 +32,8 @@ import java.util.*;
 @Slf4j
 @AllArgsConstructor
 @Aspect
-@ConditionalOnProperty(prefix = "org.source.spring", name = "lock", havingValue = "true", matchIfMissing = true)
+@ConditionalOnBean(RedisTemplate.class)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "lock", havingValue = "true", matchIfMissing = true)
 @AutoConfiguration
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class DistributedLockAspect {

@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Primary;
  */
 @AutoConfigureBefore(JacksonAutoConfiguration.class)
 @ConditionalOnWebApplication
-@ConditionalOnProperty(prefix = "org.source.spring", value = "json", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", value = "json", matchIfMissing = true)
 @AutoConfiguration
 public class JacksonConfig {
 

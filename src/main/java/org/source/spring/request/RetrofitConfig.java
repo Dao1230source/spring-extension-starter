@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Data
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "org.source.spring", name = "request", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "request", matchIfMissing = true)
 @AutoConfigureBefore(ScanConfig.class)
 @AutoConfiguration
 public class RetrofitConfig implements BeanFactoryAware {

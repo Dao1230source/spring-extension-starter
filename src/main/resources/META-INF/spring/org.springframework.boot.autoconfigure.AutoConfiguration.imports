@@ -1,8 +1,8 @@
 # cache
 org.source.spring.cache.ScanProcessorConfig
 org.source.spring.cache.ConfigureCacheConfig
-org.source.spring.cache.strategy.ConfigureInterceptorConfig
-org.source.spring.cache.configure.ConfigureTtlProperties
+org.source.spring.cache.ConfigureInterceptorConfig
+org.source.spring.cache.ConfigureTtlProperties
 # exception
 org.source.spring.exception.ExtendPackagesConfig
 # i18n
@@ -21,6 +21,7 @@ org.source.spring.properties.SecurityProperties
 org.source.spring.redis.config.RedisConfig
 org.source.spring.redis.pubsub.RedisPubsubConfig
 org.source.spring.redis.lock.DistributedLockAspect
+org.source.spring.redis.redisson.RedissonConfig
 # request
 org.source.spring.request.RetrofitConfig
 org.source.spring.request.RequestProperties

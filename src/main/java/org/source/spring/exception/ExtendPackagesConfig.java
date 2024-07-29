@@ -11,7 +11,7 @@ import org.springframework.util.ClassUtils;
 
 import java.util.List;
 
-@ConditionalOnProperty(prefix = "org.source.spring", name = "exception", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "exception", matchIfMissing = true)
 @AutoConfigureBefore(ScanConfig.class)
 @AutoConfiguration
 public class ExtendPackagesConfig {

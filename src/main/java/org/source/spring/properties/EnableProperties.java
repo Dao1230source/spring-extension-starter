@@ -5,10 +5,10 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 是否启用某个组件
+ * 是否启用某个组件，默认false
  */
 @Data
-@ConfigurationProperties(value = "org.source.spring")
+@ConfigurationProperties(value = "org.source.spring.enabled")
 @AutoConfiguration
 public class EnableProperties {
     /**
@@ -23,6 +23,7 @@ public class EnableProperties {
     private boolean redis = true;
     private boolean lock = true;
     private boolean pubsub = true;
+    private boolean redisson = true;
     private boolean request = true;
     private boolean scan = true;
     private boolean uid = true;

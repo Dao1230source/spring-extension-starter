@@ -14,7 +14,7 @@ import java.lang.reflect.Type;
 import java.util.*;
 
 @Slf4j
-@ConditionalOnProperty(prefix = "org.source.spring", value = "mq", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", value = "mq", matchIfMissing = true)
 @AutoConfigureBefore
 public class MqMessageConverter extends AbstractMessageConverter {
     @Override

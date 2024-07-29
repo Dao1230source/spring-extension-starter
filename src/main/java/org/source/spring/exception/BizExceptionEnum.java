@@ -19,12 +19,6 @@ public enum BizExceptionEnum implements EnumProcessor<BizException> {
     THROW_EXCEPTION("系统异常"),
 
     /**
-     * source global database
-     */
-    RECORD_NOT_FOUND("记录不存在"),
-    RECORD_HAS_EXIST("记录已存在"),
-
-    /**
      * validate
      */
     PARAM_EXCEPTION("请求参数校验异常"),

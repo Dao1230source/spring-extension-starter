@@ -11,7 +11,7 @@ import org.springframework.context.event.EventListener;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-@ConditionalOnProperty(prefix = "org.source.spring", name = "utility", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "utility", matchIfMissing = true)
 @AutoConfiguration
 public class SystemUtil {
     private static String ip;

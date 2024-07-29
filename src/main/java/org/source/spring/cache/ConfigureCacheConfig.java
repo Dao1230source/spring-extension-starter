@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.source.spring.cache.configure.ConfigureCache;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
-import org.source.spring.cache.configure.ConfigureTtlProperties;
 import org.source.spring.cache.configure.ReturnTypeEnum;
 import org.source.spring.cache.exception.CacheExceptionEnum;
 import org.source.spring.cache.pubsub.ConfigureCacheMessageDelegate;
@@ -49,10 +48,10 @@ import java.util.stream.Collectors;
 /**
  * @author zengfugen
  */
-@ConditionalOnProperty(prefix = "org.source.spring", name = "cache", matchIfMissing = true)
 @Slf4j
 @Data
 @EnableCaching
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "cache", havingValue = "true", matchIfMissing = true)
 @AutoConfigureAfter({ScanConfig.class})
 @AutoConfiguration
 public class ConfigureCacheConfig implements BeanFactoryAware {
@@ -88,6 +87,7 @@ public class ConfigureCacheConfig implements BeanFactoryAware {
         }
         // 针对不同cacheName，设置不同的过期时间
         Map<String, RedisCacheConfiguration> configMap = configMap(allCacheConfigs);
+        log.info("create RedisCacheManager");
         // 配置数据不可变
         Map<String, ConfigureCacheProperties> configureCacheExpendMap = Map.copyOf(Streams.toMap(allCacheConfigs, ConfigureCacheProperties::getCacheName));
         return new ConfigureRedisCacheManager(cacheWriter, defaultCacheConfiguration, configMap, true,

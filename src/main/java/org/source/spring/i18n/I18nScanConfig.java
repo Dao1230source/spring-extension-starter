@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
 
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "i18n", matchIfMissing = true)
 @AutoConfiguration(before = {ScanConfig.class, I18nConfig.class})
-@ConditionalOnProperty(prefix = "org.source.spring", name = "i18n", matchIfMissing = true)
 public class I18nScanConfig {
     @Bean
     public I18nScanProcessor i18nScanProcessor() {

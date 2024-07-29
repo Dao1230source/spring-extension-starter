@@ -1,18 +1,19 @@
-package org.source.spring.cache.strategy;
+package org.source.spring.cache;
 
 import org.jetbrains.annotations.NotNull;
-import org.source.spring.cache.ConfigureCacheConfig;
-import org.source.spring.cache.ConfigureRedisCacheManager;
+import org.source.spring.cache.strategy.ConfigureCacheInterceptor;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.annotation.ProxyCachingConfiguration;
 import org.springframework.cache.interceptor.BeanFactoryCacheOperationSourceAdvisor;
 import org.springframework.cache.interceptor.CacheInterceptor;
 import org.springframework.cache.interceptor.CacheOperationSource;
 
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "cache", havingValue = "true", matchIfMissing = true)
 @AutoConfigureAfter({ProxyCachingConfiguration.class, ConfigureCacheConfig.class})
 @AutoConfiguration
 public class ConfigureInterceptorConfig implements BeanFactoryAware {

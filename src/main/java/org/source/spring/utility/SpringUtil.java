@@ -16,7 +16,7 @@ import java.util.Map;
  * @author zengfugen
  */
 @Slf4j
-@ConditionalOnProperty(prefix = "org.source.spring", name = "utility", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "utility", matchIfMissing = true)
 @AutoConfiguration
 public class SpringUtil implements ApplicationContextAware {
 

@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.source.spring.cache.ConfigureTtlProperties;
 import org.source.spring.cache.strategy.PartialCacheStrategyEnum;
 import org.source.spring.cache.constant.CacheConstant;
 import org.source.utility.utils.Jsons;
