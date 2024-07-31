@@ -17,7 +17,7 @@ Based on spring cache extension, cache is obtained in batches through collection
   SpEL表达式
   当方法返回值是List/ Set时必填
   value生成redis key的spEl表达式
-  使用 #P 来表示 spEL 中的占位符
+  使用 #R 来表示 spEL 中的占位符
   ```
 - `@ConfigureCache.returnType()`
     ```text
@@ -60,7 +60,7 @@ Based on spring cache extension, cache is obtained in batches through collection
 - 支持批量功能即方法入参是Collection类型
     - 返回值是List/Set
       ```java
-      @ConfigureCache(cacheNames = "strings2ViewList", key = "#names", cacheKeySpEl = "#P.name")
+      @ConfigureCache(cacheNames = "strings2ViewList", key = "#names", cacheKeySpEl = "#R.name")
       public List<StudentView> strings2ViewList(Collection<String> names) {
       }
       ```
@@ -72,7 +72,7 @@ Based on spring cache extension, cache is obtained in batches through collection
       ```
     - 当部分key不能从缓存中获取值时
       ```java
-      @ConfigureCache(cacheNames = "partialCacheStrategyPartialTrust", key = "#names", cacheKeySpEl = "#P.name",
+      @ConfigureCache(cacheNames = "partialCacheStrategyPartialTrust", key = "#names", cacheKeySpEl = "#R.name",
             partialCacheStrategy = PartialCacheStrategyEnum.PARTIAL_TRUST)
       public List<StudentView> partialCacheStrategyPartialTrust(Collection<String> names) {
       }
@@ -94,7 +94,7 @@ Based on spring cache extension, cache is obtained in batches through collection
   }
   ```
 
-更多使用请见 [demo](http://)
+更多使用请见 [demo](https://github.com/Dao1230source/demo.git)
 
 ### 辅助信息
 
