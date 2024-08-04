@@ -32,6 +32,14 @@ public class ExtendEvaluationContext<T extends ExtendRootObject> extends MethodB
         super.setVariable(VariableConstants.ARGS, root.getArgs());
         super.setVariable(VariableConstants.TARGET, root.getTarget());
         super.setVariable(VariableConstants.TARGET_CLASS, root.getTargetClass());
+        Object[] args = root.getArgs();
+        String[] parameterNames = SpElUtil.getParameterNames(root.getMethod());
+        if (Objects.nonNull(parameterNames) && parameterNames.length > args.length) {
+            for (int i = 0; i < root.getArgs().length; i++) {
+                super.setVariable(parameterNames[i], args[i]);
+            }
+        }
+        super.setVariable(VariableConstants.METHOD_LOCATION, root.getMethodLocation());
     }
 
     public void setMethodResult(Object methodResult) {

@@ -32,6 +32,12 @@ public enum BizExceptionEnum implements EnumProcessor<BizException> {
      * http request
      */
     INVALID_RPC_REQUEST("无效的RPC请求"),
+
+    /**
+     * log
+     */
+    LOG_RESULT_MUST_BE_COLLECTION("方法的结果必须是集合类型"),
+    LOG_METHOD_PARAM_RESULT_MUST_EQUAL_SIZE("方法的参数和结果集合大小必须相等"),
     ;
 
     private final String message;

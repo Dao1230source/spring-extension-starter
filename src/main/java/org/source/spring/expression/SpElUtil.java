@@ -26,6 +26,23 @@ import java.util.function.Consumer;
 public class SpElUtil {
 
     private static final SpelExpressionParser PARSER = new SpelExpressionParser();
+    /**
+     * <pre>
+     *  maven编译时默认 '-debug' 参数，LocalVariableTableParameterNameDiscoverer 生效，但是该类将被弃用。
+     *  应使用StandardReflectionParameterNameDiscoverer，但编译时需要添加 '-parameters' 参数
+     *  即maven配置
+     *  {@code
+     *  <plugin>
+     *      <groupId>org.apache.maven.plugins</groupId>
+     *      <artifactId>maven-compiler-plugin</artifactId>
+     *      <configuration>
+     *          <parameters>true</parameters>
+     *      </configuration>
+     *  </plugin>
+     *  }
+     *
+     * </pre>
+     */
     private static final DefaultParameterNameDiscoverer DISCOVERER = new DefaultParameterNameDiscoverer();
 
     public static <R> @Nullable R parse(String spEl, Class<R> resultClass, Consumer<StandardEvaluationContext> prepareAvailable) {

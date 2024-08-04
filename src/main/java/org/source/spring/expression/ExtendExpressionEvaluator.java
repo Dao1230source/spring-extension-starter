@@ -2,6 +2,7 @@ package org.source.spring.expression;
 
 import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInvocation;
+import org.source.utility.constant.Constants;
 import org.springframework.context.expression.AnnotatedElementKey;
 import org.springframework.context.expression.CachedExpressionEvaluator;
 import org.springframework.expression.Expression;
@@ -20,9 +21,14 @@ public class ExtendExpressionEvaluator<T extends ExtendRootObject, E extends Ext
         return (E) new ExtendEvaluationContext<>(invocation, this.getParameterNameDiscoverer());
     }
 
-    public <R> R parseThrow(E context, String expr, Class<R> parsedClass) {
+    @SuppressWarnings("unchecked")
+    public <R> R parse(E context, String expr, Class<R> parsedClass) {
         if (!StringUtils.hasText(expr)) {
             return null;
+        }
+        // spEl表达式中不包含 # 或 T(),表明不是spring expression
+        if (!(expr.contains(Constants.HASH) || expr.contains("T("))) {
+            return (R) expr;
         }
         if (this.noNeedParse(context, expr)) {
             return null;
@@ -34,16 +40,8 @@ public class ExtendExpressionEvaluator<T extends ExtendRootObject, E extends Ext
     }
 
     private boolean noNeedParse(E context, String spEl) {
+        // 表达式处理方法结果（R），但是VariableConstants.METHOD_RESULT在context中不存在
         return spEl.contains(VariableConstants.RESULT_SP_EL) && !context.methodResultExists();
-    }
-
-    public <R> R parse(E context, String expr, Class<R> parsedClass) {
-        try {
-            return parseThrow(context, expr, parsedClass);
-        } catch (Exception e) {
-            log.error("parse expression exception", e);
-            return null;
-        }
     }
 
     public String replacePlaceHolder(String spEl, int idx) {

@@ -15,6 +15,7 @@ public class VariableConstants {
     public static final String TARGET_CLASS = "targetClass";
 
     public static final String METHOD_RESULT = "methodResult";
+    public static final String METHOD_LOCATION = "methodLocation";
     public static final String PARAM = "P";
     public static final String PARAM_SP_EL = Constants.HASH + PARAM;
     public static final String RESULT = "R";

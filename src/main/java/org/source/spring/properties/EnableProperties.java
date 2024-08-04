@@ -19,6 +19,7 @@ public class EnableProperties {
     private boolean i18n = true;
     private boolean io = true;
     private boolean json = true;
+    private boolean log = true;
     private boolean mq = true;
     private boolean redis = true;
     private boolean lock = true;

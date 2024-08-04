@@ -18,7 +18,7 @@ public class TraceContext {
      */
     public static final String SECRET_KEY = "SECRET_KEY";
     public static final String EXTENSION_DATA_PREFIX = "E-";
-    public static final String DEFAULT_USER_ID = "-1";
+    public static final String DEFAULT_USER_ID = "system";
 
     public static String getTraceId() {
         return get(TRACE_ID);
