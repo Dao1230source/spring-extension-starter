@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>spring-extension-starter</artifactId>
+    <version>0.0.7</version>
 
     <dependencies>
         <dependency>

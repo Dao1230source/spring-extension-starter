@@ -211,7 +211,11 @@ public class Logs {
     }
 
     public static boolean getDataSourceEnabled() {
-        return (boolean) LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.ENABLED);
+        Object o = LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.ENABLED);
+        if (Objects.nonNull(o)) {
+            return Boolean.parseBoolean(o.toString());
+        }
+        return false;
     }
 
     public static String getDataSourceParentLogId() {

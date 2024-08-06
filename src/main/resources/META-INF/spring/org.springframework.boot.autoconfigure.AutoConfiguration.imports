@@ -7,6 +7,7 @@ org.source.spring.cache.ConfigureTtlProperties
 org.source.spring.exception.ExtendPackagesConfig
 # i18n
 org.source.spring.i18n.I18nConfig
+org.source.spring.i18n.I18nBeanPostProcessor
 org.source.spring.i18n.I18nScanConfig
 # io
 org.source.spring.io.ValidateConfig

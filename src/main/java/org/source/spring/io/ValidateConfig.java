@@ -4,7 +4,6 @@ import jakarta.validation.Validator;
 import org.source.spring.io.validate.RequestLocalValidatorFactoryBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration;
 import org.springframework.boot.autoconfigure.validation.ValidationConfigurationCustomizer;
@@ -19,6 +18,20 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 public class ValidateConfig {
 
     /**
+     * 设置优先使用该bean
+     * <p>
+     * web mvc {@see WebMvcAutoConfiguration.EnableWebMvcConfiguration#mvcValidator()}
+     * webFlux{@see WebFluxAutoConfiguration.EnableWebFluxConfiguration#webFluxValidator()}
+     *
+     * @return LocalValidatorFactoryBean
+     */
+    @Primary
+    @Bean
+    public LocalValidatorFactoryBean localValidatorFactoryBean() {
+        return new RequestLocalValidatorFactoryBean();
+    }
+
+    /**
      * 在此之前创建 bean {@link ValidationAutoConfiguration#defaultValidator(ApplicationContext, ObjectProvider)}
      * 不是webFlux项目加载
      *
@@ -26,17 +39,14 @@ public class ValidateConfig {
      * @param customizers        customizers
      * @return Validator
      */
-    @Primary
-    @ConditionalOnMissingClass(value = "org.springframework.web.reactive.DispatcherHandler")
     @Bean
     public Validator defaultValidator(ApplicationContext applicationContext,
-                                      ObjectProvider<ValidationConfigurationCustomizer> customizers) {
-        LocalValidatorFactoryBean factoryBean = new RequestLocalValidatorFactoryBean();
+                                      ObjectProvider<ValidationConfigurationCustomizer> customizers,
+                                      LocalValidatorFactoryBean factoryBean) {
         factoryBean.setConfigurationInitializer(configuration -> customizers.orderedStream()
                 .forEach(customizer -> customizer.customize(configuration)));
         MessageInterpolatorFactory interpolatorFactory = new MessageInterpolatorFactory(applicationContext);
         factoryBean.setMessageInterpolator(interpolatorFactory.getObject());
         return factoryBean;
     }
-
 }
