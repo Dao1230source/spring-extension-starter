@@ -1,7 +1,8 @@
 package org.source.spring.io;
 
+import jakarta.validation.MessageInterpolator;
 import jakarta.validation.Validator;
-import org.source.spring.io.validate.RequestLocalValidatorFactoryBean;
+import jakarta.validation.valueextraction.ValueExtractor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,9 +14,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
+import java.util.List;
+
 @ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "io", matchIfMissing = true)
 @AutoConfiguration(before = {ValidationAutoConfiguration.class})
 public class ValidateConfig {
+
+    @Bean
+    public RequestDataExtractor requestDataExtractor() {
+        return new RequestDataExtractor();
+    }
 
     /**
      * 设置优先使用该bean
@@ -27,8 +35,9 @@ public class ValidateConfig {
      */
     @Primary
     @Bean
-    public LocalValidatorFactoryBean localValidatorFactoryBean() {
-        return new RequestLocalValidatorFactoryBean();
+    public LocalValidatorFactoryBean localValidatorFactoryBean(MessageInterpolator messageInterpolator,
+                                                               List<ValueExtractor<?>> valueExtractorList) {
+        return new RequestLocalValidatorFactoryBean(messageInterpolator, valueExtractorList);
     }
 
     /**

@@ -1,8 +1,7 @@
-package org.source.spring.io.validate;
+package org.source.spring.io;
 
 import jakarta.validation.valueextraction.ExtractedValue;
 import jakarta.validation.valueextraction.ValueExtractor;
-import org.source.spring.io.Request;
 
 public class RequestDataExtractor implements ValueExtractor<Request<@ExtractedValue ?>> {
 
