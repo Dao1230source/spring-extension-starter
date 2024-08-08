@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.dao1230source</groupId>
         <artifactId>parent</artifactId>
-        <version>0.0.9</version>
+        <version>0.0.10</version>
         <relativePath/>
     </parent>
 
@@ -110,32 +110,4 @@
         <developerConnection>scm:git:ssh://Dao1230source/spring-extension-starter.git</developerConnection>
         <url>https://github.com/Dao1230source/spring-extension-starter/tree/master</url>
     </scm>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.central</groupId>
-                <artifactId>central-publishing-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
 </project>

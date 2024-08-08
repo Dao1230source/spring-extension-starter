@@ -7,6 +7,6 @@ public class RequestDataExtractor implements ValueExtractor<Request<@ExtractedVa
 
     @Override
     public void extractValues(Request<?> originalValue, ValueReceiver receiver) {
-        receiver.value(null, originalValue.getData());
+        receiver.value("Request", originalValue);
     }
 }

@@ -1,11 +1,13 @@
 package org.source.spring.io;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class Request<T> {
 
+    @NotNull(message = "Request.data不能为空")
     @Valid
     private T data;
 

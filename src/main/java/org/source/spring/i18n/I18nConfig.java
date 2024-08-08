@@ -14,7 +14,6 @@ import org.source.spring.scan.ScanConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.validation.beanvalidation.MessageSourceResourceBundleLocator;
 
@@ -58,15 +57,9 @@ public class I18nConfig {
         return new I18nWrapper();
     }
 
-
     @Bean
-    public MessageSource getMessageSource() {
-        return new DictMessageSource();
-    }
-
-    @Bean
-    public MessageInterpolator getMessageInterpolator(MessageSource messageSource) {
-        MessageSourceResourceBundleLocator resourceBundleLocator = new MessageSourceResourceBundleLocator(messageSource);
+    public MessageInterpolator getMessageInterpolator() {
+        MessageSourceResourceBundleLocator resourceBundleLocator = new MessageSourceResourceBundleLocator(new DictMessageSource());
         CachingResourceBundleLocator cachingResourceBundleLocator = new CachingResourceBundleLocator(resourceBundleLocator);
         return new ValidMessageInterpolator(cachingResourceBundleLocator);
     }
