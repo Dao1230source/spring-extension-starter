@@ -15,6 +15,7 @@ public class EnableProperties {
      * 启用 spring cache configure
      */
     private boolean cache = true;
+    private boolean doc = true;
     private boolean exception = true;
     private boolean i18n = true;
     private boolean io = true;

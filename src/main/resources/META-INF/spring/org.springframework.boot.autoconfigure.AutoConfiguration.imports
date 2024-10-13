@@ -3,11 +3,12 @@ org.source.spring.cache.ScanProcessorConfig
 org.source.spring.cache.ConfigureCacheConfig
 org.source.spring.cache.ConfigureInterceptorConfig
 org.source.spring.cache.ConfigureTtlProperties
+# doc
+org.source.spring.doc.DocConfig
 # exception
 org.source.spring.exception.ExtendPackagesConfig
 # i18n
 org.source.spring.i18n.I18nConfig
-org.source.spring.i18n.I18nBeanPostProcessor
 org.source.spring.i18n.I18nScanConfig
 # io
 org.source.spring.io.ValidateConfig

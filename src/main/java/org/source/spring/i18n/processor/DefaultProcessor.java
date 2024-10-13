@@ -7,7 +7,7 @@ import org.source.spring.i18n.facade.param.Dict2Param;
 import org.source.spring.i18n.facade.param.Dict3Param;
 import org.source.spring.i18n.facade.param.Dict4Param;
 import org.source.utility.tree.DefaultNode;
-import org.source.utility.tree.DefaultTree;
+import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.StringElement;
 import org.springframework.lang.Nullable;
 
@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class DefaultProcessor implements Processor<Dict> {
-    private static final DefaultTree<String, DictElement> DEFAULT_TREE = DefaultTree.build();
+    private static final Tree<String, DictElement, DefaultNode<String, DictElement>> DEFAULT_TREE = DefaultNode.buildTree();
 
     @Override
     public Optional<Dict> findByKey(Dict3Param param) {
