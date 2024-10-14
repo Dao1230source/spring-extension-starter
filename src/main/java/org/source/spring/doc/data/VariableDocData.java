@@ -1,38 +1,45 @@
 package org.source.spring.doc.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sun.source.doctree.DocTree;
 import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.source.utility.tree.DefaultNode;
 import org.springframework.util.CollectionUtils;
 
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import java.util.List;
 
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class VariableDocData extends DocData {
+    @JsonIgnore
     private String typeKind;
+    @JsonIgnore
     private String typeName;
-    private List<AnnotationDocData> annotationList;
 
-    public List<AnnotationDocData> processAnnotation(VariableElement variableElement) {
-        return variableElement.getAnnotationMirrors().stream().map(k -> {
-            AnnotationDocData annotationDocData = new AnnotationDocData();
-            annotationDocData.processAnnotation(k);
-            return annotationDocData;
-        }).toList();
+    public <E extends VariableElement> VariableDocData(DocletEnvironment env, E variableElement, String parentId) {
+        super(env, variableElement, parentId);
+        this.processVariable(variableElement);
+    }
+
+    public VariableDocData(ExecutableElement method, String parentId) {
+        TypeMirror returnType = method.getReturnType();
+        this.setName(DocTree.Kind.RETURN.tagName);
+        this.setTypeKind(returnType.getKind().name());
+        this.setTypeName(returnType.toString());
+        this.processParentId(parentId);
     }
 
     /**
      * @param variableElement variableElement
      */
-    public void processVariable(VariableElement variableElement) {
-        this.setKey(variableElement.getSimpleName().toString());
+    protected void processVariable(VariableElement variableElement) {
         TypeMirror type = variableElement.asType();
         this.setTypeKind(type.getKind().name());
         String name = type.toString();
@@ -42,38 +49,25 @@ public class VariableDocData extends DocData {
         this.setTypeName(name);
     }
 
-    public void processVariable(DocletEnvironment env, VariableElement variableElement, ExecutableElement method) {
-        this.processVariable(variableElement);
-        this.processComment(env, method);
-        this.setAnnotationList(this.processAnnotation(variableElement));
-        this.processParentId(method.toString());
-    }
-
-    public void processVariable(DocletEnvironment env, VariableElement variableElement, TypeElement cls) {
-        this.processVariable(variableElement);
-        this.processComment(env, variableElement);
-        this.setAnnotationList(this.processAnnotation(variableElement));
-        this.processParentId(cls.getQualifiedName().toString());
-    }
-
-    public boolean isBaseType() {
+    public boolean baseType() {
         TypeKind type = TypeKind.valueOf(this.typeKind);
         return type.isPrimitive() || type.equals(TypeKind.VOID) || String.class.getName().equals(typeName);
     }
 
     public boolean notBaseType() {
-        return !isBaseType();
+        return !baseType();
     }
 
-
-    public static VariableDocData methodReturn(ExecutableElement method, String parentId) {
-        VariableDocData variableDocData = new VariableDocData();
-        TypeMirror returnType = method.getReturnType();
-        variableDocData.setKey(DocTree.Kind.RETURN.tagName);
-        variableDocData.setTypeKind(returnType.getKind().name());
-        variableDocData.setTypeName(returnType.toString());
-        variableDocData.processParentId(parentId);
-        return variableDocData;
+    @Override
+    public <D extends DocData> void merge(D docData) {
+        super.merge(docData);
+        if (docData instanceof VariableDocData variableDocData) {
+            this.typeKind = variableDocData.getTypeKind();
+            this.typeName = variableDocData.getTypeName();
+        }
     }
 
+    public static boolean instanceOf(DefaultNode<String, DocData> docDataNode) {
+        return docDataNode.getElement() instanceof VariableDocData;
+    }
 }

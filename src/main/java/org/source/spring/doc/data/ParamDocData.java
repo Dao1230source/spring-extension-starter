@@ -7,40 +7,33 @@ import com.sun.source.util.DocTrees;
 import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ParamDocData extends VariableDocData {
-    @Override
-    public <E extends Element> void processComment(DocletEnvironment env, E element) {
-        if (element instanceof ExecutableElement method) {
-            List<? extends DocTree> docTrees = blockTags(env, method);
-            Optional<ParamTree> first = docTrees.stream().filter(k -> DocTree.Kind.PARAM.equals(k.getKind()))
-                    .map(ParamTree.class::cast).filter(k -> k.getName().toString().equals(this.getKey())).findFirst();
-            first.ifPresent(p -> this.setTitle(p.getDescription().toString()));
-        }
+
+    public <E extends VariableElement> ParamDocData(DocletEnvironment env, E variableElement, String parentId, ExecutableElement method) {
+        super(env, variableElement, parentId);
+        this.processComment(env, method);
     }
 
-    public static ParamDocData of(DocletEnvironment env, VariableElement variableElement, ExecutableElement method) {
-        ParamDocData paramDocData = new ParamDocData();
-        paramDocData.processVariable(env, variableElement, method);
-        return paramDocData;
-    }
-
-    public static List<DocTree> blockTags(DocletEnvironment env, Element method) {
+    protected <E extends ExecutableElement> void processComment(DocletEnvironment env, E element) {
         DocTrees trees = env.getDocTrees();
-        DocCommentTree docCommentTree = trees.getDocCommentTree(method);
-        if (Objects.nonNull(docCommentTree)) {
-            return List.copyOf(docCommentTree.getBlockTags());
+        DocCommentTree docCommentTree = trees.getDocCommentTree(element);
+        if (Objects.isNull(docCommentTree)) {
+            return;
         }
-        return List.of();
+        List<? extends DocTree> docTrees = docCommentTree.getBlockTags();
+        docTrees.stream().filter(k -> DocTree.Kind.PARAM.equals(k.getKind()))
+                .map(ParamTree.class::cast).filter(k -> k.getName().toString().equals(this.getName())).findFirst()
+                .ifPresent(p -> super.processComment(p.getDescription()));
     }
 
 }

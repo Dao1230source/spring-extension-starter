@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.lang.NonNull;
 
 import java.util.Map;
@@ -46,5 +47,9 @@ public class SpringUtil implements ApplicationContextAware {
 
     public static String getContextPath() {
         return context.getApplicationName();
+    }
+
+    public static Environment getEnvironment() {
+        return context.getEnvironment();
     }
 }

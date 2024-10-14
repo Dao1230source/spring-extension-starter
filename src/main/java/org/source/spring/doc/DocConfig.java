@@ -1,7 +1,7 @@
 package org.source.spring.doc;
 
+import org.source.spring.doc.processor.AbstractDocProcessor;
 import org.source.spring.doc.processor.DefaultDocProcessor;
-import org.source.spring.doc.processor.DocProcessor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,7 +13,7 @@ public class DocConfig {
 
     @ConditionalOnMissingBean
     @Bean
-    public DocProcessor docProcessor() {
+    public AbstractDocProcessor<?, ?> docProcessor() {
         return new DefaultDocProcessor();
     }
 

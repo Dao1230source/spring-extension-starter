@@ -3,25 +3,60 @@ package org.source.spring.doc.data;
 import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.source.utility.tree.DefaultNode;
+import org.source.utility.utils.Streams;
+import org.springframework.util.CollectionUtils;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class ClassDocData extends DocData implements Path {
-    private List<String> paths;
-    private List<String> requestMethods;
-    private List<MethodDocData> methodDocDataList = new ArrayList<>(16);
+public class ClassDocData extends DocData {
 
-    public static ClassDocData of(DocletEnvironment env, TypeElement type) {
-        ClassDocData classDocData = new ClassDocData();
-        String clsId = type.getQualifiedName().toString();
-        classDocData.setKey(clsId);
-        classDocData.processRequestMapping(type);
-        classDocData.processComment(env, type);
-        classDocData.processParentId(null);
-        return classDocData;
+    private String superClass;
+    private List<String> interfaceClasses;
+
+    protected <E extends TypeElement> void processSuperClass(E type) {
+        this.superClass = type.getSuperclass().toString();
+        this.interfaceClasses = Streams.of(type.getInterfaces()).map(TypeMirror::toString).toList();
     }
+
+    protected <E extends TypeElement> ClassDocData(DocletEnvironment env, E type, String parentId) {
+        super(env, type, parentId);
+        this.processSuperClass(type);
+    }
+
+    @Override
+    protected <E extends Element> void processName(E element) {
+        this.setName(((TypeElement) element).getQualifiedName().toString());
+    }
+
+    @Override
+    protected void processParentId(String parentId) {
+        this.setParentId(parentId);
+        this.setId(this.getName());
+    }
+
+    public List<String> obtainSuperClassNames() {
+        List<String> superClassNames = new ArrayList<>(8);
+        if (Objects.nonNull(this.superClass)) {
+            superClassNames.add(this.superClass);
+        }
+        if (!CollectionUtils.isEmpty(this.interfaceClasses)) {
+            superClassNames.addAll(this.interfaceClasses);
+        }
+        return superClassNames;
+    }
+
+    public static boolean instanceOf(DefaultNode<String, DocData> docDataNode) {
+        return docDataNode.getElement() instanceof ClassDocData;
+    }
+
 }

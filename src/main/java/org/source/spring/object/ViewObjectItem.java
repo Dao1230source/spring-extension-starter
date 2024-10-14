@@ -1,14 +1,16 @@
 package org.source.spring.object;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.source.utility.tree.identity.StringElement;
 
+@Builder
 @EqualsAndHashCode(callSuper = false)
 @Data
-public class ObjectData extends StringElement {
-
+public class ViewObjectItem extends StringElement {
     /**
      * 对象ID，唯一
      */
@@ -18,29 +20,13 @@ public class ObjectData extends StringElement {
      */
     private String parentObjectId;
 
-    /**
-     * 关键字
-     */
-    private String key;
-    /**
-     * 值
-     */
-    private ValueData value;
-    /**
-     * 类型
-     */
-    private Integer type;
-
-    /**
-     * 新增对象
-     */
-    private boolean newObject;
-
+    @JsonIgnore
     @Override
     public @NonNull String getId() {
         return objectId;
     }
 
+    @JsonIgnore
     @Override
     public String getParentId() {
         return parentObjectId;
