@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.source.spring.object.ViewData;
 import org.source.spring.object.ViewItemData;
+import org.source.utility.constant.Constants;
 import org.source.utility.tree.DefaultNode;
 import org.source.utility.tree.identity.AbstractNode;
 
@@ -14,24 +15,27 @@ import java.util.Objects;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class RequestDocData extends DocData implements ViewData {
+    private String methodId;
     @JsonIgnore
-    private DefaultNode<String, DocData> requestView;
+    private DefaultNode<String, DocData> requestData;
 
-    public static RequestDocData of(String clsId) {
-        RequestDocData viewDocData = new RequestDocData();
-        viewDocData.setKey("methodView");
-        viewDocData.setTitle("方法视图");
-        viewDocData.processParentId(clsId);
-        return viewDocData;
+    public static RequestDocData of(String clsId, String methodId) {
+        RequestDocData requestDocData = new RequestDocData();
+        requestDocData.setMethodId(methodId);
+        requestDocData.setKey(methodId + Constants.COLON + "request");
+        requestDocData.setTitle("接口请求");
+        requestDocData.setId(requestDocData.getKey());
+        requestDocData.setParentId(clsId);
+        return requestDocData;
     }
 
     @JsonProperty("viewData")
     @Override
     public DefaultNode<String, ViewItemData> getViewData() {
-        if (Objects.isNull(requestView)) {
+        if (Objects.isNull(requestData)) {
             return null;
         }
-        return AbstractNode.cast(requestView, k -> ViewItemData.builder().objectId(k.getObjectId()).build(),
+        return AbstractNode.cast(requestData, k -> ViewItemData.builder().objectId(k.getObjectId()).build(),
                 ViewItemData::setParentObjectId);
     }
 }

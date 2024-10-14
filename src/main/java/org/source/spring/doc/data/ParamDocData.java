@@ -28,9 +28,9 @@ public class ParamDocData extends VariableDocData {
         }
     }
 
-    public static ParamDocData of(DocletEnvironment env, VariableElement variableElement, ExecutableElement method) {
+    public static ParamDocData of(DocletEnvironment env, VariableElement variableElement, ExecutableElement method, String methodId) {
         ParamDocData paramDocData = new ParamDocData();
-        paramDocData.processVariable(env, variableElement, method);
+        paramDocData.processVariable(env, variableElement, method, methodId);
         return paramDocData;
     }
 

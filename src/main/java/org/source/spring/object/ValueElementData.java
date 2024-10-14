@@ -13,10 +13,10 @@ public abstract class ValueElementData implements ValueData, Element<String> {
     @JsonIgnore
     private String objectId;
     /**
-     * 新增对象
+     * 对象状态
      */
     @JsonIgnore
-    private boolean newObject;
+    private ObjectStatusEnum objectStatus;
 
     @Override
     public int compareTo(@NotNull Element<String> o) {

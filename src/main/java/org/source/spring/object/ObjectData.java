@@ -5,6 +5,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.source.utility.tree.identity.StringElement;
 
+import java.util.Objects;
+
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class ObjectData extends StringElement {
@@ -25,16 +27,18 @@ public class ObjectData extends StringElement {
     /**
      * 值
      */
-    private ValueData value;
+    private transient ValueData value;
     /**
      * 类型
      */
     private Integer type;
 
-    /**
-     * 新增对象
-     */
-    private boolean newObject;
+    public ObjectStatusEnum obtainObjectStatus() {
+        if (Objects.isNull(value)) {
+            return null;
+        }
+        return value.getObjectStatus();
+    }
 
     @Override
     public @NonNull String getId() {

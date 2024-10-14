@@ -1,6 +1,8 @@
 package org.source.spring.object;
 
-public interface ValueData {
+import java.io.Serializable;
+
+public interface ValueData extends Serializable {
     /**
      * 对象ID，唯一
      */
@@ -9,10 +11,10 @@ public interface ValueData {
     void setObjectId(String objectId);
 
     /**
-     * 新增对象
+     * 对象状态
      */
-    boolean isNewObject();
+    ObjectStatusEnum getObjectStatus();
 
-    void setNewObject(boolean newObject);
+    void setObjectStatus(ObjectStatusEnum objectStatus);
 
 }

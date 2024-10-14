@@ -4,6 +4,7 @@ import org.source.spring.doc.data.DocData;
 import org.source.spring.doc.data.RequestDocData;
 import org.source.spring.doc.data.VariableDocData;
 import org.source.spring.object.ObjectData;
+import org.source.spring.object.ObjectStatusEnum;
 import org.source.spring.object.ValueData;
 import org.source.spring.uid.Ids;
 import org.source.utility.assign.Assign;
@@ -13,10 +14,7 @@ import org.source.utility.tree.identity.AbstractNode;
 import org.springframework.lang.NonNull;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -26,10 +24,12 @@ public interface DocProcessor {
     default BiConsumer<DefaultNode<String, DocData>, DefaultNode<String, DocData>> getUpdateOldHandler() {
         return (n, old) -> {
             // 保留原objectId
-            n.getElement().setObjectId(old.getElement().getObjectId());
+            if (ObjectStatusEnum.CREATED.equals(n.getElement().getObjectStatus())) {
+                n.getElement().setObjectId(old.getElement().getObjectId());
+            }
             old.setElement(n.getElement());
             // 如果需要强制更新设置newObject=true
-            old.getElement().setNewObject(true);
+            old.getElement().setObjectStatus(ObjectStatusEnum.CACHED);
         };
     }
 
@@ -54,12 +54,14 @@ public interface DocProcessor {
 
     default <E extends DocData> void sync2tree(Collection<E> es) {
         Set<String> ids = es.stream().map(DocData::getId).collect(Collectors.toSet());
-        Set<String> treeExistsIds = getDocTree().find(n -> ids.contains(n.getId())).stream().map(AbstractNode::getId).collect(Collectors.toSet());
+        Set<String> treeExistsIds = getDocTree().find(n -> ids.contains(n.getId()) && Objects.nonNull(n.getElement().getObjectId()))
+                .stream().map(AbstractNode::getId).collect(Collectors.toSet());
         Set<String> notExistsIds = ids.stream().filter(i -> !treeExistsIds.contains(i)).collect(Collectors.toSet());
         if (!CollectionUtils.isEmpty(notExistsIds)) {
             // 从数据中查询数据并添加到tree中
             List<DocData> dataFromDbList = this.findByIdsFromDb(notExistsIds).stream().map(k -> {
                 ValueData valueData = k.getValue();
+                valueData.setObjectStatus(ObjectStatusEnum.DATABASE);
                 if (valueData instanceof DocData docData) {
                     docData.setId(k.getKey());
                     return docData;
@@ -89,28 +91,28 @@ public interface DocProcessor {
                 .addAssemble(AbstractNode::addChild)
                 .backAcquire().backAssign().invoke();
         this.getDocTree().find(n -> n.getElement() instanceof RequestDocData).forEach(n -> {
-            DefaultNode<String, DocData> method = n.getChildren().get(0);
-            if (n.getElement() instanceof RequestDocData methodView && Objects.nonNull(method)) {
-                methodView.setRequestView(method);
+            if (n.getElement() instanceof RequestDocData requestDocData) {
+                String methodId = requestDocData.getMethodId();
+                DefaultNode<String, DocData> methodNode = this.getDocTree().getIdMap().get(methodId);
+                Optional.ofNullable(methodNode).ifPresent(requestDocData::setRequestData);
             }
         });
     }
 
     default <E extends DocData> void save(Collection<E> es) {
-        sync2tree(es);
+        es.forEach(k -> k.setObjectStatus(ObjectStatusEnum.CREATED));
+        this.sync2tree(es);
         this.specificHandle();
         Tree<String, ObjectData, DefaultNode<String, ObjectData>> tree = this.getDocTree()
                 .cast(this::convert2Object, ObjectData::setParentObjectId);
         List<DefaultNode<String, ObjectData>> list = tree.getIdMap().values().stream()
-                .filter(k -> k.getElement().isNewObject()).toList();
+                .filter(k -> !ObjectStatusEnum.DATABASE.equals(k.getElement().obtainObjectStatus())).toList();
         this.save2db(list);
-        list.forEach(k -> k.getElement().setNewObject(false));
-        es.forEach(k -> k.setNewObject(false));
+        es.forEach(k -> k.setObjectStatus(ObjectStatusEnum.DATABASE));
     }
 
     default <E extends DocData> ObjectData convert2Object(E docData) {
         ObjectData objectData = new ObjectData();
-        objectData.setNewObject(docData.isNewObject());
         objectData.setObjectId(docData.getObjectId());
         objectData.setKey(docData.getId());
         objectData.setType(getType(docData));
@@ -118,7 +120,7 @@ public interface DocProcessor {
         // 如果objectId为null，表明是新增数据
         if (Objects.isNull(docData.getObjectId())) {
             objectData.setObjectId(Ids.stringId());
-            objectData.setNewObject(true);
+            docData.setObjectId(objectData.getObjectId());
         }
         return objectData;
     }

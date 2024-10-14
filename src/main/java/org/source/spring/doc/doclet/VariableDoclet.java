@@ -23,7 +23,7 @@ public class VariableDoclet extends AbstractDoclet {
                 .toList();
         List<DocData> docDataList = new ArrayList<>(16);
         typeElementList.forEach(type -> {
-            ClassDocData classDocData = ClassDocData.of(env, type);
+            ClassDocData classDocData = ClassDocData.of(env, type, false);
             docDataList.add(classDocData);
             List<VariableElement> variableElementList = type.getEnclosedElements().stream()
                     .filter(t -> ElementKind.FIELD.equals(t.getKind())).map(VariableElement.class::cast)

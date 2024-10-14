@@ -1,5 +1,6 @@
 package org.source.spring.object;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,11 +20,13 @@ public class ViewItemData extends StringElement {
      */
     private String parentObjectId;
 
+    @JsonIgnore
     @Override
     public @NonNull String getId() {
         return objectId;
     }
 
+    @JsonIgnore
     @Override
     public String getParentId() {
         return parentObjectId;

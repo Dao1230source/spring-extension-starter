@@ -42,11 +42,11 @@ public class VariableDocData extends DocData {
         this.setTypeName(name);
     }
 
-    public void processVariable(DocletEnvironment env, VariableElement variableElement, ExecutableElement method) {
+    public void processVariable(DocletEnvironment env, VariableElement variableElement, ExecutableElement method, String methodId) {
         this.processVariable(variableElement);
         this.processComment(env, method);
         this.setAnnotationList(this.processAnnotation(variableElement));
-        this.processParentId(method.toString());
+        this.processParentId(methodId);
     }
 
     public void processVariable(DocletEnvironment env, VariableElement variableElement, TypeElement cls) {

@@ -27,16 +27,16 @@ public class ControllerDoclet extends AbstractDoclet {
                 .toList();
         List<DocData> docDataList = new ArrayList<>(16);
         typeElementList.forEach(type -> {
-            ClassDocData classDocData = ClassDocData.of(env, type);
+            ClassDocData classDocData = ClassDocData.of(env, type, true);
             docDataList.add(classDocData);
             List<ExecutableElement> executableElementList = type.getEnclosedElements().stream()
                     .filter(t -> ElementKind.METHOD.equals(t.getKind())).map(ExecutableElement.class::cast).toList();
             executableElementList.forEach(method -> {
-                RequestDocData requestDocData = RequestDocData.of(classDocData.getId());
-                docDataList.add(requestDocData);
-                MethodDocData methodDocData = MethodDocData.of(env, method, requestDocData.getId());
+                MethodDocData methodDocData = MethodDocData.of(env, method, classDocData.getId());
                 docDataList.add(methodDocData);
-                List<ParamDocData> params = method.getParameters().stream().map(p -> ParamDocData.of(env, p, method)).toList();
+                RequestDocData requestDocData = RequestDocData.of(classDocData.getId(), methodDocData.getId());
+                docDataList.add(requestDocData);
+                List<ParamDocData> params = method.getParameters().stream().map(p -> ParamDocData.of(env, p, method, methodDocData.getId())).toList();
                 docDataList.addAll(params);
                 this.extraClsNames.addAll(params.stream().filter(VariableDocData::notBaseType)
                         .map(VariableDocData::getTypeName).collect(Collectors.toSet()));
