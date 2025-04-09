@@ -20,7 +20,7 @@ import java.util.Collections;
 
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "uid", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "uid")
 @AutoConfigureBefore(ScanConfig.class)
 @EnableConfigurationProperties(IdProperties.class)
 @AutoConfiguration

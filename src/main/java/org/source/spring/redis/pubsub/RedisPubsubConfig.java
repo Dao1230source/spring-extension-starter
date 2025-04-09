@@ -25,7 +25,7 @@ import java.util.Map;
  *
  * @author zengfugen
  */
-@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "pubsub", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "pubsub")
 @AutoConfiguration
 public class RedisPubsubConfig implements BeanFactoryAware {
 

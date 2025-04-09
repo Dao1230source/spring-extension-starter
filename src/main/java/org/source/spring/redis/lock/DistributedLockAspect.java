@@ -33,7 +33,7 @@ import java.util.*;
 @AllArgsConstructor
 @Aspect
 @ConditionalOnBean(RedisTemplate.class)
-@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "lock", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "lock", havingValue = "true")
 @AutoConfiguration
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class DistributedLockAspect {

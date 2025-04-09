@@ -278,11 +278,16 @@ public class ConfigureRedisCache extends RedisCache {
         }
         if (cacheProperties.isCacheInJvm()) {
             log.debug("ConfigureCache evict jvm");
+            cacheProperties.getJvmCache().invalidate(key);
             byte[] channelTopic = RedisSerializer.string().serialize(PublishTopic.TOPIC_CONFIGURE_CACHE);
             byte[] message = RedisSerializer.string().serialize(Jsons.str(new ConfigureCacheMessage(cacheName, key instanceof Collection<?>, Jsons.str(key))));
             if (Objects.nonNull(channelTopic) && Objects.nonNull(message)) {
-                Long count = cacheWriter.publish(cacheName, channelTopic, message);
-                log.debug("ConfigureCache publish evict message, receive clients:{}", count);
+                try {
+                    Long count = cacheWriter.publish(cacheName, channelTopic, message);
+                    log.debug("ConfigureCache publish evict message, receive clients:{}", count);
+                } catch (Exception e) {
+                    log.error("may not connect redis, {}", e.getMessage());
+                }
             }
         }
         if (cacheProperties.isCacheInRedis()) {
@@ -293,6 +298,21 @@ public class ConfigureRedisCache extends RedisCache {
             } else {
                 cacheWriter.remove(cacheName, createAndConvertCacheKey2(key));
             }
+        }
+    }
+
+    @Override
+    public void clear() {
+        ConfigureCacheProperties cacheProperties = this.configureCacheExpendMap.get(super.getName());
+        String cacheName = this.getName();
+        if (log.isDebugEnabled()) {
+            log.debug("ConfigureCache clear jvm, cacheName:{}", cacheName);
+        }
+        if (cacheProperties.isCacheInJvm()) {
+            cacheProperties.getJvmCache().invalidateAll();
+        }
+        if (cacheProperties.isCacheInRedis()) {
+            super.clear();
         }
     }
 

@@ -22,12 +22,12 @@ public class EnableProperties {
     private boolean json = true;
     private boolean log = true;
     private boolean mq = true;
-    private boolean redis = true;
-    private boolean lock = true;
-    private boolean pubsub = true;
-    private boolean redisson = true;
+    private boolean redis = false;
+    private boolean lock = false;
+    private boolean pubsub = false;
+    private boolean redisson = false;
     private boolean request = true;
     private boolean scan = true;
-    private boolean uid = true;
+    private boolean uid = false;
     private boolean utility = true;
 }

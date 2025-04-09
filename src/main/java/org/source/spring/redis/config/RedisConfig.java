@@ -14,7 +14,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 /**
  * @author zengfugen
  */
-@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "redis", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "redis")
 @AutoConfiguration
 public class RedisConfig {
 

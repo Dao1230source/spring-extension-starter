@@ -16,7 +16,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 
-@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "redisson", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "redisson", havingValue = "true")
 @AllArgsConstructor
 @AutoConfiguration
 public class RedissonConfig {
