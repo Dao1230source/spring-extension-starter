@@ -6,17 +6,12 @@ import org.jetbrains.annotations.NotNull;
 import org.source.utility.tree.identity.Element;
 
 @Data
-public abstract class ObjectValueElement implements ObjectValue, Element<String> {
+public abstract class AbstractValue implements Value, Element<String> {
     /**
      * 对象ID，唯一
      */
     @JsonIgnore
     private String objectId;
-    /**
-     * 对象状态
-     */
-    @JsonIgnore
-    private ObjectStatusEnum objectStatus;
 
     @Override
     public int compareTo(@NotNull Element<String> o) {

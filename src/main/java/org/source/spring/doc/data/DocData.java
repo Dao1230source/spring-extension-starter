@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.source.spring.object.ObjectValueElement;
+import org.source.spring.object.AbstractValue;
 import org.source.utility.constant.Constants;
 import org.springframework.lang.NonNull;
 
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class DocData extends ObjectValueElement {
+public class DocData extends AbstractValue {
     @JsonIgnore
     private String id;
     @JsonIgnore

@@ -3,11 +3,11 @@ package org.source.spring.object.data;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import org.source.spring.object.ObjectValueElement;
+import org.source.spring.object.AbstractValue;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class DefaultObjectValue extends ObjectValueElement {
+public class DefaultAbstractValue extends AbstractValue {
     private String parentObjectId;
 
     @Override

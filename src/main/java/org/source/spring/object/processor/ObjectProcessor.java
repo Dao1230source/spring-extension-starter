@@ -2,11 +2,12 @@ package org.source.spring.object.processor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.source.spring.object.ObjectStatusEnum;
-import org.source.spring.object.ObjectValueElement;
+import org.source.spring.object.AbstractValue;
+import org.source.spring.object.StatusEnum;
 import org.source.spring.object.data.ObjectData;
 import org.source.spring.object.entity.ObjectEntity;
 import org.source.spring.object.entity.RelationEntity;
+import org.source.spring.object.tree.ObjectNode;
 import org.source.spring.trace.TraceContext;
 import org.source.spring.uid.Ids;
 import org.source.utility.enums.BaseExceptionEnum;
@@ -23,8 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
-public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntity,
-        V extends ObjectValueElement, N extends AbstractNode<String, V, N>> {
+public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntity, V extends AbstractValue> {
     Logger log = LoggerFactory.getLogger(ObjectProcessor.class);
 
     @NonNull
@@ -33,20 +33,20 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
     @NonNull
     R newRelationEntity();
 
-    Tree<String, V, N> getDocTree();
+    Tree<String, V, ObjectNode<String, V>> getDocTree();
 
-    default BiConsumer<N, N> getUpdateOldHandler() {
+    default BiConsumer<ObjectNode<String, V>, ObjectNode<String, V>> getUpdateOldHandler() {
         return (n, old) -> {
             // 数据库的objectId
-            if (ObjectStatusEnum.DATABASE.equals(n.getElement().getObjectStatus())) {
+            if (StatusEnum.DATABASE.equals(n.getStatus())) {
                 old.getElement().setObjectId(n.getElement().getObjectId());
             }
-            old.getElement().setObjectStatus(ObjectStatusEnum.CACHED);
+            old.setStatus(StatusEnum.CACHED);
         };
     }
 
     default Collection<V> maybeFromDb(Collection<V> es) {
-        List<N> nodes = this.getDocTree().find(n -> !ObjectStatusEnum.DATABASE.equals(n.getElement().getObjectStatus()));
+        List<ObjectNode<String, V>> nodes = this.getDocTree().find(n -> !StatusEnum.DATABASE.equals(n.getStatus()));
         return Streams.map(nodes, AbstractNode::getElement).toList();
     }
 
@@ -104,7 +104,6 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
      * @param vs es
      */
     default void add2Tree(Collection<V> vs) {
-        vs.forEach(k -> k.setObjectStatus(ObjectStatusEnum.CREATED));
         this.sync2tree(vs);
     }
 
@@ -115,15 +114,11 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
             return;
         }
         // 从数据中查询数据并添加到tree中
-        List<V> dataFromDbList = this.findFromDb(maybeFromDbValues).stream().map(k -> {
-            V objectValue = this.valueFromObject(k);
-            if (Objects.nonNull(objectValue)) {
-                objectValue.setObjectStatus(ObjectStatusEnum.DATABASE);
-            }
-            return objectValue;
-        }).toList();
+        List<V> dataFromDbList = this.findFromDb(maybeFromDbValues).stream().map(this::valueFromObject).toList();
         // 如果相同 key 的数据已存在，更新 objectId
-        this.getDocTree().add(dataFromDbList, this.getUpdateOldHandler());
+        this.getDocTree().add(dataFromDbList,
+                n -> n.setStatus(StatusEnum.DATABASE),
+                this.getUpdateOldHandler());
     }
 
     default ObjectData<V> convert2Object(V objectValue) {

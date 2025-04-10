@@ -4,7 +4,7 @@ import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.source.utility.tree.DefaultNode;
+import org.source.spring.object.tree.ObjectNode;
 import org.source.utility.utils.Streams;
 import org.springframework.util.CollectionUtils;
 
@@ -55,7 +55,7 @@ public class ClassDocData extends DocData {
         return superClassNames;
     }
 
-    public static boolean instanceOf(DefaultNode<String, DocData> docDataNode) {
+    public static boolean instanceOf(ObjectNode<String, DocData> docDataNode) {
         return docDataNode.getElement() instanceof ClassDocData;
     }
 

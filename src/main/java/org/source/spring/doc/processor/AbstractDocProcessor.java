@@ -3,15 +3,15 @@ package org.source.spring.doc.processor;
 import lombok.Getter;
 import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.data.*;
-import org.source.spring.object.ObjectStatusEnum;
-import org.source.spring.object.ObjectValue;
+import org.source.spring.object.StatusEnum;
+import org.source.spring.object.Value;
 import org.source.spring.object.data.ObjectData;
 import org.source.spring.object.entity.ObjectEntity;
 import org.source.spring.object.entity.RelationEntity;
 import org.source.spring.object.processor.AbstractObjectProcessor;
 import org.source.spring.object.processor.RelationHandler;
+import org.source.spring.object.tree.ObjectNode;
 import org.source.utility.assign.Assign;
-import org.source.utility.tree.DefaultNode;
 import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.AbstractNode;
 import org.springframework.util.CollectionUtils;
@@ -23,18 +23,18 @@ import java.util.stream.Collectors;
 public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends RelationEntity>
         extends AbstractObjectProcessor<O, R, DocData> {
 
-    private final Tree<String, DocData, DefaultNode<String, DocData>> docTree = DefaultNode.buildTree();
+    private final Tree<String, DocData, ObjectNode<String, DocData>> docTree = ObjectNode.buildTree();
     private final DocDataContainer docDataContainer = new DocDataContainer();
 
     public void process(RelationHandler relationHandler) {
         this.specificHandle();
-        Tree<String, ObjectData<DocData>, DefaultNode<String, ObjectData<DocData>>> objectTree = this.getDocTree()
+        Tree<String, ObjectData<DocData>, ObjectNode<String, ObjectData<DocData>>> objectTree = this.getDocTree()
                 .cast(this::convert2Object2, ObjectData::setParentObjectId);
         List<ObjectData<DocData>> list = objectTree.getIdMap().values().stream()
-                .filter(k -> !ObjectStatusEnum.DATABASE.equals(k.getElement().obtainObjectStatus()))
+                .filter(k -> !StatusEnum.DATABASE.equals(k.getStatus()))
                 .map(AbstractNode::getElement).toList();
         this.saveObjectData(list, relationHandler);
-        this.getDocDataContainer().forEach(k -> k.setObjectStatus(ObjectStatusEnum.DATABASE));
+        this.docTree.forEach((i, n) -> n.setStatus(StatusEnum.DATABASE));
     }
 
     /**
@@ -46,10 +46,10 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
      */
     public void specificHandle() {
         // 变量不是基础类型的
-        List<DefaultNode<String, DocData>> notBaseTypeVariableList = docTree.find(n ->
+        List<ObjectNode<String, DocData>> notBaseTypeVariableList = docTree.find(n ->
                 n.getElement() instanceof VariableDocData variableDocData && variableDocData.notBaseType());
         Assign.build(notBaseTypeVariableList)
-                .<String, DefaultNode<String, DocData>>addAcquire(ks -> docTree.find(n -> ks.contains(n.getElement().getName())),
+                .<String, ObjectNode<String, DocData>>addAcquire(ks -> docTree.find(n -> ks.contains(n.getElement().getName())),
                         k -> k.getElement().getName())
                 .addAction(n -> ((VariableDocData) n.getElement()).getTypeName())
                 .addAssemble(AbstractNode::addChild)
@@ -58,7 +58,7 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
         docTree.find(n -> n.getElement() instanceof RequestDocData).forEach(n -> {
             if (n.getElement() instanceof RequestDocData requestDocData) {
                 String methodId = requestDocData.getMethodId();
-                DefaultNode<String, DocData> methodNode = this.getDocTree().getIdMap().get(methodId);
+                ObjectNode<String, DocData> methodNode = this.getDocTree().getIdMap().get(methodId);
                 Optional.ofNullable(methodNode).ifPresent(requestDocData::setRequestData);
             }
         });
@@ -69,12 +69,12 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
             if (CollectionUtils.isEmpty(superClassNames)) {
                 return;
             }
-            Optional<DefaultNode<String, DocData>> superClsNodeOptional = superClassNames.stream()
+            Optional<ObjectNode<String, DocData>> superClsNodeOptional = superClassNames.stream()
                     .map(docTree::getById).filter(Objects::nonNull).findFirst();
             if (superClsNodeOptional.isEmpty()) {
                 return;
             }
-            DefaultNode<String, DocData> superNode = superClsNodeOptional.get();
+            ObjectNode<String, DocData> superNode = superClsNodeOptional.get();
             DocData docData = superNode.getElement();
             if (docData instanceof ClassDocData superClsDocData) {
                 classDocData.merge(superClsDocData);
@@ -119,8 +119,8 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
 
     @Override
     public DocData valueFromObject(ObjectData<DocData> objectData) {
-        ObjectValue objectValue = objectData.getValue();
-        if (objectValue instanceof DocData docData) {
+        Value value = objectData.getValue();
+        if (value instanceof DocData docData) {
             docData.setId(objectData.getKey());
             return docData;
         }

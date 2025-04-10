@@ -7,8 +7,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.source.spring.object.ViewObject;
 import org.source.spring.object.ViewObjectItem;
+import org.source.spring.object.tree.ObjectNode;
 import org.source.utility.constant.Constants;
-import org.source.utility.tree.DefaultNode;
 import org.source.utility.tree.identity.AbstractNode;
 
 import java.util.Objects;
@@ -16,10 +16,10 @@ import java.util.Objects;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class RequestDocData extends DocData implements ViewObject<ViewObjectItem, DefaultNode<String, ViewObjectItem>> {
+public class RequestDocData extends DocData implements ViewObject<ViewObjectItem, ObjectNode<String, ViewObjectItem>> {
     private String methodId;
     @JsonIgnore
-    private DefaultNode<String, DocData> requestData;
+    private ObjectNode<String, DocData> requestData;
 
     public RequestDocData(MethodDocData methodDocData, String parentId) {
         this.setMethodId(methodDocData.getId());
@@ -30,7 +30,7 @@ public class RequestDocData extends DocData implements ViewObject<ViewObjectItem
 
     @JsonProperty("viewData")
     @Override
-    public DefaultNode<String, ViewObjectItem> getViewData() {
+    public ObjectNode<String, ViewObjectItem> getViewData() {
         if (Objects.isNull(requestData)) {
             return null;
         }
