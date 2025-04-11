@@ -14,16 +14,15 @@ public interface ObjectHandler {
 
     Class<? extends AbstractValue> getValueClass();
 
-    Class<? extends ObjectProcessor<? extends ObjectEntity, ? extends RelationEntity,
-            ? extends AbstractValue>> getObjectProcessor();
+    Class<? extends ObjectProcessor<? extends ObjectEntity, ? extends RelationEntity, ? extends AbstractValue>> getObjectProcessor();
 
     <O extends ObjectEntity, V extends AbstractValue> V toObjectValue(O objectEntity);
 
     default <O extends ObjectEntity, V extends AbstractValue> ObjectData<V> toObjectData(O objectEntity) {
         ObjectData<V> objectData = new ObjectData<>();
-        objectData.setObjectId(objectData.getObjectId());
-        objectData.setType(objectData.getType());
-        objectData.setKey(objectData.getKey());
+        objectData.setObjectId(objectEntity.getObjectId());
+        objectData.setType(objectEntity.getType());
+        objectData.setKey(objectEntity.getKey());
         objectData.setValue(toObjectValue(objectEntity));
         return objectData;
     }

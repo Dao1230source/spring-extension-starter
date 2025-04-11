@@ -22,7 +22,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
 
 public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntity, V extends AbstractValue> {
     Logger log = LoggerFactory.getLogger(ObjectProcessor.class);
@@ -35,13 +35,24 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
 
     Tree<String, V, ObjectNode<String, V>> getDocTree();
 
-    default BiConsumer<ObjectNode<String, V>, ObjectNode<String, V>> getUpdateOldHandler() {
+    default BinaryOperator<ObjectNode<String, V>> getUpdateOldHandler() {
         return (n, old) -> {
-            // 数据库的objectId
-            if (StatusEnum.DATABASE.equals(n.getStatus())) {
-                old.getElement().setObjectId(n.getElement().getObjectId());
+            // 现有的node已保存到数据库
+            if (StatusEnum.DATABASE.equals(old.getStatus())) {
+                // 如果新的element与数据库的不相同，更新
+                if (!n.getElement().equals(old.getElement())) {
+                    old.setElement(n.getElement());
+                    old.setStatus(StatusEnum.CACHED);
+                }
+                return old;
+            } else {
+                // 数据库的objectId
+                if (StatusEnum.DATABASE.equals(n.getStatus())) {
+                    old.getElement().setObjectId(n.getElement().getObjectId());
+                }
+                old.setStatus(StatusEnum.CACHED);
             }
-            old.setStatus(StatusEnum.CACHED);
+            return old;
         };
     }
 
@@ -117,8 +128,9 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
         List<V> dataFromDbList = this.findFromDb(maybeFromDbValues).stream().map(this::valueFromObject).toList();
         // 如果相同 key 的数据已存在，更新 objectId
         this.getDocTree().add(dataFromDbList,
-                n -> n.setStatus(StatusEnum.DATABASE),
-                this.getUpdateOldHandler());
+                null,
+                this.getUpdateOldHandler(),
+                n -> n.setStatus(StatusEnum.DATABASE));
     }
 
     default ObjectData<V> convert2Object(V objectValue) {

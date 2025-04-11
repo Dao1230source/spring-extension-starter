@@ -16,8 +16,7 @@ public class DefaultObjectHandler implements ObjectHandler {
     }
 
     @Override
-    public Class<? extends ObjectProcessor<? extends ObjectEntity, ? extends RelationEntity,
-            ? extends AbstractValue>> getObjectProcessor() {
+    public Class<? extends ObjectProcessor<? extends ObjectEntity, ? extends RelationEntity, ? extends AbstractValue>> getObjectProcessor() {
         return DefaultObjectProcessor.class;
     }
 

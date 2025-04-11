@@ -29,7 +29,8 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
     public void process(RelationHandler relationHandler) {
         this.specificHandle();
         Tree<String, ObjectData<DocData>, ObjectNode<String, ObjectData<DocData>>> objectTree = this.getDocTree()
-                .cast(this::convert2Object2, ObjectData::setParentObjectId);
+                .cast(this::convert2Object2, ObjectData::setParentObjectId,
+                        (o, n) -> o.setStatus(n.getStatus()));
         List<ObjectData<DocData>> list = objectTree.getIdMap().values().stream()
                 .filter(k -> !StatusEnum.DATABASE.equals(k.getStatus()))
                 .map(AbstractNode::getElement).toList();
