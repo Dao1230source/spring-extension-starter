@@ -37,10 +37,19 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
 
     default BinaryOperator<ObjectNode<String, V>> getUpdateOldHandler() {
         return (n, old) -> {
+            log.debug("new object id:{}", n.getId());
+            if (Objects.isNull(old)) {
+                n.setStatus(StatusEnum.CACHED);
+                log.debug("old object not exists");
+                return n;
+            }
+            log.debug("old object id:{}", old.getId());
             // 现有的node已保存到数据库
             if (StatusEnum.DATABASE.equals(old.getStatus())) {
+                log.debug("old object from database");
                 // 如果新的element与数据库的不相同，更新
-                if (!n.getElement().equals(old.getElement())) {
+                if (!StatusEnum.DATABASE.equals(n.getStatus()) && !n.getElement().equals(old.getElement())) {
+                    log.debug("new object not from database and not equal old object.\nnew:{} \nold:{}", Jsons.str(n), Jsons.str(old));
                     old.setElement(n.getElement());
                     old.setStatus(StatusEnum.CACHED);
                 }
@@ -48,6 +57,7 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
             } else {
                 // 数据库的objectId
                 if (StatusEnum.DATABASE.equals(n.getStatus())) {
+                    log.debug("new object from database");
                     old.getElement().setObjectId(n.getElement().getObjectId());
                 }
                 old.setStatus(StatusEnum.CACHED);
@@ -119,7 +129,6 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
     }
 
     default void sync2tree(Collection<V> vs) {
-        this.getDocTree().add(vs);
         Collection<V> maybeFromDbValues = this.maybeFromDb(vs);
         if (CollectionUtils.isEmpty(maybeFromDbValues)) {
             return;
@@ -128,9 +137,12 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
         List<V> dataFromDbList = this.findFromDb(maybeFromDbValues).stream().map(this::valueFromObject).toList();
         // 如果相同 key 的数据已存在，更新 objectId
         this.getDocTree().add(dataFromDbList,
-                null,
+                true,
+                n -> n.setStatus(StatusEnum.DATABASE),
                 this.getUpdateOldHandler(),
-                n -> n.setStatus(StatusEnum.DATABASE));
+                null);
+        this.getDocTree().add(vs, false, n -> n.setStatus(StatusEnum.CREATED),
+                this.getUpdateOldHandler(), null);
     }
 
     default ObjectData<V> convert2Object(V objectValue) {

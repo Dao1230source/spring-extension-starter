@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.source.spring.object.AbstractValue;
 import org.source.utility.constant.Constants;
-import org.springframework.lang.NonNull;
 
 import javax.lang.model.element.Element;
 import java.util.Arrays;
@@ -29,7 +28,6 @@ public class DocData extends AbstractValue {
     @JsonIgnore
     private String parentId;
 
-    @NonNull
     private String name;
     private String title;
     private String text;
@@ -87,5 +85,4 @@ public class DocData extends AbstractValue {
             this.setText(docData.getText());
         }
     }
-
 }
