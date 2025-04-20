@@ -9,15 +9,15 @@ import org.source.spring.object.data.ObjectData;
 import org.source.spring.object.entity.ObjectEntity;
 import org.source.spring.object.entity.RelationEntity;
 import org.source.spring.object.processor.AbstractObjectProcessor;
-import org.source.spring.object.processor.RelationHandler;
 import org.source.spring.object.tree.ObjectNode;
 import org.source.utility.assign.Assign;
 import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.AbstractNode;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Getter
 public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends RelationEntity>
@@ -26,16 +26,14 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
     private final Tree<String, DocData, ObjectNode<String, DocData>> docTree = ObjectNode.buildTree();
     private final DocDataContainer docDataContainer = new DocDataContainer();
 
-    public void process(RelationHandler relationHandler) {
-        this.specificHandle();
+    @Override
+    public List<ObjectData<DocData>> obtainObjectData() {
         Tree<String, ObjectData<DocData>, ObjectNode<String, ObjectData<DocData>>> objectTree = this.getDocTree()
-                .cast(this::convert2Object2, ObjectData::setParentObjectId,
+                .cast(this::convert2Object, ObjectData::setParentObjectId,
                         (o, n) -> o.setStatus(n.getStatus()));
-        List<ObjectData<DocData>> list = objectTree.getIdMap().values().stream()
+        return objectTree.getIdMap().values().stream()
                 .filter(k -> !StatusEnum.DATABASE.equals(k.getStatus()))
                 .map(AbstractNode::getElement).toList();
-        this.saveObjectData(list, relationHandler);
-        this.docTree.forEach((i, n) -> n.setStatus(StatusEnum.DATABASE));
     }
 
     /**
@@ -45,7 +43,8 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
      *     2、如果有接口文档 RequestDocData 数据，需要补全view数据
      * </pre>
      */
-    public void specificHandle() {
+    @Override
+    public void afterTransfer() {
         // 变量不是基础类型的
         List<ObjectNode<String, DocData>> notBaseTypeVariableList = docTree.find(n ->
                 n.getElement() instanceof VariableDocData variableDocData && variableDocData.notBaseType());
@@ -64,7 +63,7 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
             }
         });
         // 与父类或接口的数据合并
-        docTree.find(ClassDocData::instanceOf).forEach(n -> {
+        docTree.find(n -> n.getElement() instanceof ClassDocData).forEach(n -> {
             ClassDocData classDocData = (ClassDocData) n.getElement();
             List<String> superClassNames = classDocData.obtainSuperClassNames();
             if (CollectionUtils.isEmpty(superClassNames)) {
@@ -89,33 +88,11 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
         });
     }
 
-    /**
-     * AbstractDoclet 中使用，转为tree结构，保存在内存中
-     *
-     * @param es es
-     */
-    public void add2Tree2(Collection<DocData> es) {
-        this.add2Tree(es);
-        this.getDocDataContainer().add(es);
-    }
-
-
-    public ObjectData<DocData> convert2Object2(DocData docData) {
-        ObjectData<DocData> objectData = this.convert2Object(docData);
+    @Override
+    public ObjectData<DocData> convert2Object(DocData docData) {
+        ObjectData<DocData> objectData = super.convert2Object(docData);
         objectData.setKey(docData.getId());
         return objectData;
-    }
-
-    @Override
-    public Collection<DocData> maybeFromDb(Collection<DocData> es) {
-        // DocData.key 为
-        Set<String> keys = es.stream().map(DocData::getId).collect(Collectors.toSet());
-        return getDocTree().find(n -> {
-            if (keys.contains(n.getElement().getName())) {
-                return !Objects.nonNull(n.getElement().getObjectId());
-            }
-            return true;
-        }).stream().map(AbstractNode::getElement).collect(Collectors.toSet());
     }
 
     @Override

@@ -35,11 +35,71 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
 
     Tree<String, V, ObjectNode<String, V>> getDocTree();
 
+    /**
+     * 转为tree
+     *
+     * @param vs es
+     */
+    default void transfer2tree(Collection<V> vs) {
+        Collection<V> notExistsDb = this.notExistsDb(vs);
+        if (!CollectionUtils.isEmpty(notExistsDb)) {
+            // 从数据中查询数据并添加到tree中
+            List<V> dataFromDbList = this.findFromDb(notExistsDb).stream().map(this::valueFromObject).toList();
+            // 如果相同 key 的数据已存在，更新 objectId
+            this.getDocTree().add(dataFromDbList,
+                    true,
+                    n -> n.setStatus(StatusEnum.DATABASE),
+                    this.getUpdateOldHandler(),
+                    null);
+        }
+        this.getDocTree().add(vs, false, n -> n.setStatus(StatusEnum.CREATED),
+                this.getUpdateOldHandler(), null);
+        this.afterTransfer();
+    }
+
+    default void afterTransfer() {
+    }
+
+    /**
+     * 持久化数据
+     *
+     * @param relationIdentity 关系定义
+     */
+    default void persist2Database(RelationIdentity relationIdentity) {
+        this.beforePersist();
+        this.saveObjectData(this.obtainObjectData(), relationIdentity);
+        this.afterPersist();
+    }
+
+    /**
+     * 对 this.getDocTree() 做一些操作
+     */
+    default void beforePersist() {
+        this.getDocTree().forEach((i, n) -> {
+            if (StatusEnum.DATABASE.equals(n.getOldStatus())
+                    && Objects.nonNull(n.getOldElement())
+                    && n.getOldElement().equals(n.getElement())) {
+                n.setStatus(StatusEnum.DATABASE);
+            }
+        });
+    }
+
+    default List<ObjectData<V>> obtainObjectData() {
+        return this.getDocTree().getIdMap().values().stream()
+                .filter(k -> !StatusEnum.DATABASE.equals(k.getStatus()))
+                .map(AbstractNode::getElement).filter(Objects::nonNull).map(this::convert2Object).toList();
+    }
+
+    default void afterPersist() {
+        this.getDocTree().forEach((i, n) -> n.setStatus(StatusEnum.DATABASE));
+    }
+
     default BinaryOperator<ObjectNode<String, V>> getUpdateOldHandler() {
         return (n, old) -> {
             log.debug("new object id:{}", n.getId());
             if (Objects.isNull(old)) {
-                n.setStatus(StatusEnum.CACHED);
+                // 默认CREATED
+                n.setStatus(Objects.requireNonNullElse(n.getStatus(), StatusEnum.CREATED));
                 log.debug("old object not exists");
                 return n;
             }
@@ -50,25 +110,28 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
                 // 如果新的element与数据库的不相同，更新
                 if (!StatusEnum.DATABASE.equals(n.getStatus()) && !n.getElement().equals(old.getElement())) {
                     log.debug("new object not from database and not equal old object.\nnew:{} \nold:{}", Jsons.str(n), Jsons.str(old));
+                    old.setOldElement(old.getElement());
+                    old.setOldStatus(old.getStatus());
+                    n.getElement().setObjectId(old.getOldElement().getObjectId());
                     old.setElement(n.getElement());
                     old.setStatus(StatusEnum.CACHED);
                 }
                 return old;
-            } else {
-                // 数据库的objectId
-                if (StatusEnum.DATABASE.equals(n.getStatus())) {
-                    log.debug("new object from database");
-                    old.getElement().setObjectId(n.getElement().getObjectId());
-                }
-                old.setStatus(StatusEnum.CACHED);
             }
+            // 数据库的objectId
+            if (StatusEnum.DATABASE.equals(n.getStatus())) {
+                log.debug("new object from database");
+                old.getElement().setObjectId(n.getElement().getObjectId());
+            }
+            old.setStatus(StatusEnum.CACHED);
             return old;
         };
     }
 
-    default Collection<V> maybeFromDb(Collection<V> es) {
-        List<ObjectNode<String, V>> nodes = this.getDocTree().find(n -> !StatusEnum.DATABASE.equals(n.getStatus()));
-        return Streams.map(nodes, AbstractNode::getElement).toList();
+    default Collection<V> notExistsDb(Collection<V> vs) {
+        List<V> vsFromDb = this.getDocTree().find(n -> StatusEnum.DATABASE.equals(n.getStatus()))
+                .stream().map(AbstractNode::getElement).filter(Objects::nonNull).toList();
+        return Streams.notRetain(vs, AbstractValue::getId, vsFromDb).toList();
     }
 
     /**
@@ -106,52 +169,26 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
         return objectEntity;
     }
 
-    default R data2RefEntity(ObjectData<V> objectData, RelationHandler relationHandler) {
+    default R data2RefEntity(ObjectData<V> objectData, RelationIdentity relationIdentity) {
         R relationEntity = this.newRelationEntity();
         relationEntity.setObjectId(objectData.getObjectId());
         relationEntity.setParentObjectId(objectData.getParentObjectId());
-        relationEntity.setType(relationHandler.getType());
+        relationEntity.setType(relationIdentity.getType());
         relationEntity.setCreateUser(TraceContext.getUserIdOrDefault());
         return relationEntity;
     }
 
-    default ObjectHandler getObjectHandler(V v) {
-        return new DefaultObjectHandler();
-    }
-
-    /**
-     * AbstractDoclet 中使用，转为tree结构，保存在内存中
-     *
-     * @param vs es
-     */
-    default void add2Tree(Collection<V> vs) {
-        this.sync2tree(vs);
-    }
-
-    default void sync2tree(Collection<V> vs) {
-        Collection<V> maybeFromDbValues = this.maybeFromDb(vs);
-        if (CollectionUtils.isEmpty(maybeFromDbValues)) {
-            return;
-        }
-        // 从数据中查询数据并添加到tree中
-        List<V> dataFromDbList = this.findFromDb(maybeFromDbValues).stream().map(this::valueFromObject).toList();
-        // 如果相同 key 的数据已存在，更新 objectId
-        this.getDocTree().add(dataFromDbList,
-                true,
-                n -> n.setStatus(StatusEnum.DATABASE),
-                this.getUpdateOldHandler(),
-                null);
-        this.getDocTree().add(vs, false, n -> n.setStatus(StatusEnum.CREATED),
-                this.getUpdateOldHandler(), null);
+    default ObjectIdentity getObjectHandler(V v) {
+        return new DefaultObjectIdentity();
     }
 
     default ObjectData<V> convert2Object(V objectValue) {
         ObjectData<V> objectData = new ObjectData<>();
         objectData.setObjectId(objectValue.getObjectId());
-        ObjectHandler objectHandler = this.getObjectHandler(objectValue);
-        BaseExceptionEnum.NOT_NULL.nonNull(objectHandler,
+        ObjectIdentity objectIdentity = this.getObjectHandler(objectValue);
+        BaseExceptionEnum.NOT_NULL.nonNull(objectIdentity,
                 "get ObjectHandler is null by {}", objectValue.getClass().getName());
-        objectData.setType(objectHandler.getType());
+        objectData.setType(objectIdentity.getType());
         objectData.setValue(objectValue);
         // 如果objectId为null，表明是新增数据
         if (Objects.isNull(objectValue.getObjectId())) {
@@ -164,13 +201,13 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
     /**
      * 数据保存处理
      */
-    default void saveObjectData(Collection<ObjectData<V>> objectData, RelationHandler relationHandler) {
+    default void saveObjectData(Collection<ObjectData<V>> objectData, RelationIdentity relationIdentity) {
         if (log.isDebugEnabled()) {
             log.debug("ObjectProcessor.save, objectDataList:{}", Jsons.str(objectData));
         }
         List<O> objectList = objectData.stream().map(this::data2entity).toList();
         List<R> relationList = objectData.stream().filter(k -> Objects.nonNull(k.getParentId()))
-                .map(k -> this.data2RefEntity(k, relationHandler)).toList();
+                .map(k -> this.data2RefEntity(k, relationIdentity)).toList();
         if (!CollectionUtils.isEmpty(objectList)) {
             this.saveObjects(objectList);
         }

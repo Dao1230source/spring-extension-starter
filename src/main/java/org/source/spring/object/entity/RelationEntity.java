@@ -1,7 +1,7 @@
 package org.source.spring.object.entity;
 
 import lombok.Data;
-import org.source.spring.object.processor.RelationHandler;
+import org.source.spring.object.processor.RelationIdentity;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +19,7 @@ public class RelationEntity {
      */
     private String parentObjectId;
     /**
-     * 关联关系类型 {@link RelationHandler#getType()}
+     * 关联关系类型 {@link RelationIdentity#getType()}
      */
     private Integer type;
     /**

@@ -4,7 +4,7 @@ import org.source.spring.object.AbstractValue;
 import org.source.spring.object.entity.ObjectEntity;
 import org.source.spring.object.entity.RelationEntity;
 
-public class DefaultObjectHandler implements ObjectHandler {
+public class DefaultObjectIdentity implements ObjectIdentity {
     @Override
     public Integer getType() {
         return -1;

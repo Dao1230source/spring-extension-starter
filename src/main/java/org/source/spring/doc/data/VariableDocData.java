@@ -15,12 +15,11 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = "typeKind")
 @Data
 public class VariableDocData extends DocData {
     @JsonIgnore
     private String typeKind;
-    @JsonIgnore
     private String typeName;
 
     public <E extends VariableElement> VariableDocData(DocletEnvironment env, E variableElement, String parentId) {

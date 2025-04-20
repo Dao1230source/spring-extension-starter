@@ -5,7 +5,7 @@ import org.source.spring.object.data.ObjectData;
 import org.source.spring.object.entity.ObjectEntity;
 import org.source.spring.object.entity.RelationEntity;
 
-public interface ObjectHandler {
+public interface ObjectIdentity {
 
     /**
      * 类型

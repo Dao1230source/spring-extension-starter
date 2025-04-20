@@ -1,5 +1,6 @@
 package org.source.spring.object.tree;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.source.spring.object.StatusEnum;
@@ -7,10 +8,14 @@ import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.AbstractNode;
 import org.source.utility.tree.identity.Element;
 
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"oldElement", "oldStatus"})
 @Data
 public class ObjectNode<I, E extends Element<I>> extends AbstractNode<I, E, ObjectNode<I, E>> {
     private StatusEnum status;
+    @JsonIgnore
+    private transient E oldElement;
+    @JsonIgnore
+    private transient StatusEnum oldStatus;
 
     @SuppressWarnings("unchecked")
     @Override

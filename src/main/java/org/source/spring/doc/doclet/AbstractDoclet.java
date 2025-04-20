@@ -36,7 +36,7 @@ public abstract class AbstractDoclet implements Doclet {
             // 应用的doc对象
             DocData appDocData = docDataContainer.obtainAppDocData(docProcessor, this.myOptions);
             this.processDoc(env, docDataContainer, appDocData);
-            docProcessor.add2Tree2(docDataContainer.getDocDataList());
+            docProcessor.transfer2tree(docDataContainer.getDocDataList());
             // 计算class的父类和接口
             this.processExtraSuper(this.obtainExtraSuperClsNames(docDataContainer.getDocDataList()));
             // 计算变量是非基础类型即手动创建的类

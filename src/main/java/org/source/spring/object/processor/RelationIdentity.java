@@ -3,7 +3,7 @@ package org.source.spring.object.processor;
 /**
  *
  */
-public interface RelationHandler {
+public interface RelationIdentity {
 
     /**
      * 领域

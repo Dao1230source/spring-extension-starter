@@ -1,7 +1,7 @@
 package org.source.spring.object.entity;
 
 import lombok.Data;
-import org.source.spring.object.processor.ObjectHandler;
+import org.source.spring.object.processor.ObjectIdentity;
 
 import java.time.LocalDateTime;
 
@@ -24,7 +24,7 @@ public class ObjectEntity {
      */
     private String value;
     /**
-     * 类型 {@link ObjectHandler#getType()}
+     * 类型 {@link ObjectIdentity#getType()}
      */
     private Integer type;
     /**
