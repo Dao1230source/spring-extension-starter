@@ -1,12 +1,9 @@
 package org.source.spring.doc.data;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.source.spring.object.ViewObject;
-import org.source.spring.object.ViewObjectItem;
+import org.source.spring.object.ObjectSummary;
 import org.source.spring.object.tree.ObjectNode;
 import org.source.utility.constant.Constants;
 import org.source.utility.tree.identity.AbstractNode;
@@ -16,10 +13,9 @@ import java.util.Objects;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class RequestDocData extends DocData implements ViewObject<ViewObjectItem, ObjectNode<String, ViewObjectItem>> {
+public class RequestDocData extends DocData {
     private String methodId;
-    @JsonIgnore
-    private ObjectNode<String, DocData> requestData;
+    private ObjectNode<String, ObjectSummary> requestData;
 
     public RequestDocData(MethodDocData methodDocData, String parentId) {
         this.setMethodId(methodDocData.getId());
@@ -28,13 +24,14 @@ public class RequestDocData extends DocData implements ViewObject<ViewObjectItem
         this.processParentId(parentId);
     }
 
-    @JsonProperty("viewData")
-    @Override
-    public ObjectNode<String, ViewObjectItem> getViewData() {
-        if (Objects.isNull(requestData)) {
+    public static ObjectNode<String, ObjectSummary> transfer2Summary(ObjectNode<String, DocData> objectNode) {
+        if (Objects.isNull(objectNode)) {
             return null;
         }
-        return AbstractNode.cast(requestData, k -> ViewObjectItem.builder().objectId(k.getObjectId()).build(),
-                ViewObjectItem::setParentObjectId);
+        return AbstractNode.cast(objectNode, k -> {
+            ObjectSummary objectSummary = new ObjectSummary();
+            objectSummary.setObjectId(k.getObjectId());
+            return objectSummary;
+        }, ObjectSummary::setParentObjectId);
     }
 }

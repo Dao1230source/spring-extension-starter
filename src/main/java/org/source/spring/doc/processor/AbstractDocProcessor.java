@@ -13,6 +13,7 @@ import org.source.spring.object.tree.ObjectNode;
 import org.source.utility.assign.Assign;
 import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.AbstractNode;
+import org.source.utility.utils.Streams;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
@@ -59,11 +60,11 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
             if (n.getElement() instanceof RequestDocData requestDocData) {
                 String methodId = requestDocData.getMethodId();
                 ObjectNode<String, DocData> methodNode = this.getDocTree().getIdMap().get(methodId);
-                Optional.ofNullable(methodNode).ifPresent(requestDocData::setRequestData);
+                Optional.ofNullable(methodNode).map(RequestDocData::transfer2Summary).ifPresent(requestDocData::setRequestData);
             }
         });
         // 与父类或接口的数据合并
-        docTree.find(n -> n.getElement() instanceof ClassDocData).forEach(n -> {
+        docTree.find(ClassDocData::instanceOf).forEach(n -> {
             ClassDocData classDocData = (ClassDocData) n.getElement();
             List<String> superClassNames = classDocData.obtainSuperClassNames();
             if (CollectionUtils.isEmpty(superClassNames)) {
@@ -78,10 +79,10 @@ public abstract class AbstractDocProcessor<O extends ObjectEntity, R extends Rel
             DocData docData = superNode.getElement();
             if (docData instanceof ClassDocData superClsDocData) {
                 classDocData.merge(superClsDocData);
-                List<DocData> methodOrVariableList = n.getChildren().stream()
+                List<DocData> methodOrVariableList = Streams.of(n.getChildren())
                         .filter(c -> MethodDocData.instanceOf(c) || VariableDocData.instanceOf(c))
                         .map(AbstractNode::getElement).toList();
-                methodOrVariableList.forEach(c -> superNode.getChildren().stream()
+                methodOrVariableList.forEach(c -> Streams.of(superNode.getChildren())
                         .filter(sc -> c.getName().equals(sc.getElement().getName()))
                         .findFirst().ifPresent(sc -> c.merge(sc.getElement())));
             }

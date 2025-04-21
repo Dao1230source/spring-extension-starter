@@ -1,6 +1,5 @@
 package org.source.spring.doc.data;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sun.source.doctree.DocTree;
 import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
@@ -15,10 +14,9 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true, exclude = "typeKind")
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class VariableDocData extends DocData {
-    @JsonIgnore
     private String typeKind;
     private String typeName;
 

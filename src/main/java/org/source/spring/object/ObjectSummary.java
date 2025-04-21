@@ -1,20 +1,14 @@
 package org.source.spring.object;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import org.source.utility.tree.identity.StringElement;
+import lombok.*;
 
 @Builder
-@EqualsAndHashCode(callSuper = false)
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class ViewObjectItem extends StringElement {
-    /**
-     * 对象ID，唯一
-     */
-    private String objectId;
+public class ObjectSummary extends AbstractValue {
     /**
      * 父对象ID
      */
@@ -23,7 +17,7 @@ public class ViewObjectItem extends StringElement {
     @JsonIgnore
     @Override
     public @NonNull String getId() {
-        return objectId;
+        return getObjectId();
     }
 
     @JsonIgnore
