@@ -1,6 +1,5 @@
 package org.source.spring.doc.data;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -21,8 +20,6 @@ public class RequestClassDocData extends ClassDocData implements Path {
 
     private List<String> paths;
     private List<String> requestMethods;
-
-    @JsonIgnore
     private boolean docUseSimpleName;
 
     public <E extends TypeElement> RequestClassDocData(DocletEnvironment env, E type, String parentId, boolean docUseSimpleName) {
