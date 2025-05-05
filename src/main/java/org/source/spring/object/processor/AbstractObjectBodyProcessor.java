@@ -1,16 +1,13 @@
 package org.source.spring.object.processor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.StatusEnum;
-import org.source.spring.object.data.ObjectData;
-import org.source.spring.object.entity.ObjectEntity;
-import org.source.spring.object.entity.RelationEntity;
+import org.source.spring.object.data.ObjectFullData;
+import org.source.spring.object.entity.ObjectBodyEntityIdentity;
 import org.source.spring.object.tree.ObjectNode;
 import org.source.spring.trace.TraceContext;
 import org.source.spring.uid.Ids;
-import org.source.utility.enums.BaseExceptionEnum;
 import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.AbstractNode;
 import org.source.utility.utils.Jsons;
@@ -24,24 +21,33 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
 
-public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntity, V extends AbstractValue> {
-    Logger log = LoggerFactory.getLogger(ObjectProcessor.class);
+@Slf4j
+public abstract class AbstractObjectBodyProcessor<B extends ObjectBodyEntityIdentity, V extends AbstractValue> {
+    private final AbstractObjectProcessor<?, ?> objectProcessor;
 
-    @NonNull
-    O newObjectEntity();
+    protected AbstractObjectBodyProcessor(AbstractObjectProcessor<?, ?> objectProcessor) {
+        this.objectProcessor = objectProcessor;
+    }
 
-    @NonNull
-    R newRelationEntity();
+    public abstract Tree<String, V, ObjectNode<String, V>> getDocTree();
 
-    Tree<String, V, ObjectNode<String, V>> getDocTree();
+    public abstract B newObjectBodyEntity();
+
+    public abstract List<B> findObjectBodies(Collection<String> referenceIds);
+
+    public abstract void saveObjectBodies(Collection<B> objectBodies);
+
+    public abstract Integer getObjectType(V v);
+
+    public abstract V toObjectValue(B objectBodyEntity);
 
     /**
      * 转为tree
      *
      * @param vs es
      */
-    default void transfer2tree(Collection<V> vs) {
-        Collection<V> notExistsDb = this.notExistsDb(vs);
+    public void transfer2tree(Collection<V> vs) {
+        Collection<V> notExistsDb = this.maybeExistsDb(vs);
         if (!CollectionUtils.isEmpty(notExistsDb)) {
             // 从数据中查询数据并添加到tree中
             List<V> dataFromDbList = this.findFromDb(notExistsDb).stream().map(this::valueFromObject).toList();
@@ -57,24 +63,23 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
         this.afterTransfer();
     }
 
-    default void afterTransfer() {
+    public void afterTransfer() {
     }
 
     /**
      * 持久化数据
-     *
-     * @param relationIdentity 关系定义
      */
-    default void persist2Database(RelationIdentity relationIdentity) {
+    public void persist2Database() {
         this.beforePersist();
-        this.saveObjectData(this.obtainObjectData(), relationIdentity);
+        List<ObjectFullData<V>> objectFullData = this.obtainObjectData();
+        this.objectProcessor.saveObjectData(objectFullData, this);
         this.afterPersist();
     }
 
     /**
      * 对 this.getDocTree() 做一些操作
      */
-    default void beforePersist() {
+    public void beforePersist() {
         this.getDocTree().forEach((i, n) -> {
             if (StatusEnum.DATABASE.equals(n.getOldStatus())
                     && Objects.nonNull(n.getOldElement())
@@ -84,17 +89,17 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
         });
     }
 
-    default List<ObjectData<V>> obtainObjectData() {
+    public List<ObjectFullData<V>> obtainObjectData() {
         return this.getDocTree().getIdMap().values().stream()
                 .filter(k -> !StatusEnum.DATABASE.equals(k.getStatus()))
                 .map(AbstractNode::getElement).filter(Objects::nonNull).map(this::convert2Object).toList();
     }
 
-    default void afterPersist() {
+    public void afterPersist() {
         this.getDocTree().forEach((i, n) -> n.setStatus(StatusEnum.DATABASE));
     }
 
-    default BinaryOperator<ObjectNode<String, V>> getUpdateOldHandler() {
+    public BinaryOperator<ObjectNode<String, V>> getUpdateOldHandler() {
         return (n, old) -> {
             log.debug("new object id:{}", n.getId());
             if (Objects.isNull(old)) {
@@ -128,91 +133,50 @@ public interface ObjectProcessor<O extends ObjectEntity, R extends RelationEntit
         };
     }
 
-    default Collection<V> notExistsDb(Collection<V> vs) {
+    public Collection<V> maybeExistsDb(Collection<V> vs) {
         List<V> vsFromDb = this.getDocTree().find(n -> StatusEnum.DATABASE.equals(n.getStatus()))
                 .stream().map(AbstractNode::getElement).filter(Objects::nonNull).toList();
         return Streams.notRetain(vs, AbstractValue::getId, vsFromDb).toList();
     }
 
     /**
-     * ObjectData 的key批量查询
+     * ObjectFullData 的key批量查询
      *
      * @param vs es
-     * @return {@literal Collection<ObjectData>}
+     * @return {@literal Collection<ObjectFullData>}
      */
     @NonNull
-    default Collection<ObjectData<V>> findFromDb(Collection<V> vs) {
+    public Collection<ObjectFullData<V>> findFromDb(Collection<V> vs) {
         return List.of();
     }
 
-    default @Nullable V valueFromObject(ObjectData<V> objectData) {
-        return objectData.getValue();
+    public @Nullable V valueFromObject(ObjectFullData<V> objectFullData) {
+        return objectFullData.getValue();
     }
 
-    default void saveObjects(Collection<O> objects) {
-
-    }
-
-    default void saveRelations(Collection<R> relations) {
-
-    }
-
-    default O data2entity(ObjectData<V> data) {
-        O objectEntity = this.newObjectEntity();
-        objectEntity.setObjectId(data.getObjectId());
-        objectEntity.setKey(data.getKey());
-        objectEntity.setValue(Jsons.str(data.getValue()));
-        objectEntity.setType(data.getType());
-        objectEntity.setDeleted(Boolean.FALSE);
-        objectEntity.setCreateUser(TraceContext.getUserIdOrDefault());
-        objectEntity.setUpdateUser(TraceContext.getUserIdOrDefault());
-        return objectEntity;
-    }
-
-    default R data2RefEntity(ObjectData<V> objectData, RelationIdentity relationIdentity) {
-        R relationEntity = this.newRelationEntity();
-        relationEntity.setObjectId(objectData.getObjectId());
-        relationEntity.setParentObjectId(objectData.getParentObjectId());
-        relationEntity.setType(relationIdentity.getType());
-        relationEntity.setCreateUser(TraceContext.getUserIdOrDefault());
-        return relationEntity;
-    }
-
-    default ObjectIdentity getObjectHandler(V v) {
-        return new DefaultObjectIdentity();
-    }
-
-    default ObjectData<V> convert2Object(V objectValue) {
-        ObjectData<V> objectData = new ObjectData<>();
-        objectData.setObjectId(objectValue.getObjectId());
-        ObjectIdentity objectIdentity = this.getObjectHandler(objectValue);
-        BaseExceptionEnum.NOT_NULL.nonNull(objectIdentity,
-                "get ObjectHandler is null by {}", objectValue.getClass().getName());
-        objectData.setType(objectIdentity.getType());
-        objectData.setValue(objectValue);
+    public ObjectFullData<V> convert2Object(V objectValue) {
+        ObjectFullData<V> objectFullData = new ObjectFullData<>();
+        objectFullData.setObjectId(objectValue.getObjectId());
+        objectFullData.setType(getObjectType(objectValue));
+        objectFullData.setValue(objectValue);
         // 如果objectId为null，表明是新增数据
         if (Objects.isNull(objectValue.getObjectId())) {
-            objectData.setObjectId(Ids.stringId());
-            objectValue.setObjectId(objectData.getObjectId());
+            objectFullData.setObjectId(Ids.stringId());
+            objectValue.setObjectId(objectFullData.getObjectId());
         }
-        return objectData;
+        return objectFullData;
     }
 
-    /**
-     * 数据保存处理
-     */
-    default void saveObjectData(Collection<ObjectData<V>> objectData, RelationIdentity relationIdentity) {
-        if (log.isDebugEnabled()) {
-            log.debug("ObjectProcessor.save, objectDataList:{}", Jsons.str(objectData));
+    public B data2ObjectBodyEntity(ObjectFullData<V> data) {
+        B entity = this.newObjectBodyEntity();
+        if (Objects.isNull(entity)) {
+            return null;
         }
-        List<O> objectList = objectData.stream().map(this::data2entity).toList();
-        List<R> relationList = objectData.stream().filter(k -> Objects.nonNull(k.getParentId()))
-                .map(k -> this.data2RefEntity(k, relationIdentity)).toList();
-        if (!CollectionUtils.isEmpty(objectList)) {
-            this.saveObjects(objectList);
-        }
-        if (!CollectionUtils.isEmpty(relationList)) {
-            this.saveRelations(relationList);
-        }
+        entity.setObjectId(data.getObjectId());
+        entity.setKey(data.getKey());
+        entity.setValue(Jsons.str(data.getValue()));
+        entity.setCreateUser(TraceContext.getUserIdOrDefault());
+        entity.setUpdateUser(TraceContext.getUserIdOrDefault());
+        return entity;
     }
 }

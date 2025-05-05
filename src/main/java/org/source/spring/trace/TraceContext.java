@@ -13,12 +13,14 @@ public class TraceContext {
 
     public static final String TRACE_ID = "TRACE_ID";
     public static final String USER_ID = "USER_ID";
+    public static final String SPACE_ID = "SPACE_ID";
     /**
      * 系统密钥，由gateway模块配置并添加到request header中，其他所有模块的请求如果没有带有该key，视为非法请求
      */
     public static final String SECRET_KEY = "SECRET_KEY";
     public static final String EXTENSION_DATA_PREFIX = "E-";
     public static final String DEFAULT_USER_ID = "system";
+    public static final String DEFAULT_SPACE_ID = "public";
 
     public static String getTraceId() {
         return get(TRACE_ID);
@@ -29,11 +31,15 @@ public class TraceContext {
     }
 
     public static String getTraceIdOrDefault() {
-        return compute(TRACE_ID, TraceContext::getDefaultTraceId);
+        return compute(TRACE_ID, Ids::stringId);
     }
 
     public static String getUserIdOrDefault() {
-        return compute(USER_ID, TraceContext::getDefaultUserId);
+        return compute(USER_ID, () -> DEFAULT_USER_ID);
+    }
+
+    public static String getSpaceIdOrDefault() {
+        return compute(SPACE_ID, () -> DEFAULT_SPACE_ID);
     }
 
     public static Map<String, String> extensionData() {

@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 public class DocDataContainer {
     private List<DocData> docDataList = new ArrayList<>(16);
 
-    public DocData obtainAppDocData(AbstractDocProcessor<?, ?> docProcessor, MyOptions myOptions) {
+    public DocData obtainAppDocData(AbstractDocProcessor<?> docProcessor, MyOptions myOptions) {
         String appName = Objects.requireNonNullElse(SpringUtil.getEnvironment().getProperty("spring.application.name"), "springboot");
         return docProcessor.getDocTree().get(n -> n.getId().equals(appName)).map(AbstractNode::getElement).orElseGet(() -> {
             DocData docData = new DocData(appName, myOptions.getAppTitle(), myOptions.getAppText());

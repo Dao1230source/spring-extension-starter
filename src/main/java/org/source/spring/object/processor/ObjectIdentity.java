@@ -1,29 +1,16 @@
 package org.source.spring.object.processor;
 
 import org.source.spring.object.AbstractValue;
-import org.source.spring.object.data.ObjectData;
-import org.source.spring.object.entity.ObjectEntity;
-import org.source.spring.object.entity.RelationEntity;
+import org.source.spring.object.entity.ObjectBodyEntityIdentity;
 
-public interface ObjectIdentity {
+public interface ObjectIdentity<B extends ObjectBodyEntityIdentity, V extends AbstractValue> {
 
     /**
      * 类型
      */
     Integer getType();
 
-    Class<? extends AbstractValue> getValueClass();
+    Class<V> getValueClass();
 
-    Class<? extends ObjectProcessor<? extends ObjectEntity, ? extends RelationEntity, ? extends AbstractValue>> getObjectProcessor();
-
-    <O extends ObjectEntity, V extends AbstractValue> V toObjectValue(O objectEntity);
-
-    default <O extends ObjectEntity, V extends AbstractValue> ObjectData<V> toObjectData(O objectEntity) {
-        ObjectData<V> objectData = new ObjectData<>();
-        objectData.setObjectId(objectEntity.getObjectId());
-        objectData.setType(objectEntity.getType());
-        objectData.setKey(objectEntity.getKey());
-        objectData.setValue(toObjectValue(objectEntity));
-        return objectData;
-    }
+    Class<? extends AbstractObjectBodyProcessor<B, V>> getObjectProcessor();
 }
