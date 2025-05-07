@@ -76,14 +76,6 @@ public class TraceContext {
         return value;
     }
 
-    public static String getDefaultTraceId() {
-        return Ids.stringId();
-    }
-
-    public static String getDefaultUserId() {
-        return DEFAULT_USER_ID;
-    }
-
     public static void clear() {
         MDC.clear();
     }
