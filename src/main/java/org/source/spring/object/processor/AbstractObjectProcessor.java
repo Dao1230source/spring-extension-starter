@@ -67,9 +67,9 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
     /**
      * convert entity to value
      */
-    public abstract V toObjectValue(ObjectBodyEntityIdentity objectBodyEntity);
+    public abstract V toObjectValue(Integer type, ObjectBodyEntityIdentity objectBodyEntity);
 
-    public abstract Map<Integer, AbstractObjectProcessor<? extends ObjectEntityIdentity, ? extends RelationEntityIdentity,
+    public abstract Map<Integer, ? extends AbstractObjectProcessor<? extends ObjectEntityIdentity, ? extends RelationEntityIdentity,
             ? extends ObjectBodyEntityIdentity, ? extends AbstractValue>> allObjectProcessors();
 
     /**
@@ -205,20 +205,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         return objectFullData;
     }
 
-    public B data2ObjectBodyEntity(ObjectFullData<V> data) {
-        B entity = this.newObjectBodyEntity();
-        if (Objects.isNull(entity)) {
-            return null;
-        }
-        entity.setObjectId(data.getObjectId());
-        entity.setKey(data.getKey());
-        entity.setValue(Jsons.str(data.getValue()));
-        entity.setCreateUser(TraceContext.getUserIdOrDefault());
-        entity.setUpdateUser(TraceContext.getUserIdOrDefault());
-        return entity;
-    }
-
-
     /**
      * 数据保存处理
      */
@@ -226,10 +212,9 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         if (log.isDebugEnabled()) {
             log.debug("ObjectProcessor.save, objectDataList:{}", Jsons.str(objectData));
         }
-        List<O> objectList = objectData.stream().map(this::data2ObjectEntity).toList();
-        List<B> objectBodyList = objectData.stream().map(this::data2ObjectBodyEntity).toList();
-        List<R> relationList = objectData.stream().filter(k -> Objects.nonNull(k.getParentId()))
-                .map(this::data2RelationEntity).toList();
+        List<O> objectList = this.data2ObjectEntities(objectData);
+        List<B> objectBodyList = this.data2ObjectBodyEntities(objectData);
+        List<R> relationList = this.data2RelationEntities(objectData);
         if (!CollectionUtils.isEmpty(objectList)) {
             this.saveObjects(objectList);
         }
@@ -239,6 +224,10 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         if (!CollectionUtils.isEmpty(relationList)) {
             this.saveRelations(relationList);
         }
+    }
+
+    public List<O> data2ObjectEntities(Collection<ObjectFullData<V>> objectData) {
+        return objectData.stream().map(this::data2ObjectEntity).toList();
     }
 
     public O data2ObjectEntity(ObjectFullData<V> data) {
@@ -252,6 +241,27 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         entity.setDeleted(Boolean.FALSE);
         entity.setCreateUser(TraceContext.getUserIdOrDefault());
         return entity;
+    }
+
+    public List<B> data2ObjectBodyEntities(Collection<ObjectFullData<V>> objectData) {
+        return objectData.stream().map(this::data2ObjectBodyEntity).toList();
+    }
+
+    public B data2ObjectBodyEntity(ObjectFullData<V> data) {
+        B entity = this.newObjectBodyEntity();
+        if (Objects.isNull(entity)) {
+            return null;
+        }
+        entity.setObjectId(data.getObjectId());
+        entity.setKey(data.getKey());
+        entity.setValue(Jsons.str(data.getValue()));
+        entity.setCreateUser(TraceContext.getUserIdOrDefault());
+        entity.setUpdateUser(TraceContext.getUserIdOrDefault());
+        return entity;
+    }
+
+    public List<R> data2RelationEntities(Collection<ObjectFullData<V>> objectData) {
+        return objectData.stream().filter(k -> Objects.nonNull(k.getParentId())).map(this::data2RelationEntity).toList();
     }
 
     public R data2RelationEntity(ObjectFullData<V> objectFullData) {
@@ -308,7 +318,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
             collect.add(data);
             return collect;
         }).flatMap(Collection::stream).toList();
-        Map<Integer, AbstractObjectProcessor<? extends ObjectEntityIdentity, ? extends RelationEntityIdentity,
+        Map<Integer, ? extends AbstractObjectProcessor<? extends ObjectEntityIdentity, ? extends RelationEntityIdentity,
                 ? extends ObjectBodyEntityIdentity, ? extends AbstractValue>> processorMap = this.allObjectProcessors();
         Map<Integer, Function<Collection<ObjectFullData<AbstractValue>>, Assign<ObjectFullData<AbstractValue>>>> assignerMap = HashMap.newHashMap(processorMap.size());
         processorMap.forEach((k, p) ->
@@ -318,7 +328,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
                                 .addAction(ObjectFullData::getObjectId)
                                 .addAssemble((e, t) -> {
                                     e.setKey(t.getKey());
-                                    e.setValue(p.toObjectValue(t));
+                                    e.setValue(p.toObjectValue(e.getType(), t));
                                 }).backAcquire().backAssign()));
         Assign.build(objectFullData).addBranches(ObjectFullData::getType, assignerMap).invoke();
     }
