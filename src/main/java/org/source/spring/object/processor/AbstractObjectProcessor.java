@@ -17,8 +17,10 @@ import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.AbstractNode;
 import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -100,10 +102,17 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
     /**
      * 持久化数据
      */
+    @SuppressWarnings("unchecked")
     public void persist2Database() {
         this.beforePersist();
         List<ObjectFullData<V>> objectFullData = this.obtainObjectData();
-        this.saveObjectData(objectFullData);
+        if (log.isDebugEnabled()) {
+            log.debug("ObjectProcessor.save, objectDataList:{}", Jsons.str(objectFullData));
+        }
+        List<O> objectList = this.data2ObjectEntities(objectFullData);
+        List<B> objectBodyList = this.data2ObjectBodyEntities(objectFullData);
+        List<R> relationList = this.data2RelationEntities(objectFullData);
+        ((AbstractObjectProcessor<O, R, B, V>) AopContext.currentProxy()).saveObjectData(objectList, objectBodyList, relationList);
         this.afterPersist();
     }
 
@@ -208,13 +217,8 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
     /**
      * 数据保存处理
      */
-    public void saveObjectData(Collection<ObjectFullData<V>> objectData) {
-        if (log.isDebugEnabled()) {
-            log.debug("ObjectProcessor.save, objectDataList:{}", Jsons.str(objectData));
-        }
-        List<O> objectList = this.data2ObjectEntities(objectData);
-        List<B> objectBodyList = this.data2ObjectBodyEntities(objectData);
-        List<R> relationList = this.data2RelationEntities(objectData);
+    @Transactional(rollbackFor = Exception.class)
+    public void saveObjectData(List<O> objectList, List<B> objectBodyList, List<R> relationList) {
         if (!CollectionUtils.isEmpty(objectList)) {
             this.saveObjects(objectList);
         }
@@ -286,7 +290,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         private List<R> relations;
     }
 
-    public void find(Collection<String> objectIds) {
+    public List<ObjectFullData<AbstractValue>> find(Collection<String> objectIds) {
         List<ObjectTemp<O, R>> list = Streams.map(new HashSet<>(objectIds), k -> ObjectTemp.<O, R>builder().objectId(k).build()).toList();
         List<ObjectTemp<O, R>> tempList = Assign.build(list)
                 .parallel()
@@ -330,7 +334,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
                                     e.setKey(t.getKey());
                                     e.setValue(p.toObjectValue(e.getType(), t));
                                 }).backAcquire().backAssign()));
-        Assign.build(objectFullData).addBranches(ObjectFullData::getType, assignerMap).invoke();
+        return Assign.build(objectFullData).addBranches(ObjectFullData::getType, assignerMap).invoke().getMainData2List();
     }
 
 }

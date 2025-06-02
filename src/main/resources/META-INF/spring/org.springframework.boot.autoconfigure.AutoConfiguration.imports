@@ -1,3 +1,5 @@
+# all
+org.source.spring.EnableAopConfig
 # cache
 org.source.spring.cache.ScanProcessorConfig
 org.source.spring.cache.ConfigureCacheConfig
