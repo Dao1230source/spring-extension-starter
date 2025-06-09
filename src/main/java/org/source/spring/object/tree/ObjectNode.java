@@ -16,6 +16,10 @@ public class ObjectNode<I, E extends Element<I>> extends AbstractNode<I, E, Obje
     private transient E oldElement;
     @JsonIgnore
     private transient StatusEnum oldStatus;
+    /**
+     * 与parentNode的关联关系
+     */
+    private Integer relationType;
 
     @SuppressWarnings("unchecked")
     @Override

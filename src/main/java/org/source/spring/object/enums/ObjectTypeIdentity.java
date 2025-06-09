@@ -1,16 +1,22 @@
-package org.source.spring.object.processor;
+package org.source.spring.object.enums;
 
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.entity.ObjectBodyEntityIdentity;
 import org.source.spring.object.entity.ObjectEntityIdentity;
 import org.source.spring.object.entity.RelationEntityIdentity;
+import org.source.spring.object.processor.AbstractObjectProcessor;
 
-public interface ObjectIdentity {
+public interface ObjectTypeIdentity {
 
     /**
      * 类型
      */
     Integer getType();
+
+    /**
+     * 描述
+     */
+    String getDesc();
 
     /**
      * object value class

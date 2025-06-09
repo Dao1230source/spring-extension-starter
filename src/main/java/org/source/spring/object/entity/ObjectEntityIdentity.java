@@ -1,7 +1,5 @@
 package org.source.spring.object.entity;
 
-import org.source.spring.object.processor.ObjectIdentity;
-
 import java.time.LocalDateTime;
 
 public interface ObjectEntityIdentity {
@@ -16,13 +14,6 @@ public interface ObjectEntityIdentity {
     String getObjectId();
 
     void setObjectId(String objectId);
-
-    /**
-     * 类型 {@link ObjectIdentity#getType()}
-     */
-    Integer getType();
-
-    void setType(Integer type);
 
     /**
      * 空间ID

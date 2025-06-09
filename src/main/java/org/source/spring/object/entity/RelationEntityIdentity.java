@@ -1,6 +1,6 @@
 package org.source.spring.object.entity;
 
-import org.source.spring.object.processor.ObjectIdentity;
+import org.source.spring.object.enums.ObjectTypeIdentity;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +19,7 @@ public interface RelationEntityIdentity {
 
 
     /**
-     * 类型 {@link ObjectIdentity#getType()}
+     * 类型 {@link ObjectTypeIdentity#getType()}
      */
     Integer getType();
 

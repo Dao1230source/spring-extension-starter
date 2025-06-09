@@ -2,6 +2,7 @@ package org.source.spring.object.processor;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.source.spring.doc.enums.DocObjectTypeEnum;
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.StatusEnum;
 import org.source.spring.object.data.ObjectFullData;
@@ -83,7 +84,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         Collection<V> notExistsDb = this.maybeExistsDb(vs);
         if (!CollectionUtils.isEmpty(notExistsDb)) {
             // 从数据中查询数据并添加到tree中
-            List<V> dataFromDbList = this.findFromDb(notExistsDb).stream().map(this::valueFromObject).toList();
+            List<V> dataFromDbList = this.findFromDbAndConvert2Data(notExistsDb).stream().map(this::valueFromObject).toList();
             // 如果相同 key 的数据已存在，更新 objectId
             this.getDocTree().add(dataFromDbList,
                     true,
@@ -91,7 +92,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
                     this::mergeNode,
                     null);
         }
-        this.getDocTree().add(vs, false, n -> n.setStatus(StatusEnum.CREATED),
+        this.getDocTree().add(vs, true, n -> n.setStatus(StatusEnum.CREATED),
                 this::mergeNode, null);
         this.afterTransfer();
     }
@@ -189,12 +190,27 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
     /**
      * ObjectFullData 的key批量查询
      *
-     * @param vs es
+     * @param vs vs
      * @return {@literal Collection<ObjectFullData>}
      */
     @NonNull
-    public Collection<ObjectFullData<V>> findFromDb(Collection<V> vs) {
+    public Collection<ObjectFullData<V>> findFromDbAndConvert2Data(Collection<V> vs) {
+        return this.convert2Data(this.findFromDb(vs));
+    }
+
+    @NonNull
+    public Collection<B> findFromDb(Collection<V> vs) {
         return List.of();
+    }
+
+    public Collection<ObjectFullData<V>> convert2Data(Collection<B> objectBodyEntities) {
+        return Streams.map(objectBodyEntities, k -> {
+            DocObjectTypeEnum type = DocObjectTypeEnum.getByType(k.getType());
+            if (Objects.isNull(type)) {
+                return null;
+            }
+            return type.<V>parse(k);
+        }).filter(Objects::nonNull).toList();
     }
 
     public @Nullable V valueFromObject(ObjectFullData<V> objectFullData) {
@@ -240,7 +256,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
             return null;
         }
         entity.setObjectId(data.getObjectId());
-        entity.setType(data.getType());
         entity.setSpaceId(TraceContext.getSpaceIdOrDefault());
         entity.setDeleted(Boolean.FALSE);
         entity.setCreateUser(TraceContext.getUserIdOrDefault());
@@ -259,6 +274,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         entity.setObjectId(data.getObjectId());
         entity.setKey(data.getKey());
         entity.setValue(Jsons.str(data.getValue()));
+        entity.setType(data.getType());
         entity.setCreateUser(TraceContext.getUserIdOrDefault());
         entity.setUpdateUser(TraceContext.getUserIdOrDefault());
         return entity;
@@ -309,7 +325,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
             data.setObjectId(k.getObjectId());
             if (Objects.nonNull(k.getObject())) {
                 O object = k.getObject();
-                data.setType(object.getType());
                 data.setSpaceId(object.getSpaceId());
             }
             List<ObjectFullData<AbstractValue>> collect = Streams.map(k.getRelations(), r -> {
@@ -333,6 +348,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
                                 .addAssemble((e, t) -> {
                                     e.setKey(t.getKey());
                                     e.setValue(p.toObjectValue(e.getType(), t));
+                                    e.setType(t.getType());
                                 }).backAcquire().backAssign()));
         return Assign.build(objectFullData).addBranches(ObjectFullData::getType, assignerMap).invoke().getMainData2List();
     }

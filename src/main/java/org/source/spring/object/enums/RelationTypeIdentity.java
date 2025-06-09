@@ -1,9 +1,9 @@
-package org.source.spring.object.processor;
+package org.source.spring.object.enums;
 
 /**
  *
  */
-public interface RelationIdentity {
+public interface RelationTypeIdentity {
 
     /**
      * 领域
