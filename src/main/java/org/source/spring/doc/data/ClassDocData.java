@@ -38,12 +38,6 @@ public class ClassDocData extends DocData {
         this.setName(((TypeElement) element).getQualifiedName().toString());
     }
 
-    @Override
-    protected void processParentId(String parentId) {
-        this.setParentId(parentId);
-        this.setId(this.getName());
-    }
-
     public List<String> obtainSuperClassNames() {
         List<String> superClassNames = new ArrayList<>(8);
         if (Objects.nonNull(this.superClass)) {

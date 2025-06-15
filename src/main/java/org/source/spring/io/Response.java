@@ -32,6 +32,7 @@ public class Response<T> {
     private Throwable cause;
 
     private LocalDateTime timestamp;
+    private String traceId;
 
     private T data;
 

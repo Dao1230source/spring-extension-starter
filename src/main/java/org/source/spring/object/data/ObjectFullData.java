@@ -1,11 +1,14 @@
 package org.source.spring.object.data;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.source.spring.object.AbstractValue;
+import org.source.spring.object.StatusEnum;
 import org.source.utility.tree.identity.StringElement;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 
 @EqualsAndHashCode(callSuper = false)
@@ -25,11 +28,10 @@ public class ObjectFullData<V extends AbstractValue> extends StringElement {
      */
     private String parentObjectId;
 
-
     /**
-     * 关键字
+     * 名称
      */
-    private String key;
+    private String name;
 
     /**
      * 值
@@ -66,14 +68,26 @@ public class ObjectFullData<V extends AbstractValue> extends StringElement {
 
     private LocalDateTime updateTime;
 
+    /**
+     * node status
+     */
+    private StatusEnum status;
 
+    @JsonIgnore
     @Override
     public @NonNull String getId() {
+        if (Objects.isNull(objectId)) {
+            return value.getId();
+        }
         return objectId;
     }
 
+    @JsonIgnore
     @Override
     public String getParentId() {
+        if (Objects.isNull(parentObjectId)) {
+            return value.getParentId();
+        }
         return parentObjectId;
     }
 

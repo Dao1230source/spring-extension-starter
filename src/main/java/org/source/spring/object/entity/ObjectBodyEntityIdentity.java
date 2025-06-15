@@ -1,7 +1,5 @@
 package org.source.spring.object.entity;
 
-import org.source.spring.object.enums.ObjectTypeIdentity;
-
 import java.time.LocalDateTime;
 
 public interface ObjectBodyEntityIdentity {
@@ -22,12 +20,12 @@ public interface ObjectBodyEntityIdentity {
 
 
     /**
-     * key
+     * name
      */
 
-    String getKey();
+    String getName();
 
-    void setKey(String key);
+    void setName(String name);
 
 
     /**
@@ -38,13 +36,6 @@ public interface ObjectBodyEntityIdentity {
     String getValue();
 
     void setValue(String value);
-
-    /**
-     * 类型 {@link ObjectTypeIdentity#getType()}
-     */
-    Integer getType();
-
-    void setType(Integer type);
 
     /**
      * 创建人

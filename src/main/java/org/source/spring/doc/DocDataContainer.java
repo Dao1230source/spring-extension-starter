@@ -4,6 +4,7 @@ import lombok.Data;
 import org.source.spring.doc.data.AnnotationDocData;
 import org.source.spring.doc.data.DocData;
 import org.source.spring.doc.processor.AbstractDocProcessor;
+import org.source.spring.object.data.ObjectFullData;
 import org.source.spring.utility.SpringUtil;
 import org.source.utility.tree.identity.AbstractNode;
 
@@ -20,11 +21,13 @@ public class DocDataContainer {
 
     public DocData obtainAppDocData(AbstractDocProcessor<?, ?, ?> docProcessor, MyOptions myOptions) {
         String appName = Objects.requireNonNullElse(SpringUtil.getEnvironment().getProperty("spring.application.name"), "springboot");
-        return docProcessor.getDocTree().get(n -> n.getId().equals(appName)).map(AbstractNode::getElement).orElseGet(() -> {
-            DocData docData = new DocData(appName, myOptions.getAppTitle(), myOptions.getAppText());
-            docDataList.add(docData);
-            return docData;
-        });
+        return docProcessor.getObjectTree().get(n -> n.getId().equals(appName))
+                .map(AbstractNode::getElement).map(ObjectFullData::getValue)
+                .orElseGet(() -> {
+                    DocData docData = new DocData(appName, myOptions.getAppTitle(), myOptions.getAppText());
+                    docDataList.add(docData);
+                    return docData;
+                });
     }
 
     public <D extends DocData> void add(D docData) {

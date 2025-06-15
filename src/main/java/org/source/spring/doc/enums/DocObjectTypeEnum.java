@@ -54,10 +54,11 @@ public enum DocObjectTypeEnum implements ObjectTypeIdentity {
         return Enums.getEnum(DocObjectTypeEnum.class, DocObjectTypeEnum::getValueClass, clz);
     }
 
+    @Override
     public <V extends AbstractValue> ObjectFullData<V> parse(ObjectBodyEntityIdentity entity) {
         ObjectFullData<V> fullData = new ObjectFullData<>();
         fullData.setType(this.getType());
-        fullData.setKey(entity.getKey());
+        fullData.setName(entity.getName());
         fullData.setObjectId(entity.getObjectId());
         @SuppressWarnings("unchecked")
         V value = (V) Jsons.obj(entity.getValue(), this.getValueClass());

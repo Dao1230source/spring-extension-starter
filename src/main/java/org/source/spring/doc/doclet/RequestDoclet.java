@@ -28,7 +28,7 @@ public class RequestDoclet extends AbstractDoclet {
                     ParamDocData paramDocData = new ParamDocData(env, p, methodDocData.getId(), method);
                     docDataContainer.addWithAnnotation(paramDocData, p);
                 });
-                docDataContainer.add(new VariableDocData(method, methodDocData.getId()));
+                docDataContainer.add(VariableDocData.methodResult(method, methodDocData.getId()));
             });
         });
     }

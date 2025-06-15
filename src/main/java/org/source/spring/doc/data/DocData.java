@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.source.spring.doc.enums.DocRelationTypeEnum;
+import org.source.spring.doc.processor.AbstractDocProcessor;
 import org.source.spring.object.AbstractValue;
 import org.source.utility.constant.Constants;
 
@@ -21,15 +22,13 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = false, exclude = {"id", "parentId"})
+@EqualsAndHashCode(callSuper = false)
 @Data
 public class DocData extends AbstractValue {
-    @JsonIgnore
-    private String id;
-    @JsonIgnore
-    private String parentId;
-
     private String name;
+    private String parentName;
+    @JsonIgnore
+    private String fullName;
     private String title;
     private String text;
 
@@ -56,12 +55,13 @@ public class DocData extends AbstractValue {
     }
 
     protected void processParentId(String parentId) {
-        this.parentId = parentId;
-        if (Objects.nonNull(this.parentId)) {
-            this.id = this.parentId + Constants.COLON + this.name;
-        } else {
-            this.id = this.name;
-        }
+        this.parentName = Objects.nonNull(parentId) ? parentId : AbstractDocProcessor.PARENT_NAME_DEFAULT;
+        this.fullName = this.obtainFullName();
+    }
+
+    private String obtainFullName() {
+        return AbstractDocProcessor.PARENT_NAME_DEFAULT.equals(this.parentName) ?
+                this.name : this.parentName + Constants.COLON + this.name;
     }
 
     protected <E extends Element> void processComment(DocletEnvironment env, E element) {
@@ -91,4 +91,20 @@ public class DocData extends AbstractValue {
             this.setText(docData.getText());
         }
     }
+
+    @JsonIgnore
+    @Override
+    public @NotNull String getId() {
+        if (Objects.isNull(this.fullName)) {
+            this.fullName = this.obtainFullName();
+        }
+        return this.fullName;
+    }
+
+    @JsonIgnore
+    @Override
+    public String getParentId() {
+        return this.parentName;
+    }
+
 }

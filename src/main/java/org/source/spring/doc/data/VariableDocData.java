@@ -25,14 +25,6 @@ public class VariableDocData extends DocData {
         this.processVariable(variableElement);
     }
 
-    public VariableDocData(ExecutableElement method, String parentId) {
-        TypeMirror returnType = method.getReturnType();
-        this.setName(DocTree.Kind.RETURN.tagName);
-        this.setTypeKind(returnType.getKind().name());
-        this.setTypeName(returnType.toString());
-        this.processParentId(parentId);
-    }
-
     /**
      * @param variableElement variableElement
      */
@@ -66,5 +58,16 @@ public class VariableDocData extends DocData {
 
     public static boolean instanceOf(ObjectNode<String, DocData> docDataNode) {
         return docDataNode.getElement() instanceof VariableDocData;
+    }
+
+
+    public static VariableDocData methodResult(ExecutableElement method, String parentId) {
+        VariableDocData data = new VariableDocData();
+        TypeMirror returnType = method.getReturnType();
+        data.setName(DocTree.Kind.RETURN.tagName);
+        data.setTypeKind(returnType.getKind().name());
+        data.setTypeName(returnType.toString());
+        data.processParentId(parentId);
+        return data;
     }
 }

@@ -16,10 +16,6 @@ public class ObjectNode<I, E extends Element<I>> extends AbstractNode<I, E, Obje
     private transient E oldElement;
     @JsonIgnore
     private transient StatusEnum oldStatus;
-    /**
-     * 与parentNode的关联关系
-     */
-    private Integer relationType;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -36,5 +32,13 @@ public class ObjectNode<I, E extends Element<I>> extends AbstractNode<I, E, Obje
     public static <I, E extends Element<I>> Tree<I, E, ObjectNode<I, E>> buildTree() {
         return new Tree<>(ObjectNode::new, node -> {
         });
+    }
+
+    @Override
+    public String toString() {
+        return "ObjectNode{" +
+                "id=" + getId() +
+                "status=" + status +
+                '}';
     }
 }

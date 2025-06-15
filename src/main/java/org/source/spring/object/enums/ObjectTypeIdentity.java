@@ -1,6 +1,7 @@
 package org.source.spring.object.enums;
 
 import org.source.spring.object.AbstractValue;
+import org.source.spring.object.data.ObjectFullData;
 import org.source.spring.object.entity.ObjectBodyEntityIdentity;
 import org.source.spring.object.entity.ObjectEntityIdentity;
 import org.source.spring.object.entity.RelationEntityIdentity;
@@ -28,4 +29,6 @@ public interface ObjectTypeIdentity {
      */
     <O extends ObjectEntityIdentity, R extends RelationEntityIdentity, B extends ObjectBodyEntityIdentity, V extends AbstractValue>
     Class<? extends AbstractObjectProcessor<O, R, B, V>> getObjectProcessor();
+
+    <V extends AbstractValue> ObjectFullData<V> parse(ObjectBodyEntityIdentity entity);
 }

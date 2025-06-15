@@ -1,5 +1,7 @@
 package org.source.spring.object.entity;
 
+import org.source.spring.object.enums.ObjectTypeIdentity;
+
 import java.time.LocalDateTime;
 
 public interface ObjectEntityIdentity {
@@ -21,6 +23,14 @@ public interface ObjectEntityIdentity {
     String getSpaceId();
 
     void setSpaceId(String spaceId);
+
+    /**
+     * 类型 {@link ObjectTypeIdentity#getType()}
+     */
+    Integer getType();
+
+    void setType(Integer type);
+
 
     /**
      * 是否已删除，0-未删除，1-已删除
