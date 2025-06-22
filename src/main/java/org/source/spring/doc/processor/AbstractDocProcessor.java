@@ -148,11 +148,12 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
         return b;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Map<Integer, ? extends AbstractObjectProcessor<? extends ObjectEntityIdentity, ? extends RelationEntityIdentity,
-            ? extends ObjectBodyEntityIdentity, ? extends AbstractValue>> allObjectProcessors() {
+    public Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
+            ObjectBodyEntityIdentity, AbstractValue>> allObjectProcessors() {
         return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getType,
-                e -> (AbstractObjectProcessor<? extends ObjectEntityIdentity, ? extends RelationEntityIdentity, ? extends ObjectBodyEntityIdentity, ? extends AbstractValue>) SpringUtil.getBean(e.getObjectProcessor()));
+                e -> SpringUtil.getBean(e.getObjectProcessor()));
     }
 
     @Override
@@ -173,5 +174,4 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
     public boolean shouldSetParentObjectId() {
         return false;
     }
-
 }

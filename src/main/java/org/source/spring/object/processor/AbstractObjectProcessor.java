@@ -1,5 +1,6 @@
 package org.source.spring.object.processor;
 
+import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.source.spring.object.AbstractValue;
@@ -14,6 +15,7 @@ import org.source.spring.object.tree.ObjectNode;
 import org.source.spring.trace.TraceContext;
 import org.source.spring.uid.Ids;
 import org.source.utility.assign.Assign;
+import org.source.utility.assign.InterruptStrategyEnum;
 import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.AbstractNode;
 import org.source.utility.utils.Jsons;
@@ -40,31 +42,31 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
      */
     public abstract O newObjectEntity();
 
-    public abstract List<O> findObjects(Collection<String> objectIds);
+    public abstract List<O> findObjects(@NotEmpty Collection<String> objectIds);
 
-    public abstract void saveObjects(Collection<O> objects);
+    public abstract void saveObjects(@NotEmpty Collection<O> objects);
 
     /**
      * relation
      */
     public abstract R newRelationEntity();
 
-    public abstract List<R> findRelationsByObjectIds(Collection<String> objectIds);
+    public abstract List<R> findRelationsByObjectIds(@NotEmpty Collection<String> objectIds);
 
-    public abstract List<R> findRelationsByParentObjectIds(Collection<String> parentObjectIds);
+    public abstract List<R> findRelationsByParentObjectIds(@NotEmpty Collection<String> parentObjectIds);
 
-    public abstract List<R> findRelationsByBelongIds(Collection<String> belongIds);
+    public abstract List<R> findRelationsByBelongIds(@NotEmpty Collection<String> belongIds);
 
-    public abstract void saveRelations(Collection<R> relations);
+    public abstract void saveRelations(@NotEmpty Collection<R> relations);
 
     /**
      * object body
      */
     public abstract B newObjectBodyEntity();
 
-    public abstract List<B> findObjectBodies(Collection<String> objectIds);
+    public abstract List<B> findObjectBodies(@NotEmpty Collection<String> objectIds);
 
-    public abstract void saveObjectBodies(Collection<B> objectBodies);
+    public abstract void saveObjectBodies(@NotEmpty Collection<B> objectBodies);
 
     /**
      * obtain type for object value
@@ -76,8 +78,8 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
      */
     public abstract V toObjectValue(Integer type, ObjectBodyEntityIdentity objectBodyEntity);
 
-    public abstract Map<Integer, ? extends AbstractObjectProcessor<? extends ObjectEntityIdentity, ? extends RelationEntityIdentity,
-            ? extends ObjectBodyEntityIdentity, ? extends AbstractValue>> allObjectProcessors();
+    public abstract Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
+            ObjectBodyEntityIdentity, AbstractValue>> allObjectProcessors();
 
     /**
      * 转为tree
@@ -253,6 +255,9 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
     @NonNull
     public Collection<B> findObjectBodyWhenWrite(Collection<V> vs) {
         List<String> objectIds = Streams.map(vs, V::getObjectId).toList();
+        if (CollectionUtils.isEmpty(objectIds)) {
+            return List.of();
+        }
         return this.findObjectBodies(objectIds);
     }
 
@@ -265,6 +270,9 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
     @NonNull
     public Collection<R> findRelationWhenWrite(Collection<B> bs) {
         List<String> objectIds = Streams.map(bs, B::getObjectId).toList();
+        if (CollectionUtils.isEmpty(objectIds)) {
+            return List.of();
+        }
         return this.findRelationsByObjectIds(objectIds);
     }
 
@@ -418,8 +426,9 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         };
         List<ObjectTemp<O, R>> list = Streams.map(new HashSet<>(objectIds), k -> ObjectTemp.<O, R>builder().objectId(k).build()).toList();
         List<ObjectTemp<O, R>> tempList = Assign.build(list)
-                .parallel()
+                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
                 .addAcquire(this::findObjects, O::getObjectId)
+                .throwException()
                 .addAction(ObjectTemp::getObjectId)
                 .addAssemble(ObjectTemp::setObject)
                 .backAcquire().backAssign()
@@ -454,7 +463,9 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         Map<Integer, Function<Collection<ObjectFullData<AbstractValue>>, Assign<ObjectFullData<AbstractValue>>>> assignerMap = HashMap.newHashMap(processorMap.size());
         processorMap.forEach((k, p) ->
                 assignerMap.put(k, es -> this.assignByType(es, p)));
-        List<ObjectFullData<AbstractValue>> fullData = Assign.build(objectFullData).addBranches(ObjectFullData::getType, assignerMap).invoke().getMainData2List();
+        List<ObjectFullData<AbstractValue>> fullData = Assign.build(objectFullData)
+                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
+                .addBranches(ObjectFullData::getType, assignerMap).invoke().getMainData2List();
         return ObjectNode.<String, ObjectFullData<AbstractValue>>buildTree().add(fullData);
     }
 
@@ -462,6 +473,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
                                                               AbstractObjectProcessor<?, ?, ?, ?> processor) {
         return Assign.build(es)
                 .addAcquire(processor::findObjectBodies, ObjectBodyEntityIdentity::getObjectId)
+                .throwException()
                 .addAction(ObjectFullData::getObjectId)
                 .addAssemble((e, t) -> {
                     e.setName(t.getName());
