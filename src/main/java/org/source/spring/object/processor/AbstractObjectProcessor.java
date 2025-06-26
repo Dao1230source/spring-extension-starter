@@ -3,6 +3,7 @@ package org.source.spring.object.processor;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.source.spring.exception.BizExceptionEnum;
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.StatusEnum;
 import org.source.spring.object.data.ObjectFullData;
@@ -18,11 +19,10 @@ import org.source.utility.assign.Assign;
 import org.source.utility.assign.InterruptStrategyEnum;
 import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.AbstractNode;
+import org.source.utility.tree.identity.Node;
 import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
 import org.springframework.aop.framework.AopContext;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @Getter
 @Slf4j
 public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R extends RelationEntityIdentity,
-        B extends ObjectBodyEntityIdentity, V extends AbstractValue> {
+        B extends ObjectBodyEntityIdentity, V extends AbstractValue, T extends ObjectTypeIdentity> {
 
     protected Tree<String, ObjectFullData<V>, ObjectNode<String, ObjectFullData<V>>> objectTree = ObjectNode.buildTree();
 
@@ -68,18 +68,64 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
 
     public abstract void saveObjectBodies(@NotEmpty Collection<B> objectBodies);
 
+    public abstract Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
+            ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity>> objectType2ProcessorMap();
+
+    public abstract Map<Integer, T> type2ObjectTypeMap();
+
+    public abstract Map<Class<? extends V>, T> class2ObjectTypeMap();
+
+    public Function<V, String> getValueIdGetter() {
+        return V::getObjectId;
+    }
+
+    public Function<B, String> getObjectBodyIdGetter() {
+        return B::getObjectId;
+    }
+
+    public Function<ObjectFullData<V>, String> getFullDataIdGetter() {
+        return ObjectFullData::getObjectId;
+    }
+
+    public Function<ObjectFullData<V>, String> getFullDataParentIdGetter() {
+        return ObjectFullData::getParentObjectId;
+    }
+
     /**
      * obtain type for object value
      */
-    public abstract ObjectTypeIdentity getObjectType(V v);
+    public ObjectTypeIdentity getObjectType(V v) {
+        ObjectTypeIdentity type = this.class2ObjectTypeMap().get(v.getClass());
+        if (Objects.isNull(type)) {
+            throw BizExceptionEnum.OBJECT_VALUE_CLASS_NOT_DEFINED.except("class:{}", v.getClass());
+        }
+        return type;
+    }
 
     /**
      * convert entity to value
      */
-    public abstract V toObjectValue(Integer type, ObjectBodyEntityIdentity objectBodyEntity);
+    public ObjectTypeIdentity getObjectType(Integer type) {
+        ObjectTypeIdentity objectType = this.type2ObjectTypeMap().get(type);
+        if (Objects.isNull(objectType)) {
+            throw BizExceptionEnum.OBJECT_TYPE_NOT_DEFINED.except("type:{}", type);
+        }
+        return objectType;
+    }
 
-    public abstract Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
-            ObjectBodyEntityIdentity, AbstractValue>> allObjectProcessors();
+    public V convert2Value(ObjectTypeIdentity objectType, ObjectBodyEntityIdentity objectBodyEntity) {
+        return Jsons.obj(objectBodyEntity.getValue(), objectType.getValueClass());
+    }
+
+    public ObjectFullData<V> convert2FullData(ObjectTypeIdentity objectType, ObjectBodyEntityIdentity entity) {
+        ObjectFullData<V> fullData = new ObjectFullData<>();
+        fullData.setType(objectType.getType());
+        fullData.setName(entity.getName());
+        fullData.setObjectId(entity.getObjectId());
+        V value = this.convert2Value(objectType, entity);
+        fullData.setValue(value);
+        return fullData;
+    }
 
     /**
      * 转为tree
@@ -109,6 +155,8 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
 
     public Tree<String, ObjectFullData<V>, ObjectNode<String, ObjectFullData<V>>> handleDbDataTree() {
         Tree<String, ObjectFullData<V>, ObjectNode<String, ObjectFullData<V>>> tree = this.getObjectTree();
+        tree.setIdGetter(n -> Node.getProperty(n, this.getFullDataIdGetter()));
+        tree.setParentIdGetter(n -> Node.getProperty(n, this.getFullDataParentIdGetter()));
         tree.setKeepOldIndex(true);
         tree.setAfterCreateHandler(n -> n.setStatus(StatusEnum.DATABASE));
         tree.setMergeHandler(this::mergeNode);
@@ -144,7 +192,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         List<O> objectList = this.data2ObjectEntities(objectFullData);
         List<B> objectBodyList = this.data2ObjectBodyEntities(objectFullData);
         List<R> relationList = this.data2RelationEntities(objectFullData);
-        ((AbstractObjectProcessor<O, R, B, V>) AopContext.currentProxy()).saveObjectData(objectList, objectBodyList, relationList);
+        ((AbstractObjectProcessor<O, R, B, V, T>) AopContext.currentProxy()).saveObjectData(objectList, objectBodyList, relationList);
         this.afterPersist();
     }
 
@@ -222,38 +270,26 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         return Streams.notRetain(vs, AbstractValue::getId, vsFromDb).toList();
     }
 
-    public boolean shouldSetParentObjectId() {
-        return true;
-    }
-
     /**
      * ObjectFullData 的key批量查询
      *
      * @param vs vs
      * @return {@literal Collection<ObjectFullData>}
      */
-    @NonNull
     public Collection<ObjectFullData<V>> findFromDbAndConvert2FullData(Collection<V> vs) {
-        Collection<B> objectBodies = this.findObjectBodyWhenWrite(vs);
-        Map<String, ObjectTypeIdentity> valueTypeMap = Streams.toMap(vs, V::getObjectId, this::getObjectType);
-        Collection<ObjectFullData<V>> objectFullData = this.convert2FullData(objectBodies, valueTypeMap);
-        if (this.shouldSetParentObjectId()) {
-            Collection<R> relations = this.findRelationWhenWrite(objectBodies);
-            Map<String, List<String>> objectParentsMap = this.objectParentsMap(relations);
-            objectFullData = this.fullDataSetParentObjectId(objectFullData, objectParentsMap);
-        }
-        return objectFullData;
+        Collection<B> objectBodies = this.findObjectBodyWhenOperate(vs);
+        Collection<ObjectFullData<V>> objectFullData = this.convert2FullData(objectBodies, vs);
+        return this.fillParentId(objectFullData);
     }
 
     /**
-     * 写数据时，查询对象主体数据，有些自定义的对象可能不是通过objectId查询
-     * 与之相对的{@link AbstractObjectProcessor }是读数据时的标准的通过objectId查询数据库
+     * 新增或更新数据时，查询对象主体数据，有些自定义的对象可能不是通过objectId查询
+     * 与之相对的{@link AbstractObjectProcessor#findObjectBodies(Collection)}  }是读数据时的标准的通过objectId查询数据库
      *
      * @param vs vs
      * @return objectBodies
      */
-    @NonNull
-    public Collection<B> findObjectBodyWhenWrite(Collection<V> vs) {
+    public Collection<B> findObjectBodyWhenOperate(Collection<V> vs) {
         List<String> objectIds = Streams.map(vs, V::getObjectId).toList();
         if (CollectionUtils.isEmpty(objectIds)) {
             return List.of();
@@ -261,15 +297,31 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         return this.findObjectBodies(objectIds);
     }
 
+    public Collection<ObjectFullData<V>> convert2FullData(Collection<B> objectBodyEntities, Collection<V> vs) {
+        Map<String, V> valueTypeMap = Streams.toMap(vs, this.getValueIdGetter());
+        return Streams.map(objectBodyEntities, b -> {
+            String objectBodyId = this.getObjectBodyIdGetter().apply(b);
+            V v = valueTypeMap.get(objectBodyId);
+            BizExceptionEnum.OBJECT_CANNOT_FIND_VALUE.nonNull(v, objectBodyId);
+            ObjectTypeIdentity type = this.getObjectType(v);
+            return this.convert2FullData(type, b);
+        }).filter(Objects::nonNull).toList();
+    }
+
+    public Collection<ObjectFullData<V>> fillParentId(Collection<ObjectFullData<V>> objectFullData) {
+        Collection<R> relations = this.findRelationWhenWrite(objectFullData);
+        Map<String, List<String>> objectParentsMap = this.objectParentsMap(relations);
+        return this.fullDataSetParentObjectId(objectFullData, objectParentsMap);
+    }
+
     /**
      * 写数据时，查询关系数据
      *
-     * @param bs vs
+     * @param objectFullData vs
      * @return relations
      */
-    @NonNull
-    public Collection<R> findRelationWhenWrite(Collection<B> bs) {
-        List<String> objectIds = Streams.map(bs, B::getObjectId).toList();
+    public Collection<R> findRelationWhenWrite(Collection<ObjectFullData<V>> objectFullData) {
+        List<String> objectIds = Streams.map(objectFullData, ObjectFullData::getId).toList();
         if (CollectionUtils.isEmpty(objectIds)) {
             return List.of();
         }
@@ -287,20 +339,10 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
                 Collectors.mapping(R::getParentObjectId, Collectors.toList())));
     }
 
-    public Collection<ObjectFullData<V>> convert2FullData(Collection<B> objectBodyEntities, Map<String, ObjectTypeIdentity> valueTypeMap) {
-        return Streams.map(objectBodyEntities, k -> {
-            ObjectTypeIdentity type = valueTypeMap.get(k.getObjectId());
-            if (Objects.isNull(type)) {
-                return null;
-            }
-            return type.<V>parse(k);
-        }).filter(Objects::nonNull).toList();
-    }
-
     public Collection<ObjectFullData<V>> fullDataSetParentObjectId(Collection<ObjectFullData<V>> fullData,
                                                                    Map<String, List<String>> objectParentsMap) {
         return fullData.stream().map(b -> {
-            List<String> parentObjectIds = objectParentsMap.get(b.getObjectId());
+            List<String> parentObjectIds = objectParentsMap.get(this.getFullDataIdGetter().apply(b));
             if (CollectionUtils.isEmpty(parentObjectIds)) {
                 return List.of(b);
             } else if (parentObjectIds.size() == 1) {
@@ -315,10 +357,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
                 }).toList();
             }
         }).flatMap(Collection::stream).toList();
-    }
-
-    public @Nullable V valueFromObject(ObjectFullData<V> objectFullData) {
-        return objectFullData.getValue();
     }
 
     public ObjectFullData<V> convert2Object(V objectValue) {
@@ -458,8 +496,8 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
             collect.add(data);
             return collect;
         }).flatMap(Collection::stream).toList();
-        Map<Integer, ? extends AbstractObjectProcessor<? extends ObjectEntityIdentity, ? extends RelationEntityIdentity,
-                ? extends ObjectBodyEntityIdentity, ? extends AbstractValue>> processorMap = this.allObjectProcessors();
+        Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
+                ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity>> processorMap = this.objectType2ProcessorMap();
         Map<Integer, Function<Collection<ObjectFullData<AbstractValue>>, Assign<ObjectFullData<AbstractValue>>>> assignerMap = HashMap.newHashMap(processorMap.size());
         processorMap.forEach((k, p) ->
                 assignerMap.put(k, es -> this.assignByType(es, p)));
@@ -470,14 +508,14 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
     }
 
     public Assign<ObjectFullData<AbstractValue>> assignByType(Collection<ObjectFullData<AbstractValue>> es,
-                                                              AbstractObjectProcessor<?, ?, ?, ?> processor) {
+                                                              AbstractObjectProcessor<?, ?, ?, ?, ?> processor) {
         return Assign.build(es)
                 .addAcquire(processor::findObjectBodies, ObjectBodyEntityIdentity::getObjectId)
                 .throwException()
                 .addAction(ObjectFullData::getObjectId)
                 .addAssemble((e, t) -> {
                     e.setName(t.getName());
-                    e.setValue(processor.toObjectValue(e.getType(), t));
+                    e.setValue(processor.convert2Value(processor.getObjectType(e.getType()), t));
                 }).backAcquire().backAssign();
     }
 

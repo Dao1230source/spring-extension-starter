@@ -42,7 +42,9 @@ public enum BizExceptionEnum implements EnumProcessor<BizException> {
     /**
      *
      */
-    DOC_DATA_CLASS_NOT_DEFINED("Doc Data Class Not Defined"),
+    OBJECT_VALUE_CLASS_NOT_DEFINED("object value class not defined"),
+    OBJECT_TYPE_NOT_DEFINED("object type not defined"),
+    OBJECT_CANNOT_FIND_VALUE("cannot find value by id"),
     ;
 
     private final String message;

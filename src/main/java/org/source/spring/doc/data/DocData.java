@@ -56,12 +56,6 @@ public class DocData extends AbstractValue {
 
     protected void processParentId(String parentId) {
         this.parentName = Objects.nonNull(parentId) ? parentId : AbstractDocProcessor.PARENT_NAME_DEFAULT;
-        this.fullName = this.obtainFullName();
-    }
-
-    private String obtainFullName() {
-        return AbstractDocProcessor.PARENT_NAME_DEFAULT.equals(this.parentName) ?
-                this.name : this.parentName + Constants.COLON + this.name;
     }
 
     protected <E extends Element> void processComment(DocletEnvironment env, E element) {
@@ -92,19 +86,27 @@ public class DocData extends AbstractValue {
         }
     }
 
-    @JsonIgnore
-    @Override
-    public @NotNull String getId() {
+    public String getFullName() {
         if (Objects.isNull(this.fullName)) {
-            this.fullName = this.obtainFullName();
+            this.fullName = obtainFullName(this.name, this.parentName);
         }
         return this.fullName;
     }
 
     @JsonIgnore
     @Override
+    public @NotNull String getId() {
+        return this.getFullName();
+    }
+
+    @JsonIgnore
+    @Override
     public String getParentId() {
         return this.parentName;
+    }
+
+    public static String obtainFullName(String name, String parentName) {
+        return AbstractDocProcessor.PARENT_NAME_DEFAULT.equals(parentName) ? name : parentName + Constants.COLON + name;
     }
 
 }

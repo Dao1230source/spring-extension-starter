@@ -6,7 +6,6 @@ import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.data.*;
 import org.source.spring.doc.entity.DocEntityIdentity;
 import org.source.spring.doc.enums.DocObjectTypeEnum;
-import org.source.spring.exception.BizExceptionEnum;
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.StatusEnum;
 import org.source.spring.object.data.ObjectFullData;
@@ -30,10 +29,30 @@ import java.util.function.Function;
 
 @Getter
 public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R extends RelationEntityIdentity, B extends DocEntityIdentity>
-        extends AbstractObjectProcessor<O, R, B, DocData> {
+        extends AbstractObjectProcessor<O, R, B, DocData, DocObjectTypeEnum> {
     public static final String PARENT_NAME_DEFAULT = "root";
-
     private final DocDataContainer docDataContainer = new DocDataContainer();
+
+    @Override
+    public Function<DocData, String> getValueIdGetter() {
+        return DocData::getFullName;
+    }
+
+    @Override
+    public Function<B, String> getObjectBodyIdGetter() {
+        return b -> DocData.obtainFullName(b.getName(), b.getParentName());
+    }
+
+    @Override
+    public Function<ObjectFullData<DocData>, String> getFullDataIdGetter() {
+        return o -> o.getValue().getFullName();
+    }
+
+    @Override
+    public Function<ObjectFullData<DocData>, String> getFullDataParentIdGetter() {
+        return o -> o.getValue().getParentName();
+    }
+
 
     @Override
     public Tree<String, ObjectFullData<DocData>, ObjectNode<String, ObjectFullData<DocData>>> handleDbDataTree() {
@@ -48,8 +67,8 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
     @NotNull
     private Tree<String, ObjectFullData<DocData>, ObjectNode<String, ObjectFullData<DocData>>> docCustomTree(
             Tree<String, ObjectFullData<DocData>, ObjectNode<String, ObjectFullData<DocData>>> tree) {
-        tree.setIdGetter(n -> n.getElement().getValue().getFullName());
-        tree.setParentIdGetter(n -> n.getElement().getValue().getParentName());
+        tree.setIdGetter(n -> Node.getProperty(n, this.getFullDataIdGetter()));
+        tree.setParentIdGetter(n -> Node.getProperty(n, this.getFullDataParentIdGetter()));
         tree.setFinallyHandler((n, parent) ->
                 Node.setProperty(n, ObjectFullData::setParentObjectId, Node.getProperty(parent, ObjectFullData::getObjectId)));
         return tree;
@@ -151,27 +170,24 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
     @SuppressWarnings("unchecked")
     @Override
     public Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
-            ObjectBodyEntityIdentity, AbstractValue>> allObjectProcessors() {
-        return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getType,
-                e -> SpringUtil.getBean(e.getObjectProcessor()));
+            ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity>> objectType2ProcessorMap() {
+        return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getType, e -> SpringUtil.getBean(e.getObjectProcessor()));
     }
 
     @Override
-    public ObjectTypeIdentity getObjectType(DocData docData) {
-        DocObjectTypeEnum anEnum = DocObjectTypeEnum.getByValueClass(docData.getClass());
-        if (Objects.isNull(anEnum)) {
-            throw BizExceptionEnum.DOC_DATA_CLASS_NOT_DEFINED.except("class:{}", docData.getClass());
-        }
-        return anEnum;
+    public Map<Integer, DocObjectTypeEnum> type2ObjectTypeMap() {
+        return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getType);
     }
 
     @Override
-    public DocData toObjectValue(Integer type, ObjectBodyEntityIdentity objectBodyEntity) {
-        return DocObjectTypeEnum.toObjectValue(type, objectBodyEntity);
+    public Map<Class<? extends DocData>, DocObjectTypeEnum> class2ObjectTypeMap() {
+        return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getValueClass);
     }
 
     @Override
-    public boolean shouldSetParentObjectId() {
-        return false;
+    public Collection<ObjectFullData<DocData>> findFromDbAndConvert2FullData(Collection<DocData> vs) {
+        Collection<B> objectBodies = this.findObjectBodyWhenOperate(vs);
+        // 无需再给parentId赋值
+        return this.convert2FullData(objectBodies, vs);
     }
 }

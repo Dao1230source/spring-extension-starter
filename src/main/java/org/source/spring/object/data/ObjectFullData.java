@@ -21,11 +21,13 @@ public class ObjectFullData<V extends AbstractValue> extends StringElement {
     /**
      * 对象ID，唯一
      */
+    @EqualsAndHashCode.Exclude
     private String objectId;
 
     /**
      * 父对象ID
      */
+    @EqualsAndHashCode.Exclude
     private String parentObjectId;
 
     /**
@@ -71,6 +73,7 @@ public class ObjectFullData<V extends AbstractValue> extends StringElement {
     /**
      * node status
      */
+    @EqualsAndHashCode.Exclude
     private StatusEnum status;
 
     @JsonIgnore
