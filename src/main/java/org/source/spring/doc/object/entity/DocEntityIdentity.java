@@ -1,4 +1,4 @@
-package org.source.spring.doc.entity;
+package org.source.spring.doc.object.entity;
 
 import jakarta.validation.constraints.NotNull;
 import org.source.spring.object.entity.ObjectBodyEntityIdentity;

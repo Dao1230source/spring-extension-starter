@@ -11,7 +11,7 @@ import org.source.spring.doc.OptionEnum;
 import org.source.spring.doc.data.ClassDocData;
 import org.source.spring.doc.data.DocData;
 import org.source.spring.doc.data.VariableDocData;
-import org.source.spring.doc.processor.AbstractDocProcessor;
+import org.source.spring.doc.object.processor.AbstractDocProcessor;
 import org.source.spring.utility.SpringUtil;
 import org.source.utility.utils.Streams;
 import org.springframework.util.CollectionUtils;

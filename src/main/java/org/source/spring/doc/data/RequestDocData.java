@@ -1,5 +1,6 @@
 package org.source.spring.doc.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -12,6 +13,8 @@ import org.source.utility.constant.Constants;
 @Data
 public class RequestDocData extends DocData {
     private String methodId;
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
     private ObjectNode<String, ObjectFullData<DocData>> methodNode;
 
     public RequestDocData(MethodDocData methodDocData, String parentId) {

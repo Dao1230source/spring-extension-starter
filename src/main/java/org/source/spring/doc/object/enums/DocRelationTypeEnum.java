@@ -1,4 +1,4 @@
-package org.source.spring.doc.enums;
+package org.source.spring.doc.object.enums;
 
 import lombok.Getter;
 import org.source.spring.object.enums.RelationScopeEnum;

@@ -1,8 +1,8 @@
-package org.source.spring.doc.enums;
+package org.source.spring.doc.object.enums;
 
 import lombok.Getter;
 import org.source.spring.doc.data.*;
-import org.source.spring.doc.processor.AbstractDocProcessor;
+import org.source.spring.doc.object.processor.AbstractDocProcessor;
 import org.source.spring.object.enums.ObjectTypeIdentity;
 
 @Getter

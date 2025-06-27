@@ -10,8 +10,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.source.spring.doc.enums.DocRelationTypeEnum;
-import org.source.spring.doc.processor.AbstractDocProcessor;
+import org.source.spring.doc.object.enums.DocRelationTypeEnum;
+import org.source.spring.doc.object.processor.AbstractDocProcessor;
 import org.source.spring.object.AbstractValue;
 import org.source.utility.constant.Constants;
 
@@ -35,6 +35,8 @@ public class DocData extends AbstractValue {
     /**
      * 默认的与其他数据的关系
      */
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
     private Integer relationType = DocRelationTypeEnum.BELONG.getType();
 
     public <E extends Element> DocData(DocletEnvironment env, E element, String parentId) {

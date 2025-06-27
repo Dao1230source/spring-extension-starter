@@ -3,7 +3,7 @@ package org.source.spring.doc.data;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.source.spring.doc.enums.DocRelationTypeEnum;
+import org.source.spring.doc.object.enums.DocRelationTypeEnum;
 import org.springframework.util.CollectionUtils;
 
 import javax.lang.model.element.AnnotationMirror;

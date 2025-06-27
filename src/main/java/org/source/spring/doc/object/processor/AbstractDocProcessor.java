@@ -1,11 +1,11 @@
-package org.source.spring.doc.processor;
+package org.source.spring.doc.object.processor;
 
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.data.*;
-import org.source.spring.doc.entity.DocEntityIdentity;
-import org.source.spring.doc.enums.DocObjectTypeEnum;
+import org.source.spring.doc.object.entity.DocEntityIdentity;
+import org.source.spring.doc.object.enums.DocObjectTypeEnum;
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.StatusEnum;
 import org.source.spring.object.data.ObjectFullData;
@@ -75,6 +75,15 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
     }
 
     @Override
+    public boolean nodeEquals(ObjectNode<String, ObjectFullData<DocData>> n, ObjectNode<String, ObjectFullData<DocData>> old) {
+        ObjectFullData<DocData> eleNew = n.getElement();
+        ObjectFullData<DocData> eleOld = old.getElement();
+        return eleNew.getValue().equals(eleOld.getValue())
+                && eleNew.getType().equals(eleOld.getType())
+                && eleNew.getRelationType().equals(eleOld.getRelationType());
+    }
+
+    @Override
     public void beforePersist() {
         super.beforePersist();
         this.getObjectTree().forEach((k, v) -> {
@@ -105,8 +114,9 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
      */
     @Override
     public void afterTransfer() {
+        Tree<String, ObjectFullData<DocData>, ObjectNode<String, ObjectFullData<DocData>>> objectTree = this.getObjectTree();
         // 变量不是基础类型的
-        List<ObjectNode<String, ObjectFullData<DocData>>> notBaseTypeVariableList = objectTree.find(n ->
+        List<ObjectNode<String, ObjectFullData<DocData>>> notBaseTypeVariableList = this.getObjectTree().find(n ->
                 n.getElement().getValue() instanceof VariableDocData variableDocData && variableDocData.notBaseType());
         Function<Collection<String>, Collection<ObjectNode<String, ObjectFullData<DocData>>>> fetcher =
                 ks -> objectTree.find(n -> ks.contains(n.getElement().getName()));
@@ -119,7 +129,7 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
             // 接口文档对象
             if (n.getElement().getValue() instanceof RequestDocData requestDocData) {
                 String methodId = requestDocData.getMethodId();
-                requestDocData.setMethodNode(this.objectTree.getIdMap().get(methodId));
+                requestDocData.setMethodNode(objectTree.getIdMap().get(methodId));
             }
             this.mergeSuperClassData(n);
         });
@@ -133,7 +143,7 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
                 return;
             }
             Optional<ObjectNode<String, ObjectFullData<DocData>>> superClsNodeOptional = superClassNames.stream()
-                    .map(objectTree::getById).filter(Objects::nonNull).findFirst();
+                    .map(this.getObjectTree()::getById).filter(Objects::nonNull).findFirst();
             if (superClsNodeOptional.isEmpty()) {
                 return;
             }
@@ -182,12 +192,5 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
     @Override
     public Map<Class<? extends DocData>, DocObjectTypeEnum> class2ObjectTypeMap() {
         return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getValueClass);
-    }
-
-    @Override
-    public Collection<ObjectFullData<DocData>> findFromDbAndConvert2FullData(Collection<DocData> vs) {
-        Collection<B> objectBodies = this.findObjectBodyWhenOperate(vs);
-        // 无需再给parentId赋值
-        return this.convert2FullData(objectBodies, vs);
     }
 }
