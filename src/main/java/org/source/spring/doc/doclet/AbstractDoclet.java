@@ -31,7 +31,7 @@ public abstract class AbstractDoclet implements Doclet {
     public boolean run(DocletEnvironment env) {
         try {
             // doc结果数据容器
-            AbstractDocProcessor<?, ?, ?> docProcessor = this.obtainProcessor();
+            AbstractDocProcessor<?, ?, ?, ?> docProcessor = this.obtainProcessor();
             DocDataContainer docDataContainer = new DocDataContainer();
             // 应用的doc对象
             DocData appDocData = docDataContainer.obtainAppDocData(docProcessor, this.myOptions);
@@ -48,7 +48,7 @@ public abstract class AbstractDoclet implements Doclet {
         }
     }
 
-    protected AbstractDocProcessor<?, ?, ?> obtainProcessor() {
+    protected AbstractDocProcessor<?, ?, ?, ?> obtainProcessor() {
         try {
             return SpringUtil.getBean(AbstractDocProcessor.class);
         } catch (Exception e) {

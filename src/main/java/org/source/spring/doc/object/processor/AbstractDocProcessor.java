@@ -4,6 +4,7 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.data.*;
+import org.source.spring.doc.object.DocUniqueKey;
 import org.source.spring.doc.object.entity.DocEntityIdentity;
 import org.source.spring.doc.object.enums.DocObjectTypeEnum;
 import org.source.spring.object.AbstractValue;
@@ -28,8 +29,9 @@ import java.util.*;
 import java.util.function.Function;
 
 @Getter
-public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R extends RelationEntityIdentity, B extends DocEntityIdentity>
-        extends AbstractObjectProcessor<O, R, B, DocData, DocObjectTypeEnum> {
+public abstract class AbstractDocProcessor
+        <O extends ObjectEntityIdentity, R extends RelationEntityIdentity, B extends DocEntityIdentity, K extends DocUniqueKey>
+        extends AbstractObjectProcessor<O, R, B, DocData, DocObjectTypeEnum, K> {
     public static final String PARENT_NAME_DEFAULT = "root";
     private final DocDataContainer docDataContainer = new DocDataContainer();
 
@@ -180,7 +182,7 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
     @SuppressWarnings("unchecked")
     @Override
     public Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
-            ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity>> objectType2ProcessorMap() {
+            ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity, Object>> objectType2ProcessorMap() {
         return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getType, e -> SpringUtil.getBean(e.getObjectProcessor()));
     }
 
@@ -192,5 +194,12 @@ public abstract class AbstractDocProcessor<O extends ObjectEntityIdentity, R ext
     @Override
     public Map<Class<? extends DocData>, DocObjectTypeEnum> class2ObjectTypeMap() {
         return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getValueClass);
+    }
+
+    @Override
+    public void handlerAfterObjectBodyConvertToFullData(ObjectFullData<DocData> fullData, Map<K, B> objectMap) {
+        if (fullData.getValue().getClass().isAssignableFrom(DocData.class)) {
+            fullData.setRelationType(fullData.getValue().getRelationType());
+        }
     }
 }

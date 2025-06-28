@@ -26,7 +26,8 @@ public interface ObjectTypeIdentity {
     /**
      * object processor
      */
-    <O extends ObjectEntityIdentity, R extends RelationEntityIdentity, B extends ObjectBodyEntityIdentity, V extends AbstractValue, T extends ObjectTypeIdentity>
-    Class<? extends AbstractObjectProcessor<O, R, B, V, T>> getObjectProcessor();
+    <O extends ObjectEntityIdentity, R extends RelationEntityIdentity, B extends ObjectBodyEntityIdentity, V extends AbstractValue,
+            T extends ObjectTypeIdentity, K>
+    Class<? extends AbstractObjectProcessor<O, R, B, V, T, K>> getObjectProcessor();
 
 }

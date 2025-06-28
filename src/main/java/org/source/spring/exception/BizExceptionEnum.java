@@ -45,6 +45,9 @@ public enum BizExceptionEnum implements EnumProcessor<BizException> {
     OBJECT_VALUE_CLASS_NOT_DEFINED("object value class not defined"),
     OBJECT_TYPE_NOT_DEFINED("object type not defined"),
     OBJECT_CANNOT_FIND_VALUE("cannot find value by id"),
+    OBJECT_NEW_OBJECT_ENTITY_NONNULL("新建 Object 实体类的方法返回值必须不为空"),
+    OBJECT_NEW_OBJECT_BODY_ENTITY_NONNULL("新建 ObjectBody 实体类方法的返回值必须不为空"),
+    OBJECT_NEW_RELATION_ENTITY_NONNULL("新建 Relation 实体类方法的返回值必须不为空"),
     ;
 
     private final String message;

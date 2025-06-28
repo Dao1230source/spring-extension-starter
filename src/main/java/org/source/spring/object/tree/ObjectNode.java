@@ -33,12 +33,4 @@ public class ObjectNode<I, E extends Element<I>> extends AbstractNode<I, E, Obje
         return new Tree<>(ObjectNode::new, node -> {
         });
     }
-
-    @Override
-    public String toString() {
-        return "ObjectNode{" +
-                "id=" + getId() +
-                "status=" + status +
-                '}';
-    }
 }

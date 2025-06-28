@@ -34,7 +34,8 @@ import java.util.stream.Collectors;
 @Getter
 @Slf4j
 public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R extends RelationEntityIdentity,
-        B extends ObjectBodyEntityIdentity, V extends AbstractValue, T extends ObjectTypeIdentity> {
+        B extends ObjectBodyEntityIdentity,
+        V extends AbstractValue, T extends ObjectTypeIdentity, K> {
 
     protected final TransmittableThreadLocal<Tree<String, ObjectFullData<V>, ObjectNode<String, ObjectFullData<V>>>> objectTreeThreadLocal
             = TransmittableThreadLocal.withInitial(ObjectNode::buildTree);
@@ -68,10 +69,22 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
 
     public abstract List<B> findObjectBodies(@NotEmpty Collection<String> objectIds);
 
+    /**
+     * 通常 object body 的唯一键是 objectId，但实际业务新增时中可能会使用其他唯一键来查询是否已存在数据
+     *
+     * @param ks ks
+     * @return list
+     */
+    public abstract List<B> findObjectBodiesByKeys(@NotEmpty Collection<K> ks);
+
+    public abstract K objectBodyToKey(B b);
+
+    public abstract K valueToKey(V v);
+
     public abstract void saveObjectBodies(@NotEmpty Collection<B> objectBodies);
 
     public abstract Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
-            ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity>> objectType2ProcessorMap();
+            ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity, Object>> objectType2ProcessorMap();
 
     public abstract Map<Integer, T> type2ObjectTypeMap();
 
@@ -198,7 +211,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         List<O> objectList = this.data2ObjectEntities(objectFullData);
         List<B> objectBodyList = this.data2ObjectBodyEntities(objectFullData);
         List<R> relationList = this.data2RelationEntities(objectFullData);
-        ((AbstractObjectProcessor<O, R, B, V, T>) AopContext.currentProxy()).saveObjectData(objectList, objectBodyList, relationList);
+        ((AbstractObjectProcessor<O, R, B, V, T, K>) AopContext.currentProxy()).saveObjectData(objectList, objectBodyList, relationList);
         this.afterPersist();
         this.objectTreeThreadLocal.remove();
     }
@@ -281,6 +294,17 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
         return Streams.notRetain(vs, AbstractValue::getId, vsFromDb).toList();
     }
 
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Data
+    public static class FindEntityAndToFullDataTemp<V extends AbstractValue, B, R> {
+        private V value;
+        private B objectBodyEntity;
+        private ObjectFullData<V> fullData;
+        private List<R> relations;
+    }
+
     /**
      * ObjectFullData 的key批量查询
      *
@@ -288,81 +312,58 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
      * @return {@literal Collection<ObjectFullData>}
      */
     public Collection<ObjectFullData<V>> findFromDbAndConvert2FullData(Collection<V> vs) {
-        Collection<B> objectBodies = this.findObjectBodyWhenOperate(vs);
-        Collection<ObjectFullData<V>> objectFullData = this.convert2FullData(objectBodies, vs);
-        return this.fillRelation(objectFullData);
-    }
-
-    /**
-     * 新增或更新数据时，查询对象主体数据，有些自定义的对象可能不是通过objectId查询
-     * 与之相对的{@link AbstractObjectProcessor#findObjectBodies(Collection)}  }是读数据时的标准的通过objectId查询数据库
-     *
-     * @param vs vs
-     * @return objectBodies
-     */
-    public Collection<B> findObjectBodyWhenOperate(Collection<V> vs) {
-        List<String> objectIds = Streams.map(vs, V::getObjectId).toList();
-        if (CollectionUtils.isEmpty(objectIds)) {
-            return List.of();
-        }
-        return this.findObjectBodies(objectIds);
-    }
-
-    public Collection<ObjectFullData<V>> convert2FullData(Collection<B> objectBodyEntities, Collection<V> vs) {
         Map<String, V> valueTypeMap = Streams.toMap(vs, this.getValueIdGetter());
-        return Streams.map(objectBodyEntities, b -> {
-            String objectBodyId = this.getObjectBodyIdGetter().apply(b);
-            V v = valueTypeMap.get(objectBodyId);
-            BizExceptionEnum.OBJECT_CANNOT_FIND_VALUE.nonNull(v, objectBodyId);
-            ObjectTypeIdentity type = this.getObjectType(v);
-            return this.convert2FullData(type, b);
-        }).filter(Objects::nonNull).toList();
-    }
-
-    public Collection<ObjectFullData<V>> fillRelation(Collection<ObjectFullData<V>> objectFullData) {
-        Collection<R> relations = this.findRelationWhenOperate(objectFullData);
-        Map<String, List<R>> objectParentsMap = this.objectIdRelationGroup(relations);
-        return this.fullDataFillRelation(objectFullData, objectParentsMap);
+        return Assign.build(vs)
+                .cast(v -> FindEntityAndToFullDataTemp.<V, B, R>builder().value(v).build())
+                // 查询 objectBody
+                .addAcquire(this::findObjectBodiesByKeys, this::objectBodyToKey)
+                .throwException()
+                .afterProcessor((e, map) ->
+                        this.handlerAfterObjectBodyConvertToFullData(e.getFullData(), map))
+                .addAction(k -> this.valueToKey(k.getValue()))
+                // 给 objectBodyEntity、ObjectFullData<V> 赋值
+                .addAssemble((e, b) -> {
+                    e.setObjectBodyEntity(b);
+                    String objectBodyId = this.getObjectBodyIdGetter().apply(b);
+                    V v = valueTypeMap.get(objectBodyId);
+                    BizExceptionEnum.OBJECT_CANNOT_FIND_VALUE.nonNull(v, objectBodyId);
+                    ObjectTypeIdentity type = this.getObjectType(v);
+                    ObjectFullData<V> fullData = this.convert2FullData(type, b);
+                    e.setFullData(fullData);
+                })
+                .backAcquire().backAssign()
+                // 这里新建分支是因为需要先查询 objectBody，有依赖关系
+                .addBranch()
+                // 根据 objectId 查询 relations ，按objectId 分组，因为一个对象可能有多个父级
+                .<String, List<R>>addAcquire(ks -> Streams.of(this.findRelationsByObjectIds(ks)).collect(Collectors.groupingBy(R::getObjectId)))
+                .addAction(e -> e.getObjectBodyEntity().getObjectId())
+                .addAssemble(FindEntityAndToFullDataTemp::setRelations)
+                .backAcquire().backAssign().invoke()
+                // 展开，转换为 ObjectFullData<V>
+                .casts(es -> Streams.map(es, e -> {
+                    List<R> rs = e.getRelations();
+                    ObjectFullData<V> objectFullData = e.getFullData();
+                    if (CollectionUtils.isEmpty(rs)) {
+                        return List.of(objectFullData);
+                    }
+                    return Streams.map(rs, r -> {
+                        @SuppressWarnings("unchecked")
+                        ObjectFullData<V> copy = (ObjectFullData<V>) ObjectFullDataMapper.INSTANCE.copy((ObjectFullData<AbstractValue>) objectFullData);
+                        this.fullDataFillRelation(copy, r);
+                        return copy;
+                    }).toList();
+                }).flatMap(Collection::stream).toList())
+                .toList();
     }
 
     /**
-     * 写数据时，查询关系数据
+     * object 转换为 ObjectFullData<V> 时做一些特殊处理
      *
-     * @param objectFullData vs
-     * @return relations
+     * @param fullData  fullData
+     * @param objectMap {@literal <K, ObjectBodyEntity>}
      */
-    public Collection<R> findRelationWhenOperate(Collection<ObjectFullData<V>> objectFullData) {
-        List<String> objectIds = Streams.map(objectFullData, ObjectFullData::getId).toList();
-        if (CollectionUtils.isEmpty(objectIds)) {
-            return List.of();
-        }
-        return this.findRelationsByObjectIds(objectIds);
-    }
+    public void handlerAfterObjectBodyConvertToFullData(ObjectFullData<V> fullData, Map<K, B> objectMap) {
 
-    /**
-     * 对应的父对象
-     *
-     * @param relations relations
-     * @return {@literal <objectIds,parentObjectIds>}
-     */
-    public Map<String, List<R>> objectIdRelationGroup(Collection<R> relations) {
-        return Streams.of(relations).collect(Collectors.groupingBy(R::getObjectId));
-    }
-
-    public Collection<ObjectFullData<V>> fullDataFillRelation(Collection<ObjectFullData<V>> fullData,
-                                                              Map<String, List<R>> objectParentsMap) {
-        return fullData.stream().map(b -> {
-            List<R> rs = objectParentsMap.get(b.getObjectId());
-            if (CollectionUtils.isEmpty(rs)) {
-                return List.of(b);
-            }
-            return Streams.map(rs, r -> {
-                @SuppressWarnings("unchecked")
-                ObjectFullData<V> copy = (ObjectFullData<V>) ObjectFullDataMapper.INSTANCE.copy((ObjectFullData<AbstractValue>) b);
-                this.fullDataFillRelation(copy, r);
-                return copy;
-            }).toList();
-        }).flatMap(Collection::stream).toList();
     }
 
     public void fullDataFillRelation(ObjectFullData<V> fullData, R r) {
@@ -402,9 +403,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
 
     public O data2ObjectEntity(ObjectFullData<V> data) {
         O entity = this.newObjectEntity();
-        if (Objects.isNull(entity)) {
-            return null;
-        }
+        BizExceptionEnum.OBJECT_NEW_OBJECT_ENTITY_NONNULL.nonNull(entity, data.getValue().getObjectId());
         entity.setObjectId(data.getObjectId());
         entity.setType(data.getType());
         entity.setSpaceId(TraceContext.getSpaceIdOrDefault());
@@ -420,9 +419,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
 
     public B data2ObjectBodyEntity(ObjectFullData<V> data) {
         B entity = this.newObjectBodyEntity();
-        if (Objects.isNull(entity)) {
-            return null;
-        }
+        BizExceptionEnum.OBJECT_NEW_OBJECT_BODY_ENTITY_NONNULL.nonNull(entity, data.getValue().getObjectId());
         entity.setObjectId(data.getObjectId());
         entity.setName(data.getName());
         entity.setValue(Jsons.str(data.getValue()));
@@ -440,9 +437,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
 
     public R data2RelationEntity(ObjectFullData<V> data) {
         R entity = this.newRelationEntity();
-        if (Objects.isNull(entity)) {
-            return null;
-        }
+        BizExceptionEnum.OBJECT_NEW_RELATION_ENTITY_NONNULL.nonNull(entity, data.getValue().getObjectId());
         entity.setObjectId(data.getObjectId());
         entity.setParentObjectId(data.getParentObjectId());
         entity.setType(data.getRelationType());
@@ -462,7 +457,54 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
     }
 
     public ObjectNode<String, ObjectFullData<AbstractValue>> find(Collection<String> objectIds) {
-        Function<Collection<String>, Map<String, List<R>>> belongIdMap = ks -> {
+        Collection<ObjectFullData<AbstractValue>> fullData = Assign.build(objectIds)
+                // objectId 转为 ObjectTemp
+                .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
+                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
+                // 查询 object
+                .addAcquire(this::findObjects, O::getObjectId)
+                .throwException()
+                .addAction(ObjectTemp::getObjectId)
+                .addAssemble(ObjectTemp::setObject)
+                .backAcquire().backAssign()
+                // 查询 relation 并按 belongId 分组
+                .addAcquire(this.belongIdRelationsGroupMapping())
+                .addAction(ObjectTemp::getObjectId)
+                .addAssemble(ObjectTemp::setRelations)
+                .backAcquire().backAssign().invoke()
+                // ObjectTemp 转为 ObjectFullData<AbstractValue>
+                .casts(es -> Streams.map(es, k -> {
+                    if (Objects.isNull(k.getObject())) {
+                        return List.<ObjectFullData<AbstractValue>>of();
+                    }
+                    List<String> ids = Streams.map(k.getRelations(), R::getObjectId).collect(Collectors.toList());
+                    ids.add(k.getObjectId());
+                    ObjectFullData<AbstractValue> data = new ObjectFullData<>();
+                    O object = k.getObject();
+                    data.setSpaceId(object.getSpaceId());
+                    data.setType(object.getType());
+                    data.setObjectId(k.getObjectId());
+                    List<ObjectFullData<AbstractValue>> collect = Streams.map(k.getRelations(), r -> {
+                        ObjectFullData<AbstractValue> copy = ObjectFullDataMapper.INSTANCE.copy(data);
+                        copy.setObjectId(r.getObjectId());
+                        copy.setParentObjectId(r.getParentObjectId());
+                        copy.setBelongId(r.getBelongId());
+                        copy.setRelationType(r.getType());
+                        return copy;
+                    }).collect(Collectors.toList());
+                    collect.add(data);
+                    return collect;
+                }).flatMap(Collection::stream).toList())
+                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
+                // 查询 objectBody
+                .addBranches(ObjectFullData::getType, this.assignerMap()).invoke()
+                .toList();
+        // 组成 tree 结构
+        return ObjectNode.<String, ObjectFullData<AbstractValue>>buildTree().add(fullData);
+    }
+
+    public Function<Collection<String>, Map<String, List<R>>> belongIdRelationsGroupMapping() {
+        return ks -> {
             List<R> relations = this.findRelationsByParentObjectIds(ks);
             List<R> relationsByBelongIds = this.findRelationsByBelongIds(ks);
             Set<R> rs = new HashSet<>(relations);
@@ -474,53 +516,19 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityIdentity, R 
             });
             return Streams.groupBy(rs, R::getBelongId);
         };
-        List<ObjectTemp<O, R>> list = Streams.map(new HashSet<>(objectIds), k -> ObjectTemp.<O, R>builder().objectId(k).build()).toList();
-        List<ObjectTemp<O, R>> tempList = Assign.build(list)
-                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
-                .addAcquire(this::findObjects, O::getObjectId)
-                .throwException()
-                .addAction(ObjectTemp::getObjectId)
-                .addAssemble(ObjectTemp::setObject)
-                .backAcquire().backAssign()
-                .addAcquire(belongIdMap)
-                .addAction(ObjectTemp::getObjectId)
-                .addAssemble(ObjectTemp::setRelations)
-                .backAcquire().backAssign().invoke().getMainData2List();
-        List<ObjectFullData<AbstractValue>> objectFullData = Streams.map(tempList, k -> {
-            if (Objects.isNull(k.getObject())) {
-                return List.<ObjectFullData<AbstractValue>>of();
-            }
-            List<String> ids = Streams.map(k.getRelations(), R::getObjectId).collect(Collectors.toList());
-            ids.add(k.getObjectId());
-            ObjectFullData<AbstractValue> data = new ObjectFullData<>();
-            O object = k.getObject();
-            data.setSpaceId(object.getSpaceId());
-            data.setType(object.getType());
-            data.setObjectId(k.getObjectId());
-            List<ObjectFullData<AbstractValue>> collect = Streams.map(k.getRelations(), r -> {
-                ObjectFullData<AbstractValue> copy = ObjectFullDataMapper.INSTANCE.copy(data);
-                copy.setObjectId(r.getObjectId());
-                copy.setParentObjectId(r.getParentObjectId());
-                copy.setBelongId(r.getBelongId());
-                copy.setRelationType(r.getType());
-                return copy;
-            }).collect(Collectors.toList());
-            collect.add(data);
-            return collect;
-        }).flatMap(Collection::stream).toList();
+    }
+
+    public Map<Integer, Function<Collection<ObjectFullData<AbstractValue>>, Assign<ObjectFullData<AbstractValue>>>> assignerMap() {
         Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
-                ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity>> processorMap = this.objectType2ProcessorMap();
+                ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity, Object>> processorMap = this.objectType2ProcessorMap();
         Map<Integer, Function<Collection<ObjectFullData<AbstractValue>>, Assign<ObjectFullData<AbstractValue>>>> assignerMap = HashMap.newHashMap(processorMap.size());
         processorMap.forEach((k, p) ->
                 assignerMap.put(k, es -> this.assignByType(es, p)));
-        List<ObjectFullData<AbstractValue>> fullData = Assign.build(objectFullData)
-                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
-                .addBranches(ObjectFullData::getType, assignerMap).invoke().getMainData2List();
-        return ObjectNode.<String, ObjectFullData<AbstractValue>>buildTree().add(fullData);
+        return assignerMap;
     }
 
     public Assign<ObjectFullData<AbstractValue>> assignByType(Collection<ObjectFullData<AbstractValue>> es,
-                                                              AbstractObjectProcessor<?, ?, ?, ?, ?> processor) {
+                                                              AbstractObjectProcessor<?, ?, ?, ?, ?, ?> processor) {
         return Assign.build(es)
                 .addAcquire(processor::findObjectBodies, ObjectBodyEntityIdentity::getObjectId)
                 .throwException()
