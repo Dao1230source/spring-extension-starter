@@ -5,16 +5,19 @@ import org.jetbrains.annotations.NotNull;
 import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.data.*;
 import org.source.spring.doc.object.DocUniqueKey;
-import org.source.spring.doc.object.entity.DocEntityIdentity;
+import org.source.spring.doc.object.entity.DocEntityDefiner;
 import org.source.spring.doc.object.enums.DocObjectTypeEnum;
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.StatusEnum;
 import org.source.spring.object.data.ObjectFullData;
-import org.source.spring.object.entity.ObjectBodyEntityIdentity;
-import org.source.spring.object.entity.ObjectEntityIdentity;
-import org.source.spring.object.entity.RelationEntityIdentity;
-import org.source.spring.object.enums.ObjectTypeIdentity;
+import org.source.spring.object.entity.ObjectBodyEntityDefiner;
+import org.source.spring.object.entity.ObjectEntityDefiner;
+import org.source.spring.object.entity.RelationEntityDefiner;
+import org.source.spring.object.enums.ObjectTypeDefiner;
 import org.source.spring.object.processor.AbstractObjectProcessor;
+import org.source.spring.object.processor.ObjectBodyDbProcessorDefiner;
+import org.source.spring.object.processor.ObjectDbProcessorDefiner;
+import org.source.spring.object.processor.RelationDbProcessorDefiner;
 import org.source.spring.object.tree.ObjectNode;
 import org.source.spring.utility.SpringUtil;
 import org.source.utility.assign.Assign;
@@ -30,10 +33,16 @@ import java.util.function.Function;
 
 @Getter
 public abstract class AbstractDocProcessor
-        <O extends ObjectEntityIdentity, R extends RelationEntityIdentity, B extends DocEntityIdentity, K extends DocUniqueKey>
+        <O extends ObjectEntityDefiner, R extends RelationEntityDefiner, B extends DocEntityDefiner, K extends DocUniqueKey>
         extends AbstractObjectProcessor<O, R, B, DocData, DocObjectTypeEnum, K> {
     public static final String PARENT_NAME_DEFAULT = "root";
     private final DocDataContainer docDataContainer = new DocDataContainer();
+
+    protected AbstractDocProcessor(ObjectDbProcessorDefiner<O> objectDbProcessorDefiner,
+                                   ObjectBodyDbProcessorDefiner<B, DocData, K> objectBodyDbProcessorDefiner,
+                                   RelationDbProcessorDefiner<R> relationDbProcessorDefiner) {
+        super(objectDbProcessorDefiner, objectBodyDbProcessorDefiner, relationDbProcessorDefiner);
+    }
 
     @Override
     public Function<DocData, String> getValueIdGetter() {
@@ -181,8 +190,8 @@ public abstract class AbstractDocProcessor
 
     @SuppressWarnings("unchecked")
     @Override
-    public Map<Integer, AbstractObjectProcessor<ObjectEntityIdentity, RelationEntityIdentity,
-            ObjectBodyEntityIdentity, AbstractValue, ObjectTypeIdentity, Object>> objectType2ProcessorMap() {
+    public Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
+            ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> objectType2ProcessorMap() {
         return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getType, e -> SpringUtil.getBean(e.getObjectProcessor()));
     }
 

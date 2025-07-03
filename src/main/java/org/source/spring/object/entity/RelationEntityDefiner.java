@@ -1,10 +1,10 @@
 package org.source.spring.object.entity;
 
-import org.source.spring.object.enums.ObjectTypeIdentity;
+import org.source.spring.object.enums.ObjectTypeDefiner;
 
 import java.time.LocalDateTime;
 
-public interface RelationEntityIdentity {
+public interface RelationEntityDefiner {
 
     Long getId();
 
@@ -19,7 +19,7 @@ public interface RelationEntityIdentity {
 
 
     /**
-     * 类型 {@link ObjectTypeIdentity#getType()}
+     * 类型 {@link ObjectTypeDefiner#getType()}
      */
     Integer getType();
 

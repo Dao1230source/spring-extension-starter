@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import org.source.utility.tree.identity.Element;
 
 @Data
-public abstract class AbstractValue implements Value, Element<String> {
+public abstract class AbstractValue implements Element<String> {
     /**
      * 对象ID，唯一
      */

@@ -1,12 +1,12 @@
 package org.source.spring.object.enums;
 
 import org.source.spring.object.AbstractValue;
-import org.source.spring.object.entity.ObjectBodyEntityIdentity;
-import org.source.spring.object.entity.ObjectEntityIdentity;
-import org.source.spring.object.entity.RelationEntityIdentity;
+import org.source.spring.object.entity.ObjectBodyEntityDefiner;
+import org.source.spring.object.entity.ObjectEntityDefiner;
+import org.source.spring.object.entity.RelationEntityDefiner;
 import org.source.spring.object.processor.AbstractObjectProcessor;
 
-public interface ObjectTypeIdentity {
+public interface ObjectTypeDefiner {
 
     /**
      * 类型
@@ -26,8 +26,8 @@ public interface ObjectTypeIdentity {
     /**
      * object processor
      */
-    <O extends ObjectEntityIdentity, R extends RelationEntityIdentity, B extends ObjectBodyEntityIdentity, V extends AbstractValue,
-            T extends ObjectTypeIdentity, K>
+    <O extends ObjectEntityDefiner, R extends RelationEntityDefiner, B extends ObjectBodyEntityDefiner,
+            V extends AbstractValue, T extends ObjectTypeDefiner, K>
     Class<? extends AbstractObjectProcessor<O, R, B, V, T, K>> getObjectProcessor();
 
 }

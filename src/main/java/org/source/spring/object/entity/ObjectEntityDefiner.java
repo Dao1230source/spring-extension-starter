@@ -1,10 +1,10 @@
 package org.source.spring.object.entity;
 
-import org.source.spring.object.enums.ObjectTypeIdentity;
+import org.source.spring.object.enums.ObjectTypeDefiner;
 
 import java.time.LocalDateTime;
 
-public interface ObjectEntityIdentity {
+public interface ObjectEntityDefiner {
 
     Long getId();
 
@@ -25,7 +25,7 @@ public interface ObjectEntityIdentity {
     void setSpaceId(String spaceId);
 
     /**
-     * 类型 {@link ObjectTypeIdentity#getType()}
+     * 类型 {@link ObjectTypeDefiner#getType()}
      */
     Integer getType();
 

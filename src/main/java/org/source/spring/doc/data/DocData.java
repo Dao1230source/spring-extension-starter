@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 public class DocData extends AbstractValue {
     private String name;
     private String parentName;
-    @JsonIgnore
     private String fullName;
     private String title;
     private String text;

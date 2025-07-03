@@ -2,7 +2,7 @@ package org.source.spring.object.entity;
 
 import java.time.LocalDateTime;
 
-public interface ObjectBodyEntityIdentity {
+public interface ObjectBodyEntityDefiner {
 
 
     Long getId();
