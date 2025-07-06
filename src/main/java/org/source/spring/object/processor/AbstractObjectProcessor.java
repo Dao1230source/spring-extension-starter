@@ -29,6 +29,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -40,6 +41,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     protected static final Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
             ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> ALL_TYPE_PROCESSORS = new ConcurrentHashMap<>();
     protected static final Map<Integer, Function<Collection<ObjectFullData<AbstractValue>>, Assign<ObjectFullData<AbstractValue>>>> ALL_TYPE_ASSIGNERS = new ConcurrentHashMap<>();
+    protected static final Map<Integer, Consumer<Collection<ObjectEntityDefiner>>> ALL_TYPE_OBJECT_CONSUMERS = new ConcurrentHashMap<>();
 
     protected final TransmittableThreadLocal<Tree<String, ObjectFullData<V>, ObjectNode<String, ObjectFullData<V>>>> objectTreeThreadLocal
             = TransmittableThreadLocal.withInitial(ObjectNode::buildTree);
@@ -535,7 +537,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     public Assign<ObjectFullData<AbstractValue>> assignByType(Collection<ObjectFullData<AbstractValue>> es,
                                                               AbstractObjectProcessor<?, ?, ?, ?, ?, ?> processor) {
         return Assign.build(es)
-                .addAcquire(processor.objectBodyDbProcessorDefiner::findObjectBodies, ObjectBodyEntityDefiner::getObjectId)
+                .addAcquire(processor.getObjectBodyDbProcessorDefiner()::findObjectBodies, ObjectBodyEntityDefiner::getObjectId)
                 .throwException()
                 .addAction(ObjectFullData::getObjectId)
                 .addAssemble((e, t) -> {
@@ -551,8 +553,29 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
 
     @Transactional(rollbackFor = Exception.class)
     public void remove(Collection<String> objectIds) {
-        this.objectDbProcessorDefiner.removeObjects(objectIds);
-        this.objectBodyDbProcessorDefiner.removeObjectBodies(objectIds);
-        this.relationDbProcessorDefiner.removeRelations(objectIds);
+        Assign.build(objectIds)
+                .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
+                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
+                // 查询 object
+                .addAcquire(this.objectDbProcessorDefiner::findObjects, O::getObjectId)
+                .throwException()
+                .addAction(ObjectTemp::getObjectId)
+                .addAssemble(ObjectTemp::setObject)
+                .backAcquire().backAssign().invoke()
+                .<ObjectEntityDefiner>cast(ObjectTemp::getObject)
+                .addOperates(ObjectEntityDefiner::getType, this.allTypeObjectConsumers());
+    }
+
+    public Map<Integer, Consumer<Collection<ObjectEntityDefiner>>> allTypeObjectConsumers() {
+        if (ALL_TYPE_OBJECT_CONSUMERS.isEmpty()) {
+            this.allTypeProcessors().forEach((k, p) ->
+                    ALL_TYPE_OBJECT_CONSUMERS.put(k, es -> {
+                        Set<String> objectIds = Streams.map(es, ObjectEntityDefiner::getObjectId).collect(Collectors.toSet());
+                        p.getObjectDbProcessorDefiner().removeObjects(objectIds);
+                        p.getRelationDbProcessorDefiner().removeRelations(objectIds);
+                        p.getObjectBodyDbProcessorDefiner().removeObjectBodies(objectIds);
+                    }));
+        }
+        return ALL_TYPE_OBJECT_CONSUMERS;
     }
 }
