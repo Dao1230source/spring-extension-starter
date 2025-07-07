@@ -1,21 +1,22 @@
-package org.source.spring.object.processor;
+package org.source.spring.object;
 
 import com.alibaba.ttl.TransmittableThreadLocal;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.source.spring.exception.BizExceptionEnum;
-import org.source.spring.object.AbstractValue;
-import org.source.spring.object.StatusEnum;
 import org.source.spring.object.data.ObjectFullData;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
 import org.source.spring.object.enums.ObjectTypeDefiner;
+import org.source.spring.object.handler.ObjectBodyDbHandlerDefiner;
+import org.source.spring.object.handler.ObjectDbHandlerDefiner;
+import org.source.spring.object.handler.ObjectTypeHandlerDefiner;
+import org.source.spring.object.handler.RelationDbHandlerDefiner;
 import org.source.spring.object.mapper.ObjectFullDataMapper;
 import org.source.spring.object.tree.ObjectNode;
 import org.source.spring.trace.TraceContext;
 import org.source.spring.uid.Ids;
-import org.source.spring.utility.SpringUtil;
 import org.source.utility.assign.Assign;
 import org.source.utility.assign.InterruptStrategyEnum;
 import org.source.utility.tree.Tree;
@@ -28,8 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -38,24 +37,44 @@ import java.util.stream.Collectors;
 @Slf4j
 public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R extends RelationEntityDefiner,
         B extends ObjectBodyEntityDefiner, V extends AbstractValue, T extends ObjectTypeDefiner, K> {
-    protected static final Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
-            ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> ALL_TYPE_PROCESSORS = new ConcurrentHashMap<>();
-    protected static final Map<Integer, Function<Collection<ObjectFullData<AbstractValue>>, Assign<ObjectFullData<AbstractValue>>>> ALL_TYPE_ASSIGNERS = new ConcurrentHashMap<>();
-    protected static final Map<Integer, Consumer<Collection<ObjectEntityDefiner>>> ALL_TYPE_OBJECT_CONSUMERS = new ConcurrentHashMap<>();
 
     protected final TransmittableThreadLocal<Tree<String, ObjectFullData<V>, ObjectNode<String, ObjectFullData<V>>>> objectTreeThreadLocal
             = TransmittableThreadLocal.withInitial(ObjectNode::buildTree);
 
-    private final ObjectDbProcessorDefiner<O> objectDbProcessorDefiner;
-    private final ObjectBodyDbProcessorDefiner<B, V, K> objectBodyDbProcessorDefiner;
-    private final RelationDbProcessorDefiner<R> relationDbProcessorDefiner;
+    private final ObjectDbHandlerDefiner<O> objectDbHandler;
+    private final ObjectBodyDbHandlerDefiner<B, V, K> objectBodyDbHandler;
+    private final RelationDbHandlerDefiner<R> relationDbHandler;
+    private final ObjectTypeHandlerDefiner<B, V, T> objectTypeHandler;
 
-    public abstract Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
-            ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> objectType2ProcessorMap();
+    @Transactional(rollbackFor = Exception.class)
+    public void save(Collection<V> vs) {
+        this.merge(vs);
+        this.save();
+    }
 
-    public abstract Map<Integer, T> type2ObjectTypeMap();
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Collection<String> objectIds) {
+        this.objectDbHandler.deleteObjects(objectIds);
+    }
 
-    public abstract Map<Class<? extends V>, T> class2ObjectTypeMap();
+    @Transactional(rollbackFor = Exception.class)
+    public void remove(Collection<String> objectIds) {
+        Assign.build(objectIds)
+                .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
+                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
+                // 查询 object
+                .addAcquire(this.objectDbHandler::findObjects, O::getObjectId)
+                .throwException()
+                .addAction(ObjectTemp::getObjectId)
+                .addAssemble(ObjectTemp::setObject)
+                .backAcquire().backAssign().invoke()
+                .<ObjectEntityDefiner>cast(ObjectTemp::getObject)
+                .addOperates(ObjectEntityDefiner::getType, this.objectTypeHandler.allTypeObjectConsumers());
+    }
+
+    public ObjectNode<String, ObjectFullData<AbstractValue>> findByObjectIds(Collection<String> objectIds) {
+        return this.find(objectIds);
+    }
 
     public Tree<String, ObjectFullData<V>, ObjectNode<String, ObjectFullData<V>>> getObjectTree() {
         return objectTreeThreadLocal.get();
@@ -75,42 +94,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
 
     public Function<ObjectFullData<V>, String> getFullDataParentIdGetter() {
         return ObjectFullData::getParentObjectId;
-    }
-
-    /**
-     * obtain type for object value
-     */
-    public ObjectTypeDefiner getObjectType(V v) {
-        ObjectTypeDefiner type = this.class2ObjectTypeMap().get(v.getClass());
-        if (Objects.isNull(type)) {
-            throw BizExceptionEnum.OBJECT_VALUE_CLASS_NOT_DEFINED.except("class:{}", v.getClass());
-        }
-        return type;
-    }
-
-    /**
-     * convert entity to value
-     */
-    public ObjectTypeDefiner getObjectType(Integer type) {
-        ObjectTypeDefiner objectType = this.type2ObjectTypeMap().get(type);
-        if (Objects.isNull(objectType)) {
-            throw BizExceptionEnum.OBJECT_TYPE_NOT_DEFINED.except("type:{}", type);
-        }
-        return objectType;
-    }
-
-    public V convert2Value(ObjectTypeDefiner objectType, ObjectBodyEntityDefiner objectBodyEntity) {
-        return Jsons.obj(objectBodyEntity.getValue(), objectType.getValueClass());
-    }
-
-    public ObjectFullData<V> convert2FullData(ObjectTypeDefiner objectType, B entity) {
-        ObjectFullData<V> fullData = new ObjectFullData<>();
-        fullData.setType(objectType.getType());
-        fullData.setName(entity.getName());
-        fullData.setObjectId(entity.getObjectId());
-        V value = this.convert2Value(objectType, entity);
-        fullData.setValue(value);
-        return fullData;
     }
 
     /**
@@ -288,32 +271,32 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .cast(v -> FindEntityAndToFullDataTemp.<O, B, R, V>builder().value(v).build())
                 .name("get objectBody and parent objectBody")
                 // 查询 objectBody
-                .addAcquire(this.objectBodyDbProcessorDefiner::findObjectBodiesByKeys, this.objectBodyDbProcessorDefiner::objectBodyToKey)
+                .addAcquire(this.objectBodyDbHandler::findObjectBodiesByKeys, this.objectBodyDbHandler::objectBodyToKey)
                 .throwException()
                 .afterProcessor((e, map) ->
                         this.handlerAfterObjectBodyConvertToFullData(e.getFullData(), map))
-                .addAction(k -> this.objectBodyDbProcessorDefiner.valueToKey(k.getValue()))
+                .addAction(k -> this.objectBodyDbHandler.valueToKey(k.getValue()))
                 // 给 objectBodyEntity、ObjectFullData<V > 赋值
                 .addAssemble((e, b) -> {
                     e.setObjectBodyEntity(b);
                     String objectBodyId = this.getObjectBodyIdGetter().apply(b);
                     V v = valueTypeMap.get(objectBodyId);
                     BizExceptionEnum.OBJECT_CANNOT_FIND_VALUE.nonNull(v, objectBodyId);
-                    ObjectTypeDefiner type = this.getObjectType(v);
-                    e.setFullData(this.convert2FullData(type, b));
+                    ObjectTypeDefiner type = this.objectTypeHandler.getObjectType(v);
+                    e.setFullData(this.objectTypeHandler.convert2FullData(type, b));
                 })
                 .backAcquire()
-                .addAction(k -> this.objectBodyDbProcessorDefiner.valueToParentKey(k.getValue()))
+                .addAction(k -> this.objectBodyDbHandler.valueToParentKey(k.getValue()))
                 .addAssemble(FindEntityAndToFullDataTemp::setParentObjectBodyEntity)
                 .backAcquire().backAssign()
                 .addBranch(e -> Objects.nonNull(e.getParentObjectBodyEntity()))
                 .name("get parent fullData")
-                .addAcquire(this.objectDbProcessorDefiner::findObjects, O::getObjectId)
+                .addAcquire(this.objectDbHandler::findObjects, O::getObjectId)
                 .addAction(e -> e.getParentObjectBodyEntity().getObjectId())
                 .addAssemble((e, o) -> {
                     e.setParentObjectEntity(o);
-                    ObjectTypeDefiner type = this.getObjectType(o.getType());
-                    e.setParentFullData(this.convert2FullData(type, e.getParentObjectBodyEntity()));
+                    ObjectTypeDefiner type = this.objectTypeHandler.getObjectType(o.getType());
+                    e.setParentFullData(this.objectTypeHandler.convert2FullData(type, e.getParentObjectBodyEntity()));
                 })
                 .backAcquire().backAssign()
                 .backSuper()
@@ -321,7 +304,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .addBranch(e -> Objects.nonNull(e.getObjectBodyEntity()))
                 .name("get relations")
                 // 根据 objectId 查询 relations ，按objectId 分组，因为一个对象可能有多个父级
-                .<String, List<R>>addAcquire(ks -> Streams.of(this.relationDbProcessorDefiner.findRelationsByObjectIds(ks)).collect(Collectors.groupingBy(R::getObjectId)))
+                .<String, List<R>>addAcquire(ks -> Streams.of(this.relationDbHandler.findRelationsByObjectIds(ks)).collect(Collectors.groupingBy(R::getObjectId)))
                 .addAction(e -> e.getObjectBodyEntity().getObjectId())
                 .addAssemble(FindEntityAndToFullDataTemp::setRelations)
                 .backAcquire().backAssign()
@@ -374,7 +357,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     public ObjectFullData<V> convert2Object(V objectValue) {
         ObjectFullData<V> objectFullData = new ObjectFullData<>();
         objectFullData.setObjectId(objectValue.getObjectId());
-        objectFullData.setType(getObjectType(objectValue).getType());
+        objectFullData.setType(this.objectTypeHandler.getObjectType(objectValue).getType());
         objectFullData.setValue(objectValue);
         return objectFullData;
     }
@@ -385,13 +368,13 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     @Transactional(rollbackFor = Exception.class)
     public void saveObjectData(List<O> objectList, List<B> objectBodyList, List<R> relationList) {
         if (!CollectionUtils.isEmpty(objectList)) {
-            this.objectDbProcessorDefiner.saveObjects(objectList);
+            this.objectDbHandler.saveObjects(objectList);
         }
         if (!CollectionUtils.isEmpty(objectBodyList)) {
-            this.objectBodyDbProcessorDefiner.saveObjectBodies(objectBodyList);
+            this.objectBodyDbHandler.saveObjectBodies(objectBodyList);
         }
         if (!CollectionUtils.isEmpty(relationList)) {
-            this.relationDbProcessorDefiner.saveRelations(relationList);
+            this.relationDbHandler.saveRelations(relationList);
         }
     }
 
@@ -401,7 +384,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     }
 
     public O data2ObjectEntity(ObjectFullData<V> data) {
-        O entity = this.objectDbProcessorDefiner.newObjectEntity();
+        O entity = this.objectDbHandler.newObjectEntity();
         BizExceptionEnum.OBJECT_NEW_OBJECT_ENTITY_NONNULL.nonNull(entity, data.getValue().getObjectId());
         entity.setObjectId(data.getObjectId());
         entity.setType(data.getType());
@@ -417,7 +400,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     }
 
     public B data2ObjectBodyEntity(ObjectFullData<V> data) {
-        B entity = this.objectBodyDbProcessorDefiner.newObjectBodyEntity();
+        B entity = this.objectBodyDbHandler.newObjectBodyEntity();
         BizExceptionEnum.OBJECT_NEW_OBJECT_BODY_ENTITY_NONNULL.nonNull(entity, data.getValue().getObjectId());
         entity.setObjectId(data.getObjectId());
         entity.setName(data.getName());
@@ -435,7 +418,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     }
 
     public R data2RelationEntity(ObjectFullData<V> data) {
-        R entity = this.relationDbProcessorDefiner.newRelationEntity();
+        R entity = this.relationDbHandler.newRelationEntity();
         BizExceptionEnum.OBJECT_NEW_RELATION_ENTITY_NONNULL.nonNull(entity, data.getValue().getObjectId());
         entity.setObjectId(data.getObjectId());
         entity.setParentObjectId(data.getParentObjectId());
@@ -455,13 +438,13 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         private List<R> relations;
     }
 
-    public ObjectNode<String, ObjectFullData<AbstractValue>> find(Collection<String> objectIds) {
+    protected ObjectNode<String, ObjectFullData<AbstractValue>> find(Collection<String> objectIds) {
         Collection<ObjectFullData<AbstractValue>> fullData = Assign.build(objectIds)
                 // objectId 转为 ObjectTemp
                 .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
                 .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
                 // 查询 object
-                .addAcquire(this.objectDbProcessorDefiner::findObjects, O::getObjectId)
+                .addAcquire(this.objectDbHandler::findObjects, O::getObjectId)
                 .throwException()
                 .addAction(ObjectTemp::getObjectId)
                 .addAssemble(ObjectTemp::setObject)
@@ -495,16 +478,16 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 }).flatMap(Collection::stream).toList())
                 .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
                 // 查询 objectBody
-                .addBranches(ObjectFullData::getType, this.allTypeAssigners()).invoke()
+                .addBranches(ObjectFullData::getType, this.objectTypeHandler.allTypeAssigners()).invoke()
                 .toList();
         // 组成 tree 结构
         return ObjectNode.<String, ObjectFullData<AbstractValue>>buildTree().add(fullData);
     }
 
-    public Function<Collection<String>, Map<String, List<R>>> belongIdRelationsGroupMapping() {
+    protected Function<Collection<String>, Map<String, List<R>>> belongIdRelationsGroupMapping() {
         return ks -> {
-            List<R> relations = this.relationDbProcessorDefiner.findRelationsByParentObjectIds(ks);
-            List<R> relationsByBelongIds = this.relationDbProcessorDefiner.findRelationsByBelongIds(ks);
+            List<R> relations = this.relationDbHandler.findRelationsByParentObjectIds(ks);
+            List<R> relationsByBelongIds = this.relationDbHandler.findRelationsByBelongIds(ks);
             Set<R> rs = new HashSet<>(relations);
             rs.addAll(relationsByBelongIds);
             rs.forEach(r -> {
@@ -516,66 +499,4 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         };
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
-            ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> allTypeProcessors() {
-        if (ALL_TYPE_PROCESSORS.isEmpty()) {
-            Map<String, AbstractObjectProcessor> beansOfType = SpringUtil.getBeansOfType(AbstractObjectProcessor.class);
-            beansOfType.forEach((k, v) -> ALL_TYPE_PROCESSORS.putAll(v.objectType2ProcessorMap()));
-        }
-        return ALL_TYPE_PROCESSORS;
-    }
-
-    public Map<Integer, Function<Collection<ObjectFullData<AbstractValue>>, Assign<ObjectFullData<AbstractValue>>>> allTypeAssigners() {
-        if (ALL_TYPE_ASSIGNERS.isEmpty()) {
-            this.allTypeProcessors().forEach((k, p) ->
-                    ALL_TYPE_ASSIGNERS.put(k, es -> assignByType(es, p)));
-        }
-        return ALL_TYPE_ASSIGNERS;
-    }
-
-    public Assign<ObjectFullData<AbstractValue>> assignByType(Collection<ObjectFullData<AbstractValue>> es,
-                                                              AbstractObjectProcessor<?, ?, ?, ?, ?, ?> processor) {
-        return Assign.build(es)
-                .addAcquire(processor.getObjectBodyDbProcessorDefiner()::findObjectBodies, ObjectBodyEntityDefiner::getObjectId)
-                .throwException()
-                .addAction(ObjectFullData::getObjectId)
-                .addAssemble((e, t) -> {
-                    e.setName(t.getName());
-                    e.setValue(processor.convert2Value(processor.getObjectType(e.getType()), t));
-                }).backAcquire().backAssign();
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void delete(Collection<String> objectIds) {
-        this.objectDbProcessorDefiner.deleteObjects(objectIds);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void remove(Collection<String> objectIds) {
-        Assign.build(objectIds)
-                .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
-                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
-                // 查询 object
-                .addAcquire(this.objectDbProcessorDefiner::findObjects, O::getObjectId)
-                .throwException()
-                .addAction(ObjectTemp::getObjectId)
-                .addAssemble(ObjectTemp::setObject)
-                .backAcquire().backAssign().invoke()
-                .<ObjectEntityDefiner>cast(ObjectTemp::getObject)
-                .addOperates(ObjectEntityDefiner::getType, this.allTypeObjectConsumers());
-    }
-
-    public Map<Integer, Consumer<Collection<ObjectEntityDefiner>>> allTypeObjectConsumers() {
-        if (ALL_TYPE_OBJECT_CONSUMERS.isEmpty()) {
-            this.allTypeProcessors().forEach((k, p) ->
-                    ALL_TYPE_OBJECT_CONSUMERS.put(k, es -> {
-                        Set<String> objectIds = Streams.map(es, ObjectEntityDefiner::getObjectId).collect(Collectors.toSet());
-                        p.getObjectDbProcessorDefiner().removeObjects(objectIds);
-                        p.getRelationDbProcessorDefiner().removeRelations(objectIds);
-                        p.getObjectBodyDbProcessorDefiner().removeObjectBodies(objectIds);
-                    }));
-        }
-        return ALL_TYPE_OBJECT_CONSUMERS;
-    }
 }

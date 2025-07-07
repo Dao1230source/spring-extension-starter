@@ -1,4 +1,4 @@
-package org.source.spring.object.processor;
+package org.source.spring.object.handler;
 
 import jakarta.validation.constraints.NotEmpty;
 import org.source.spring.object.entity.RelationEntityDefiner;
@@ -6,7 +6,7 @@ import org.source.spring.object.entity.RelationEntityDefiner;
 import java.util.Collection;
 import java.util.List;
 
-public interface RelationDbProcessorDefiner<R extends RelationEntityDefiner> {
+public interface RelationDbHandlerDefiner<R extends RelationEntityDefiner> {
     /**
      * relation
      */

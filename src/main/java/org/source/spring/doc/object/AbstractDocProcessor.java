@@ -1,30 +1,25 @@
-package org.source.spring.doc.object.processor;
+package org.source.spring.doc.object;
 
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.data.*;
-import org.source.spring.doc.object.DocUniqueKey;
 import org.source.spring.doc.object.entity.DocEntityDefiner;
 import org.source.spring.doc.object.enums.DocObjectTypeEnum;
-import org.source.spring.object.AbstractValue;
+import org.source.spring.object.AbstractObjectProcessor;
 import org.source.spring.object.StatusEnum;
 import org.source.spring.object.data.ObjectFullData;
-import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
-import org.source.spring.object.enums.ObjectTypeDefiner;
-import org.source.spring.object.processor.AbstractObjectProcessor;
-import org.source.spring.object.processor.ObjectBodyDbProcessorDefiner;
-import org.source.spring.object.processor.ObjectDbProcessorDefiner;
-import org.source.spring.object.processor.RelationDbProcessorDefiner;
+import org.source.spring.object.handler.ObjectBodyDbHandlerDefiner;
+import org.source.spring.object.handler.ObjectDbHandlerDefiner;
+import org.source.spring.object.handler.ObjectTypeHandlerDefiner;
+import org.source.spring.object.handler.RelationDbHandlerDefiner;
 import org.source.spring.object.tree.ObjectNode;
-import org.source.spring.utility.SpringUtil;
 import org.source.utility.assign.Assign;
 import org.source.utility.tree.Tree;
 import org.source.utility.tree.identity.AbstractNode;
 import org.source.utility.tree.identity.Node;
-import org.source.utility.utils.Enums;
 import org.source.utility.utils.Streams;
 import org.springframework.util.CollectionUtils;
 
@@ -38,10 +33,11 @@ public abstract class AbstractDocProcessor
     public static final String PARENT_NAME_DEFAULT = "root";
     private final DocDataContainer docDataContainer = new DocDataContainer();
 
-    protected AbstractDocProcessor(ObjectDbProcessorDefiner<O> objectDbProcessorDefiner,
-                                   ObjectBodyDbProcessorDefiner<B, DocData, K> objectBodyDbProcessorDefiner,
-                                   RelationDbProcessorDefiner<R> relationDbProcessorDefiner) {
-        super(objectDbProcessorDefiner, objectBodyDbProcessorDefiner, relationDbProcessorDefiner);
+    protected AbstractDocProcessor(ObjectDbHandlerDefiner<O> objectDbHandlerDefiner,
+                                   ObjectBodyDbHandlerDefiner<B, DocData, K> objectBodyDbHandlerDefiner,
+                                   RelationDbHandlerDefiner<R> relationDbHandlerDefiner,
+                                   ObjectTypeHandlerDefiner<B, DocData, DocObjectTypeEnum> objectTypeHandler) {
+        super(objectDbHandlerDefiner, objectBodyDbHandlerDefiner, relationDbHandlerDefiner, objectTypeHandler);
     }
 
     @Override
@@ -186,23 +182,6 @@ public abstract class AbstractDocProcessor
         B b = super.data2ObjectBodyEntity(data);
         b.setParentName(Objects.requireNonNullElse(data.getValue().getParentName(), PARENT_NAME_DEFAULT));
         return b;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
-            ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> objectType2ProcessorMap() {
-        return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getType, e -> SpringUtil.getBean(e.getObjectProcessor()));
-    }
-
-    @Override
-    public Map<Integer, DocObjectTypeEnum> type2ObjectTypeMap() {
-        return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getType);
-    }
-
-    @Override
-    public Map<Class<? extends DocData>, DocObjectTypeEnum> class2ObjectTypeMap() {
-        return Enums.toMap(DocObjectTypeEnum.class, DocObjectTypeEnum::getValueClass);
     }
 
     @Override

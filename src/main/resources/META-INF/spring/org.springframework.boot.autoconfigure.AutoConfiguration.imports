@@ -5,6 +5,8 @@ org.source.spring.cache.ScanProcessorConfig
 org.source.spring.cache.ConfigureCacheConfig
 org.source.spring.cache.ConfigureInterceptorConfig
 org.source.spring.cache.ConfigureTtlProperties
+# doc
+org.source.spring.doc.object.handler.DocObjectTypeHandler
 # exception
 org.source.spring.exception.ExtendPackagesConfig
 # i18n

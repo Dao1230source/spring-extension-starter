@@ -1,4 +1,4 @@
-package org.source.spring.object.processor;
+package org.source.spring.object.handler;
 
 import jakarta.validation.constraints.NotEmpty;
 import org.source.spring.object.AbstractValue;
@@ -7,7 +7,7 @@ import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import java.util.Collection;
 import java.util.List;
 
-public interface ObjectBodyDbProcessorDefiner<B extends ObjectBodyEntityDefiner, V extends AbstractValue, K> {
+public interface ObjectBodyDbHandlerDefiner<B extends ObjectBodyEntityDefiner, V extends AbstractValue, K> {
 
     /**
      * object body

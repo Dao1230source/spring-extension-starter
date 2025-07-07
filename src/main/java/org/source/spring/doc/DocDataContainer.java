@@ -3,7 +3,7 @@ package org.source.spring.doc;
 import lombok.Data;
 import org.source.spring.doc.data.AnnotationDocData;
 import org.source.spring.doc.data.DocData;
-import org.source.spring.doc.object.processor.AbstractDocProcessor;
+import org.source.spring.doc.object.AbstractDocProcessor;
 import org.source.spring.object.data.ObjectFullData;
 import org.source.spring.utility.SpringUtil;
 import org.source.utility.tree.identity.AbstractNode;

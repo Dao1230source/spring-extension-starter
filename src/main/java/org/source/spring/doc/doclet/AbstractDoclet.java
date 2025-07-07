@@ -11,7 +11,7 @@ import org.source.spring.doc.OptionEnum;
 import org.source.spring.doc.data.ClassDocData;
 import org.source.spring.doc.data.DocData;
 import org.source.spring.doc.data.VariableDocData;
-import org.source.spring.doc.object.processor.AbstractDocProcessor;
+import org.source.spring.doc.object.AbstractDocProcessor;
 import org.source.spring.utility.SpringUtil;
 import org.source.utility.utils.Streams;
 import org.springframework.util.CollectionUtils;
@@ -36,7 +36,7 @@ public abstract class AbstractDoclet implements Doclet {
             // 应用的doc对象
             DocData appDocData = docDataContainer.obtainAppDocData(docProcessor, this.myOptions);
             this.processDoc(env, docDataContainer, appDocData);
-            docProcessor.transfer2tree(docDataContainer.getDocDataList());
+            docProcessor.merge(docDataContainer.getDocDataList());
             // 计算class的父类和接口
             this.processExtraSuper(this.obtainExtraSuperClsNames(docDataContainer.getDocDataList()));
             // 计算变量是非基础类型即手动创建的类

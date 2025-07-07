@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.source.spring.doc.object.enums.DocRelationTypeEnum;
-import org.source.spring.doc.object.processor.AbstractDocProcessor;
+import org.source.spring.doc.object.AbstractDocProcessor;
 import org.source.spring.object.AbstractValue;
 import org.source.utility.constant.Constants;
 

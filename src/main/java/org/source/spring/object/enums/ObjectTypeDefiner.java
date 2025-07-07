@@ -4,7 +4,7 @@ import org.source.spring.object.AbstractValue;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
-import org.source.spring.object.processor.AbstractObjectProcessor;
+import org.source.spring.object.AbstractObjectProcessor;
 
 public interface ObjectTypeDefiner {
 
