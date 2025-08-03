@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.source.spring.object.data.ObjectFullData;
-import org.source.spring.object.tree.ObjectNode;
+import org.source.spring.object.ObjectElement;
+import org.source.spring.object.ObjectNode;
 import org.source.utility.constant.Constants;
 
 @NoArgsConstructor
@@ -15,10 +15,10 @@ public class RequestDocData extends DocData {
     private String methodId;
     @JsonIgnore
     @EqualsAndHashCode.Exclude
-    private ObjectNode<String, ObjectFullData<DocData>> methodNode;
+    private ObjectNode<String, ObjectElement<DocData>> methodNode;
 
     public RequestDocData(MethodDocData methodDocData, String parentId) {
-        this.setMethodId(methodDocData.getId());
+        this.setMethodId(methodDocData.getFullName());
         this.setName(methodDocData.getName() + Constants.COLON + "request");
         this.setTitle("接口请求");
         this.processParentId(parentId);

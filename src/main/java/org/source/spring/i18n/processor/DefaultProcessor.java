@@ -8,14 +8,14 @@ import org.source.spring.i18n.facade.param.Dict3Param;
 import org.source.spring.i18n.facade.param.Dict4Param;
 import org.source.utility.tree.DefaultNode;
 import org.source.utility.tree.Tree;
-import org.source.utility.tree.identity.StringElement;
+import org.source.utility.tree.define.Element;
 import org.springframework.lang.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class DefaultProcessor implements Processor<Dict> {
-    private static final Tree<String, DictElement, DefaultNode<String, DictElement>> DEFAULT_TREE = DefaultNode.buildTree();
+    private static final Tree<String, DictElement, DefaultNode<String, DictElement>> DEFAULT_TREE = Tree.of(new DefaultNode<>());
 
     @Override
     public Optional<Dict> findByKey(Dict3Param param) {
@@ -67,7 +67,7 @@ public class DefaultProcessor implements Processor<Dict> {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    static class DictElement extends StringElement {
+    static class DictElement implements Element<String> {
         private String id;
         private @Nullable String parentId;
         private @Nullable Dict value;

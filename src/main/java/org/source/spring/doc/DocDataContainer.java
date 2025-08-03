@@ -4,9 +4,9 @@ import lombok.Data;
 import org.source.spring.doc.data.AnnotationDocData;
 import org.source.spring.doc.data.DocData;
 import org.source.spring.doc.object.AbstractDocProcessor;
-import org.source.spring.object.data.ObjectFullData;
+import org.source.spring.object.ObjectElement;
 import org.source.spring.utility.SpringUtil;
-import org.source.utility.tree.identity.AbstractNode;
+import org.source.utility.tree.define.AbstractNode;
 
 import javax.lang.model.element.Element;
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ public class DocDataContainer {
     public DocData obtainAppDocData(AbstractDocProcessor<?, ?, ?, ?> docProcessor, MyOptions myOptions) {
         String appName = Objects.requireNonNullElse(SpringUtil.getEnvironment().getProperty("spring.application.name"), "springboot");
         return docProcessor.getObjectTree().get(n -> n.getId().equals(appName))
-                .map(AbstractNode::getElement).map(ObjectFullData::getValue)
+                .map(AbstractNode::getElement).map(ObjectElement::getValue)
                 .orElseGet(() -> {
                     DocData docData = new DocData(appName, myOptions.getAppTitle(), myOptions.getAppText());
                     docDataList.add(docData);
@@ -40,7 +40,7 @@ public class DocDataContainer {
 
     public <E extends Element> void addWithAnnotation(DocData docData, E element) {
         this.docDataList.add(docData);
-        this.docDataList.addAll(AnnotationDocData.obtainAnnotationDocDataList(element, docData.getId()));
+        this.docDataList.addAll(AnnotationDocData.obtainAnnotationDocDataList(element, docData.getFullName()));
     }
 
     public void forEach(Consumer<DocData> consumer) {

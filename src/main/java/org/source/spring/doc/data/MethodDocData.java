@@ -4,7 +4,6 @@ import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.source.spring.object.tree.ObjectNode;
 import org.source.utility.constant.Constants;
 import org.springframework.util.CollectionUtils;
 
@@ -42,9 +41,4 @@ public class MethodDocData extends DocData implements Path {
         }
         return sb.toString();
     }
-
-    public static boolean instanceOf(ObjectNode<String, DocData> docDataNode) {
-        return docDataNode.getElement() instanceof MethodDocData;
-    }
-
 }

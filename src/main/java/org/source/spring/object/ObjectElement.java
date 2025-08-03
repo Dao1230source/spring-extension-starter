@@ -1,14 +1,12 @@
-package org.source.spring.object.data;
+package org.source.spring.object;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
-import org.source.spring.object.AbstractValue;
-import org.source.spring.object.StatusEnum;
-import org.source.utility.tree.identity.StringElement;
+import org.jetbrains.annotations.NotNull;
+import org.source.utility.tree.define.EnhanceElement;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 
 @EqualsAndHashCode(callSuper = false)
@@ -16,7 +14,7 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ObjectFullData<V extends AbstractValue> extends StringElement {
+public class ObjectElement<V extends AbstractValue> extends EnhanceElement<String> {
 
     /**
      * 对象ID，唯一
@@ -29,6 +27,9 @@ public class ObjectFullData<V extends AbstractValue> extends StringElement {
      */
     @EqualsAndHashCode.Exclude
     private String parentObjectId;
+
+    @EqualsAndHashCode.Exclude
+    private String sourceObjectId;
 
     /**
      * 名称
@@ -79,19 +80,23 @@ public class ObjectFullData<V extends AbstractValue> extends StringElement {
     @JsonIgnore
     @Override
     public @NonNull String getId() {
-        if (Objects.isNull(objectId)) {
-            return value.getId();
-        }
         return objectId;
     }
 
     @JsonIgnore
     @Override
     public String getParentId() {
-        if (Objects.isNull(parentObjectId)) {
-            return value.getParentId();
-        }
         return parentObjectId;
     }
 
+
+    @Override
+    public String getSourceId() {
+        return getSourceObjectId();
+    }
+
+    @Override
+    public int compareTo(@NotNull EnhanceElement<String> o) {
+        return EnhanceElement.comparator(this, (ObjectElement<V>) o, ObjectElement::getId);
+    }
 }

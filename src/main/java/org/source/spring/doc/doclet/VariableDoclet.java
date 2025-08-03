@@ -21,13 +21,13 @@ public class VariableDoclet extends AbstractDoclet {
     @Override
     protected void processDoc(DocletEnvironment env, DocDataContainer docDataContainer, DocData appDocData) {
         this.obtainScannedResult(env).forEach(type -> {
-            VariableClassDocData classDocData = new VariableClassDocData(env, type, appDocData.getId());
+            VariableClassDocData classDocData = new VariableClassDocData(env, type, appDocData.getFullName());
             docDataContainer.add(classDocData);
             List<VariableElement> variableElementList = type.getEnclosedElements().stream()
                     .filter(t -> ElementKind.FIELD.equals(t.getKind())).map(VariableElement.class::cast)
                     .toList();
             variableElementList.forEach(f -> {
-                FieldDocData fieldDocData = new FieldDocData(env, f, classDocData.getId());
+                FieldDocData fieldDocData = new FieldDocData(env, f, classDocData.getFullName());
                 docDataContainer.addWithAnnotation(fieldDocData, f);
             });
         });

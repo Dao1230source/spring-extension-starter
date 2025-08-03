@@ -7,19 +7,20 @@ import org.source.spring.doc.data.*;
 import org.source.spring.doc.object.entity.DocEntityDefiner;
 import org.source.spring.doc.object.enums.DocObjectTypeEnum;
 import org.source.spring.object.AbstractObjectProcessor;
+import org.source.spring.object.ObjectElement;
+import org.source.spring.object.ObjectNode;
 import org.source.spring.object.StatusEnum;
-import org.source.spring.object.data.ObjectFullData;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
 import org.source.spring.object.handler.ObjectBodyDbHandlerDefiner;
 import org.source.spring.object.handler.ObjectDbHandlerDefiner;
 import org.source.spring.object.handler.ObjectTypeHandlerDefiner;
 import org.source.spring.object.handler.RelationDbHandlerDefiner;
-import org.source.spring.object.tree.ObjectNode;
 import org.source.utility.assign.Assign;
+import org.source.utility.tree.EnhanceTree;
 import org.source.utility.tree.Tree;
-import org.source.utility.tree.identity.AbstractNode;
-import org.source.utility.tree.identity.Node;
+import org.source.utility.tree.define.AbstractNode;
+import org.source.utility.tree.define.Node;
 import org.source.utility.utils.Streams;
 import org.springframework.util.CollectionUtils;
 
@@ -51,40 +52,40 @@ public abstract class AbstractDocProcessor
     }
 
     @Override
-    public Function<ObjectFullData<DocData>, String> getFullDataIdGetter() {
+    public Function<ObjectElement<DocData>, String> getFullDataIdGetter() {
         return o -> o.getValue().getFullName();
     }
 
     @Override
-    public Function<ObjectFullData<DocData>, String> getFullDataParentIdGetter() {
+    public Function<ObjectElement<DocData>, String> getFullDataParentIdGetter() {
         return o -> o.getValue().getParentName();
     }
 
 
     @Override
-    public Tree<String, ObjectFullData<DocData>, ObjectNode<String, ObjectFullData<DocData>>> handleDbDataTree() {
+    public EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> handleDbDataTree() {
         return docCustomTree(super.handleDbDataTree());
     }
 
     @Override
-    public Tree<String, ObjectFullData<DocData>, ObjectNode<String, ObjectFullData<DocData>>> handleValueDataTree() {
+    public EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> handleValueDataTree() {
         return docCustomTree(super.handleValueDataTree());
     }
 
     @NotNull
-    private Tree<String, ObjectFullData<DocData>, ObjectNode<String, ObjectFullData<DocData>>> docCustomTree(
-            Tree<String, ObjectFullData<DocData>, ObjectNode<String, ObjectFullData<DocData>>> tree) {
+    private EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> docCustomTree(
+            EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> tree) {
         tree.setIdGetter(n -> Node.getProperty(n, this.getFullDataIdGetter()));
         tree.setParentIdGetter(n -> Node.getProperty(n, this.getFullDataParentIdGetter()));
-        tree.setFinallyHandler((n, parent) ->
-                Node.setProperty(n, ObjectFullData::setParentObjectId, Node.getProperty(parent, ObjectFullData::getObjectId)));
+        tree.setAfterAddHandler((n, parent) ->
+                Node.setProperty(n, ObjectElement::setParentObjectId, Node.getProperty(parent, ObjectElement::getObjectId)));
         return tree;
     }
 
     @Override
-    public boolean nodeEquals(ObjectNode<String, ObjectFullData<DocData>> n, ObjectNode<String, ObjectFullData<DocData>> old) {
-        ObjectFullData<DocData> eleNew = n.getElement();
-        ObjectFullData<DocData> eleOld = old.getElement();
+    public boolean nodeEquals(ObjectNode<String, ObjectElement<DocData>> n, ObjectNode<String, ObjectElement<DocData>> old) {
+        ObjectElement<DocData> eleNew = n.getElement();
+        ObjectElement<DocData> eleOld = old.getElement();
         return eleNew.getValue().equals(eleOld.getValue())
                 && eleNew.getType().equals(eleOld.getType())
                 && eleNew.getRelationType().equals(eleOld.getRelationType());
@@ -95,7 +96,7 @@ public abstract class AbstractDocProcessor
         super.beforePersist();
         this.getObjectTree().forEach((k, v) -> {
             if (v.getElement().getValue() instanceof RequestDocData requestDocData && Objects.nonNull(requestDocData.getMethodNode())) {
-                List<ObjectNode<String, ObjectFullData<DocData>>> objectNodes = Node.recursiveChildren(requestDocData.getMethodNode(), true);
+                List<ObjectNode<String, ObjectElement<DocData>>> objectNodes = Node.recursiveChildren(requestDocData.getMethodNode(), true);
                 List<String> objectIds = Streams.map(objectNodes, n -> n.getElement().getObjectId())
                         .filter(Objects::nonNull).toList();
                 // 接口请求对应的node设置 belongId
@@ -121,11 +122,11 @@ public abstract class AbstractDocProcessor
      */
     @Override
     public void afterTransfer() {
-        Tree<String, ObjectFullData<DocData>, ObjectNode<String, ObjectFullData<DocData>>> objectTree = this.getObjectTree();
+        Tree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> objectTree = this.getObjectTree();
         // 变量不是基础类型的
-        List<ObjectNode<String, ObjectFullData<DocData>>> notBaseTypeVariableList = this.getObjectTree().find(n ->
+        List<ObjectNode<String, ObjectElement<DocData>>> notBaseTypeVariableList = this.getObjectTree().find(n ->
                 n.getElement().getValue() instanceof VariableDocData variableDocData && variableDocData.notBaseType());
-        Function<Collection<String>, Collection<ObjectNode<String, ObjectFullData<DocData>>>> fetcher =
+        Function<Collection<String>, Collection<ObjectNode<String, ObjectElement<DocData>>>> fetcher =
                 ks -> objectTree.find(n -> ks.contains(n.getElement().getName()));
         Assign.build(notBaseTypeVariableList)
                 .addAcquire(fetcher, k -> k.getElement().getName())
@@ -142,19 +143,19 @@ public abstract class AbstractDocProcessor
         });
     }
 
-    private void mergeSuperClassData(ObjectNode<String, ObjectFullData<DocData>> n) {
+    private void mergeSuperClassData(ObjectNode<String, ObjectElement<DocData>> n) {
         // 与父类或接口的数据合并
         if (n.getElement().getValue() instanceof ClassDocData classDocData) {
             List<String> superClassNames = classDocData.obtainSuperClassNames();
             if (CollectionUtils.isEmpty(superClassNames)) {
                 return;
             }
-            Optional<ObjectNode<String, ObjectFullData<DocData>>> superClsNodeOptional = superClassNames.stream()
+            Optional<ObjectNode<String, ObjectElement<DocData>>> superClsNodeOptional = superClassNames.stream()
                     .map(this.getObjectTree()::getById).filter(Objects::nonNull).findFirst();
             if (superClsNodeOptional.isEmpty()) {
                 return;
             }
-            ObjectNode<String, ObjectFullData<DocData>> superNode = superClsNodeOptional.get();
+            ObjectNode<String, ObjectElement<DocData>> superNode = superClsNodeOptional.get();
             DocData docData = superNode.getElement().getValue();
             if (!(docData instanceof ClassDocData superClsDocData)) {
                 return;
@@ -170,22 +171,22 @@ public abstract class AbstractDocProcessor
     }
 
     @Override
-    public ObjectFullData<DocData> convert2Object(DocData docData) {
-        ObjectFullData<DocData> objectFullData = super.convert2Object(docData);
-        objectFullData.setName(docData.getName());
-        objectFullData.setRelationType(docData.getRelationType());
-        return objectFullData;
+    public ObjectElement<DocData> convert2Object(DocData docData) {
+        ObjectElement<DocData> objectElement = super.convert2Object(docData);
+        objectElement.setName(docData.getName());
+        objectElement.setRelationType(docData.getRelationType());
+        return objectElement;
     }
 
     @Override
-    public B data2ObjectBodyEntity(ObjectFullData<DocData> data) {
+    public B data2ObjectBodyEntity(ObjectElement<DocData> data) {
         B b = super.data2ObjectBodyEntity(data);
         b.setParentName(Objects.requireNonNullElse(data.getValue().getParentName(), PARENT_NAME_DEFAULT));
         return b;
     }
 
     @Override
-    public void handlerAfterObjectBodyConvertToFullData(ObjectFullData<DocData> fullData, Map<K, B> objectMap) {
+    public void handlerAfterObjectBodyConvertToFullData(ObjectElement<DocData> fullData, Map<K, B> objectMap) {
         if (fullData.getValue().getClass().isAssignableFrom(DocData.class)) {
             fullData.setRelationType(fullData.getValue().getRelationType());
         }

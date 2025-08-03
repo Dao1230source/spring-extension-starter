@@ -15,20 +15,20 @@ public class RequestDoclet extends AbstractDoclet {
     @Override
     protected void processDoc(DocletEnvironment env, DocDataContainer docDataContainer, DocData appDocData) {
         this.obtainScannedResult(env).forEach(type -> {
-            RequestClassDocData requestClassDocData = new RequestClassDocData(env, type, appDocData.getId(), this.myOptions.isDocUseSimpleName());
+            RequestClassDocData requestClassDocData = new RequestClassDocData(env, type, appDocData.getFullName(), this.myOptions.isDocUseSimpleName());
             docDataContainer.add(requestClassDocData);
             List<ExecutableElement> executableElementList = type.getEnclosedElements().stream()
                     .filter(t -> ElementKind.METHOD.equals(t.getKind())).map(ExecutableElement.class::cast).toList();
             executableElementList.forEach(method -> {
-                MethodDocData methodDocData = new MethodDocData(env, method, requestClassDocData.getId());
+                MethodDocData methodDocData = new MethodDocData(env, method, requestClassDocData.getFullName());
                 docDataContainer.add(methodDocData);
-                RequestDocData requestDocData = new RequestDocData(methodDocData, requestClassDocData.getId());
+                RequestDocData requestDocData = new RequestDocData(methodDocData, requestClassDocData.getFullName());
                 docDataContainer.add(requestDocData);
                 method.getParameters().forEach(p -> {
-                    ParamDocData paramDocData = new ParamDocData(env, p, methodDocData.getId(), method);
+                    ParamDocData paramDocData = new ParamDocData(env, p, methodDocData.getFullName(), method);
                     docDataContainer.addWithAnnotation(paramDocData, p);
                 });
-                docDataContainer.add(VariableDocData.methodResult(method, methodDocData.getId()));
+                docDataContainer.add(VariableDocData.methodResult(method, methodDocData.getFullName()));
             });
         });
     }

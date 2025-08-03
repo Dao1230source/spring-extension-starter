@@ -5,7 +5,6 @@ import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.source.spring.object.tree.ObjectNode;
 import org.springframework.util.CollectionUtils;
 
 import javax.lang.model.element.ExecutableElement;
@@ -55,11 +54,6 @@ public class VariableDocData extends DocData {
             this.typeName = variableDocData.getTypeName();
         }
     }
-
-    public static boolean instanceOf(ObjectNode<String, DocData> docDataNode) {
-        return docDataNode.getElement() instanceof VariableDocData;
-    }
-
 
     public static VariableDocData methodResult(ExecutableElement method, String parentId) {
         VariableDocData data = new VariableDocData();

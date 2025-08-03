@@ -3,7 +3,7 @@ package org.source.spring.object.handler;
 import org.source.spring.exception.BizExceptionEnum;
 import org.source.spring.object.AbstractObjectProcessor;
 import org.source.spring.object.AbstractValue;
-import org.source.spring.object.data.ObjectFullData;
+import org.source.spring.object.ObjectElement;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
@@ -28,7 +28,7 @@ public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V e
 
     Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
             ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> allTypeProcessors();
-    Map<Integer, Function<Collection<ObjectFullData<AbstractValue>>, Assign<ObjectFullData<AbstractValue>>>> allTypeAssigners();
+    Map<Integer, Function<Collection<ObjectElement<AbstractValue>>, Assign<ObjectElement<AbstractValue>>>> allTypeAssigners();
     Map<Integer, Consumer<Collection<ObjectEntityDefiner>>> allTypeObjectConsumers();
 
     /**
@@ -57,8 +57,8 @@ public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V e
         return Jsons.obj(objectBodyEntity.getValue(), objectType.getValueClass());
     }
 
-    default ObjectFullData<V> convert2FullData(ObjectTypeDefiner objectType, B entity) {
-        ObjectFullData<V> fullData = new ObjectFullData<>();
+    default ObjectElement<V> convert2FullData(ObjectTypeDefiner objectType, B entity) {
+        ObjectElement<V> fullData = new ObjectElement<>();
         fullData.setType(objectType.getType());
         fullData.setName(entity.getName());
         fullData.setObjectId(entity.getObjectId());
