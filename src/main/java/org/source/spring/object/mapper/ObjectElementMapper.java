@@ -6,9 +6,9 @@ import org.source.spring.object.AbstractValue;
 import org.source.spring.object.ObjectElement;
 
 @Mapper
-public interface ObjectFullDataMapper {
+public interface ObjectElementMapper {
 
-    ObjectFullDataMapper INSTANCE = Mappers.getMapper(ObjectFullDataMapper.class);
+    ObjectElementMapper INSTANCE = Mappers.getMapper(ObjectElementMapper.class);
 
     ObjectElement<AbstractValue> copy(ObjectElement<AbstractValue> source);
 }

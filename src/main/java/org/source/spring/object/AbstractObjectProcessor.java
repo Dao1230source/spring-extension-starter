@@ -12,13 +12,12 @@ import org.source.spring.object.handler.ObjectBodyDbHandlerDefiner;
 import org.source.spring.object.handler.ObjectDbHandlerDefiner;
 import org.source.spring.object.handler.ObjectTypeHandlerDefiner;
 import org.source.spring.object.handler.RelationDbHandlerDefiner;
-import org.source.spring.object.mapper.ObjectFullDataMapper;
+import org.source.spring.object.mapper.ObjectElementMapper;
 import org.source.spring.trace.TraceContext;
 import org.source.spring.uid.Ids;
 import org.source.utility.assign.Assign;
 import org.source.utility.assign.InterruptStrategyEnum;
 import org.source.utility.tree.EnhanceTree;
-import org.source.utility.tree.define.AbstractNode;
 import org.source.utility.tree.define.Node;
 import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
@@ -86,11 +85,11 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         return B::getObjectId;
     }
 
-    public Function<ObjectElement<V>, String> getFullDataIdGetter() {
+    public Function<ObjectElement<V>, String> getElementIdGetter() {
         return ObjectElement::getObjectId;
     }
 
-    public Function<ObjectElement<V>, String> getFullDataParentIdGetter() {
+    public Function<ObjectElement<V>, String> getElementParentIdGetter() {
         return ObjectElement::getParentObjectId;
     }
 
@@ -103,27 +102,27 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         if (log.isDebugEnabled()) {
             log.debug("source values:{}", Jsons.str(vs));
         }
-        Collection<V> maybeExistsDb = this.maybeExistsDb(vs);
-        if (!CollectionUtils.isEmpty(maybeExistsDb)) {
+        Collection<V> maybeExistsInDb = this.needValidExistsInDb(vs);
+        if (!CollectionUtils.isEmpty(maybeExistsInDb)) {
             if (log.isDebugEnabled()) {
-                log.debug("maybeExistsDb:{}", maybeExistsDb);
+                log.debug("maybeExistsInDb:{}", maybeExistsInDb);
             }
             // 从数据中查询数据并添加到tree中
-            List<ObjectElement<V>> dataFromDbList = this.findFromDbAndConvert2FullData(maybeExistsDb);
+            List<ObjectElement<V>> dataFromDbList = this.findFromDbAndConvert2FullData(maybeExistsInDb);
             if (log.isDebugEnabled()) {
                 log.debug("dataFromDbList:{}", dataFromDbList);
             }
             this.handleDbDataTree().add(dataFromDbList);
         }
-        Collection<ObjectElement<V>> objectFullData = Streams.map(vs, this::convert2Object).filter(Objects::nonNull).toList();
-        this.handleValueDataTree().add(objectFullData);
+        Collection<ObjectElement<V>> objectElements = Streams.map(vs, this::convert2Object).filter(Objects::nonNull).toList();
+        this.handleValueDataTree().add(objectElements);
         this.afterTransfer();
     }
 
     public EnhanceTree<String, ObjectElement<V>, ObjectNode<String, ObjectElement<V>>> handleDbDataTree() {
         EnhanceTree<String, ObjectElement<V>, ObjectNode<String, ObjectElement<V>>> tree = this.getObjectTree();
-        tree.setIdGetter(n -> Node.getProperty(n, this.getFullDataIdGetter()));
-        tree.setParentIdGetter(n -> Node.getProperty(n, this.getFullDataParentIdGetter()));
+        tree.setIdGetter(n -> Node.getProperty(n, this.getElementIdGetter()));
+        tree.setParentIdGetter(n -> Node.getProperty(n, this.getElementParentIdGetter()));
         tree.setAfterCreateHandler(n -> n.setStatus(StatusEnum.DATABASE));
         tree.setMergeHandler(this::mergeNode);
         return tree;
@@ -150,13 +149,13 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     @SuppressWarnings("unchecked")
     public void save() {
         this.beforePersist();
-        List<ObjectElement<V>> objectFullData = this.obtainObjectData();
+        List<ObjectElement<V>> objectElements = this.obtainObjectData();
         if (log.isDebugEnabled()) {
-            log.debug("ObjectProcessor.save, objectDataList:{}", Jsons.str(objectFullData));
+            log.debug("ObjectProcessor.save, objectElements:{}", Jsons.str(objectElements));
         }
-        List<O> objectList = this.data2ObjectEntities(objectFullData);
-        List<B> objectBodyList = this.data2ObjectBodyEntities(objectFullData);
-        List<R> relationList = this.data2RelationEntities(objectFullData);
+        List<O> objectList = this.data2ObjectEntities(objectElements);
+        List<B> objectBodyList = this.data2ObjectBodyEntities(objectElements);
+        List<R> relationList = this.data2RelationEntities(objectElements);
         ((AbstractObjectProcessor<O, R, B, V, T, K>) AopContext.currentProxy()).saveObjectData(objectList, objectBodyList, relationList);
         this.afterPersist();
         this.objectTreeThreadLocal.remove();
@@ -234,10 +233,18 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         return n;
     }
 
-    public Collection<V> maybeExistsDb(Collection<V> vs) {
-        List<V> vsFromDb = this.getObjectTree().find(n -> StatusEnum.DATABASE.equals(n.getStatus()))
-                .stream().map(AbstractNode::getElement).filter(Objects::nonNull).map(ObjectElement::getValue).toList();
-        return Streams.notRetain(vs, AbstractValue::getObjectId, vsFromDb).toList();
+    /**
+     * 需要校验是否在数据库是否存在的V
+     *
+     * @param vs vs
+     * @return vs
+     */
+    public Collection<V> needValidExistsInDb(Collection<V> vs) {
+        Map<String, ObjectNode<String, ObjectElement<V>>> idMap = this.getObjectTree().getIdMap();
+        return Streams.retain(vs, v -> {
+            ObjectNode<String, ObjectElement<V>> node = idMap.get(this.getValueIdGetter().apply(v));
+            return Objects.isNull(node) || !StatusEnum.DATABASE.equals(node.getStatus());
+        }).toList();
     }
 
     @Builder
@@ -256,10 +263,10 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     }
 
     /**
-     * ObjectFullData 的key批量查询
+     * ObjectElement 的key批量查询
      *
      * @param vs vs
-     * @return {@literal Collection<ObjectFullData >}
+     * @return {@literal Collection<ObjectElement>}
      */
     public List<ObjectElement<V>> findFromDbAndConvert2FullData(Collection<V> vs) {
         Map<String, V> valueTypeMap = Streams.toMap(vs, this.getValueIdGetter());
@@ -272,7 +279,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .afterProcessor((e, map) ->
                         this.handlerAfterObjectBodyConvertToFullData(e.getFullData(), map))
                 .addAction(k -> this.objectBodyDbHandler.valueToKey(k.getValue()))
-                // 给 objectBodyEntity、ObjectFullData<V > 赋值
+                // 给 objectBodyEntity、ObjectElement<V > 赋值
                 .addAssemble((e, b) -> {
                     e.setObjectBodyEntity(b);
                     String objectBodyId = this.getObjectBodyIdGetter().apply(b);
@@ -307,7 +314,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .backSuper()
                 // 最终执行
                 .invoke()
-                // 展开，转换为 ObjectFullData<V >
+                // 展开，转换为 ObjectElement<V >
                 .casts(es -> Streams.map(es, e -> {
                     List<ObjectElement<V>> fullData = new ArrayList<>(this.processFullData(e.getFullData(), e.getRelations()));
                     if (Objects.nonNull(e.getParentFullData())) {
@@ -319,7 +326,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     }
 
     /**
-     * object 转换为 ObjectFullData<V > 时做一些特殊处理
+     * object 转换为 ObjectElement<V > 时做一些特殊处理
      *
      * @param fullData  fullData
      * @param objectMap {@literal <K, ObjectBodyEntity >}
@@ -337,7 +344,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         } else {
             return Streams.map(rs, r -> {
                 @SuppressWarnings("unchecked")
-                ObjectElement<V> copy = (ObjectElement<V>) ObjectFullDataMapper.INSTANCE.copy((ObjectElement<AbstractValue>) objectElement);
+                ObjectElement<V> copy = (ObjectElement<V>) ObjectElementMapper.INSTANCE.copy((ObjectElement<AbstractValue>) objectElement);
                 this.fullDataFillRelation(copy, r);
                 return copy;
             }).toList();
@@ -450,7 +457,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .addAction(ObjectTemp::getObjectId)
                 .addAssemble(ObjectTemp::setRelations)
                 .backAcquire().backAssign().invoke()
-                // ObjectTemp 转为 ObjectFullData<AbstractValue >
+                // ObjectTemp 转为 ObjectElement<AbstractValue >
                 .casts(es -> Streams.map(es, k -> {
                     if (Objects.isNull(k.getObject())) {
                         return List.<ObjectElement<AbstractValue>>of();
@@ -464,7 +471,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                         return List.of(data);
                     }
                     return Streams.map(k.getRelations(), r -> {
-                        ObjectElement<AbstractValue> copy = ObjectFullDataMapper.INSTANCE.copy(data);
+                        ObjectElement<AbstractValue> copy = ObjectElementMapper.INSTANCE.copy(data);
                         copy.setObjectId(r.getObjectId());
                         copy.setParentObjectId(r.getParentObjectId());
                         copy.setBelongId(r.getBelongId());
