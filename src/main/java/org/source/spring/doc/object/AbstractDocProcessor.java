@@ -52,12 +52,12 @@ public abstract class AbstractDocProcessor
     }
 
     @Override
-    public Function<ObjectElement<DocData>, String> getFullDataIdGetter() {
+    public Function<ObjectElement<DocData>, String> getElementIdGetter() {
         return o -> o.getValue().getFullName();
     }
 
     @Override
-    public Function<ObjectElement<DocData>, String> getFullDataParentIdGetter() {
+    public Function<ObjectElement<DocData>, String> getElementParentIdGetter() {
         return o -> o.getValue().getParentName();
     }
 
@@ -75,8 +75,8 @@ public abstract class AbstractDocProcessor
     @NotNull
     private EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> docCustomTree(
             EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> tree) {
-        tree.setIdGetter(n -> Node.getProperty(n, this.getFullDataIdGetter()));
-        tree.setParentIdGetter(n -> Node.getProperty(n, this.getFullDataParentIdGetter()));
+        tree.setIdGetter(n -> Node.getProperty(n, this.getElementIdGetter()));
+        tree.setParentIdGetter(n -> Node.getProperty(n, this.getElementParentIdGetter()));
         tree.setAfterAddHandler((n, parent) ->
                 Node.setProperty(n, ObjectElement::setParentObjectId, Node.getProperty(parent, ObjectElement::getObjectId)));
         return tree;
