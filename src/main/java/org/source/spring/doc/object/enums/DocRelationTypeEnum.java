@@ -2,14 +2,14 @@ package org.source.spring.doc.object.enums;
 
 import lombok.Getter;
 import org.source.spring.object.enums.RelationScopeEnum;
-import org.source.spring.object.enums.RelationTypeIdentity;
+import org.source.spring.object.enums.RelationTypeDefiner;
 
 /**
 * 对象之间的关联关系类型
 */
 @Getter
-public enum DocRelationTypeEnum implements RelationTypeIdentity {
-    BELONG(RelationScopeEnum.BELONG, 10000, "上下级"),
+public enum DocRelationTypeEnum implements RelationTypeDefiner {
+    SUP_AND_SUB(RelationScopeEnum.SUP_AND_SUB, 10000, "上下级"),
     VAR_ANNOTATION(RelationScopeEnum.CONSTITUENT, 10001, "变量注解"),
     ;
     private final RelationScopeEnum relationScope;

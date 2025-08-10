@@ -14,7 +14,7 @@ public enum RelationScopeEnum {
     /**
      * 如文件夹
      */
-    BELONG(1, "从属上下级"),
+    SUP_AND_SUB(1, "从属上下级"),
     /**
      * 如流程图之间的连接，平级
      */

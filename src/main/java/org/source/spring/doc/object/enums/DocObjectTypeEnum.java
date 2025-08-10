@@ -11,18 +11,16 @@ public enum DocObjectTypeEnum implements ObjectTypeDefiner {
      * 接口文档
      */
     DOC(10000, "doc", AbstractDocProcessor.class, DocData.class),
-    METHOD(10001, "方法", AbstractDocProcessor.class, MethodDocData.class),
-    PARAM(10002, "参数", AbstractDocProcessor.class, ParamDocData.class),
-    FIELD(10003, "字段", AbstractDocProcessor.class, FieldDocData.class),
-    VARIABLE(10004, "变量", AbstractDocProcessor.class, VariableDocData.class),
-    ANNOTATION(10005, "注解", AbstractDocProcessor.class, AnnotationDocData.class),
-    REQUEST(10006, "接口", AbstractDocProcessor.class, RequestDocData.class),
-    /**
-     * 类
-     */
-    CLASS(10007, "类", AbstractDocProcessor.class, ClassDocData.class),
-    CLASS_REQUEST(10008, "接口请求类", AbstractDocProcessor.class, RequestClassDocData.class),
-    CLASS_VARIABLE(10009, "变量类", AbstractDocProcessor.class, VariableClassDocData.class),
+    CLASS(10010, "类", AbstractDocProcessor.class, DocClassData.class),
+    CLASS_REQUEST(10011, "接口请求类", AbstractDocProcessor.class, DocClassRequestData.class),
+    CLASS_VARIABLE(10012, "变量类", AbstractDocProcessor.class, DocClassVariableData.class),
+    METHOD(10020, "方法", AbstractDocProcessor.class, DocMethodData.class),
+    VARIABLE(10030, "变量", AbstractDocProcessor.class, DocVariableData.class),
+    VARIABLE_PARAM(10031, "参数", AbstractDocProcessor.class, DocVariableParamData.class),
+    VARIABLE_FIELD(10032, "字段", AbstractDocProcessor.class, DocVariableFieldData.class),
+    VARIABLE_RETURN(10033, "返回值", AbstractDocProcessor.class, DocVariableReturnData.class),
+    ANNOTATION(10040, "注解", AbstractDocProcessor.class, DocVariableAnnotationData.class),
+    REQUEST(10050, "接口", AbstractDocProcessor.class, DocRequestData.class),
     ;
     private final Integer type;
     private final String desc;

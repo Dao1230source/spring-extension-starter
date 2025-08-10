@@ -95,18 +95,14 @@ public abstract class AbstractDocProcessor
     public void beforePersist() {
         super.beforePersist();
         this.getObjectTree().forEach((k, v) -> {
-            if (v.getElement().getValue() instanceof RequestDocData requestDocData && Objects.nonNull(requestDocData.getMethodNode())) {
-                List<ObjectNode<String, ObjectElement<DocData>>> objectNodes = Node.recursiveChildren(requestDocData.getMethodNode(), true);
+            if (v.getElement().getValue() instanceof DocRequestData docRequestData && Objects.nonNull(docRequestData.getMethodNode())) {
+                List<ObjectNode<String, ObjectElement<DocData>>> objectNodes = Node.recursiveChildren(docRequestData.getMethodNode(), true);
                 List<String> objectIds = Streams.map(objectNodes, n -> n.getElement().getObjectId())
                         .filter(Objects::nonNull).toList();
                 // 接口请求对应的node设置 belongId
                 this.getObjectTree().find(n -> objectIds.contains(n.getId())).forEach(n -> {
-                    n.getElement().setBelongId(v.getId());
                     if (StatusEnum.CACHED.equals(n.getStatus())) {
                         n.setStatus(StatusEnum.CACHED_RELATION);
-                        if (Objects.nonNull(n.getElement())) {
-                            n.getElement().setStatus(n.getStatus());
-                        }
                     }
                 });
             }
@@ -125,19 +121,23 @@ public abstract class AbstractDocProcessor
         Tree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> objectTree = this.getObjectTree();
         // 变量不是基础类型的
         List<ObjectNode<String, ObjectElement<DocData>>> notBaseTypeVariableList = this.getObjectTree().find(n ->
-                n.getElement().getValue() instanceof VariableDocData variableDocData && variableDocData.notBaseType());
+                n.getElement().getValue() instanceof DocVariableData variableDocData && variableDocData.notBaseType());
         Function<Collection<String>, Collection<ObjectNode<String, ObjectElement<DocData>>>> fetcher =
                 ks -> objectTree.find(n -> ks.contains(n.getElement().getName()));
         Assign.build(notBaseTypeVariableList)
                 .addAcquire(fetcher, k -> k.getElement().getName())
-                .addAction(n -> ((VariableDocData) n.getElement().getValue()).getTypeName())
+                .addAction(n -> ((DocVariableData) n.getElement().getValue()).getTypeName())
                 .addAssemble(AbstractNode::addChild)
                 .backAcquire().backAssign().invoke();
         objectTree.forEach((k, n) -> {
             // 接口文档对象
-            if (n.getElement().getValue() instanceof RequestDocData requestDocData) {
-                String methodId = requestDocData.getMethodId();
-                requestDocData.setMethodNode(objectTree.getIdMap().get(methodId));
+            if (n.getElement().getValue() instanceof DocRequestData docRequestData) {
+                String methodId = docRequestData.getMethodId();
+                ObjectNode<String, ObjectElement<DocData>> methodNode = objectTree.getIdMap().get(methodId);
+                Node.recursiveChildren(methodNode, true).forEach(on -> {
+                    on.appendToParent(n);
+                    n.addChild(on);
+                });
             }
             this.mergeSuperClassData(n);
         });
@@ -145,8 +145,8 @@ public abstract class AbstractDocProcessor
 
     private void mergeSuperClassData(ObjectNode<String, ObjectElement<DocData>> n) {
         // 与父类或接口的数据合并
-        if (n.getElement().getValue() instanceof ClassDocData classDocData) {
-            List<String> superClassNames = classDocData.obtainSuperClassNames();
+        if (n.getElement().getValue() instanceof DocClassData docClassData) {
+            List<String> superClassNames = docClassData.obtainSuperClassNames();
             if (CollectionUtils.isEmpty(superClassNames)) {
                 return;
             }
@@ -157,31 +157,23 @@ public abstract class AbstractDocProcessor
             }
             ObjectNode<String, ObjectElement<DocData>> superNode = superClsNodeOptional.get();
             DocData docData = superNode.getElement().getValue();
-            if (!(docData instanceof ClassDocData superClsDocData)) {
+            if (!(docData instanceof DocClassData superClsDocData)) {
                 return;
             }
-            classDocData.merge(superClsDocData);
+            docClassData.merge(superClsDocData);
             Streams.of(n.getChildren()).forEach(c -> {
-                if (n.getElement().getValue() instanceof MethodDocData || c.getElement().getValue() instanceof VariableDocData) {
+                if (n.getElement().getValue() instanceof DocMethodData || c.getElement().getValue() instanceof DocVariableData) {
                     Streams.of(superNode.getChildren()).filter(sc -> c.getElement().getName().equals(sc.getElement().getName()))
-                            .findFirst().ifPresent(sc -> this.mergeValue(c.getOldElement(), sc.getOldElement()));
+                            .findFirst().ifPresent(sc -> this.mergeValue(c.getElement(), sc.getElement()));
                 }
             });
         }
     }
 
     @Override
-    public ObjectElement<DocData> convert2Object(DocData docData) {
-        ObjectElement<DocData> objectElement = super.convert2Object(docData);
-        objectElement.setName(docData.getName());
-        objectElement.setRelationType(docData.getRelationType());
-        return objectElement;
-    }
-
-    @Override
-    public B data2ObjectBodyEntity(ObjectElement<DocData> data) {
+    public B data2ObjectBodyEntity(ObjectNode<String, ObjectElement<DocData>> data) {
         B b = super.data2ObjectBodyEntity(data);
-        b.setParentName(Objects.requireNonNullElse(data.getValue().getParentName(), PARENT_NAME_DEFAULT));
+        b.setParentName(Objects.requireNonNullElse(data.getElement().getValue().getParentName(), PARENT_NAME_DEFAULT));
         return b;
     }
 

@@ -10,9 +10,9 @@ import javax.lang.model.element.VariableElement;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class FieldDocData extends VariableDocData {
+public class DocVariableFieldData extends DocVariableData {
 
-    public FieldDocData(DocletEnvironment env, VariableElement variableElement, String parentId) {
-        super(env, variableElement, parentId);
+    public DocVariableFieldData(Integer sorted, DocletEnvironment env, VariableElement variableElement, String parentId) {
+        super(sorted, env, variableElement, parentId);
     }
 }

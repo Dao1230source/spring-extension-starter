@@ -3,7 +3,7 @@ package org.source.spring.object.enums;
 /**
  *
  */
-public interface RelationTypeIdentity {
+public interface RelationTypeDefiner {
 
     /**
      * 领域

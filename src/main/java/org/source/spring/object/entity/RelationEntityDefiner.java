@@ -33,11 +33,11 @@ public interface RelationEntityDefiner {
     void setParentObjectId(String parentObjectId);
 
     /**
-     * 属主ID，同属于一个对象ID
+     * 排序字段
      */
-    String getBelongId();
+    String getSorted();
 
-    void setBelongId(String parentObjectId);
+    void setSorted(String sorted);
 
     /**
      * 创建人

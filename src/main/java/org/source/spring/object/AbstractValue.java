@@ -9,4 +9,9 @@ public abstract class AbstractValue {
      */
     private String objectId;
 
+    private String name;
+
+    private String sorted;
+
+    private Integer relationType;
 }

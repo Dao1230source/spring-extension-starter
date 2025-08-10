@@ -17,24 +17,24 @@ import java.util.Objects;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class ClassDocData extends DocData {
+public class DocClassData extends DocData {
 
     private String superClass;
     private List<String> interfaceClasses;
+
+    protected <E extends TypeElement> DocClassData(Integer sorted, DocletEnvironment env, E type, String parentId) {
+        super(sorted, env, type, parentId);
+        this.processSuperClass(type);
+    }
 
     protected <E extends TypeElement> void processSuperClass(E type) {
         this.superClass = type.getSuperclass().toString();
         this.interfaceClasses = Streams.of(type.getInterfaces()).map(TypeMirror::toString).toList();
     }
 
-    protected <E extends TypeElement> ClassDocData(DocletEnvironment env, E type, String parentId) {
-        super(env, type, parentId);
-        this.processSuperClass(type);
-    }
-
     @Override
-    protected <E extends Element> void processName(E element) {
-        this.setName(((TypeElement) element).getQualifiedName().toString());
+    protected <E extends Element> String obtainName(E element) {
+        return ((TypeElement) element).getQualifiedName().toString();
     }
 
     public List<String> obtainSuperClassNames() {

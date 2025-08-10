@@ -1,13 +1,11 @@
 package org.source.spring.doc.data;
 
-import com.sun.source.doctree.DocTree;
 import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.util.CollectionUtils;
 
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -15,12 +13,12 @@ import javax.lang.model.type.TypeMirror;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class VariableDocData extends DocData {
+public class DocVariableData extends DocData {
     private String typeKind;
     private String typeName;
 
-    public <E extends VariableElement> VariableDocData(DocletEnvironment env, E variableElement, String parentId) {
-        super(env, variableElement, parentId);
+    public <E extends VariableElement> DocVariableData(Integer sorted, DocletEnvironment env, E variableElement, String parentId) {
+        super(sorted, env, variableElement, parentId);
         this.processVariable(variableElement);
     }
 
@@ -49,19 +47,9 @@ public class VariableDocData extends DocData {
     @Override
     public <D extends DocData> void merge(D docData) {
         super.merge(docData);
-        if (docData instanceof VariableDocData variableDocData) {
-            this.typeKind = variableDocData.getTypeKind();
-            this.typeName = variableDocData.getTypeName();
+        if (docData instanceof DocVariableData docVariableData) {
+            this.typeKind = docVariableData.getTypeKind();
+            this.typeName = docVariableData.getTypeName();
         }
-    }
-
-    public static VariableDocData methodResult(ExecutableElement method, String parentId) {
-        VariableDocData data = new VariableDocData();
-        TypeMirror returnType = method.getReturnType();
-        data.setName(DocTree.Kind.RETURN.tagName);
-        data.setTypeKind(returnType.getKind().name());
-        data.setTypeName(returnType.toString());
-        data.processParentId(parentId);
-        return data;
     }
 }

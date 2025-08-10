@@ -12,31 +12,33 @@ import javax.lang.model.type.DeclaredType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class AnnotationDocData extends VariableDocData {
+public class DocVariableAnnotationData extends DocVariableData {
 
     private Map<String, String> annotationAttributes = HashMap.newHashMap(16);
 
-    public AnnotationDocData(AnnotationMirror anno, String parentId) {
-        this.setRelationType(DocRelationTypeEnum.BELONG.getType());
+    public DocVariableAnnotationData(Integer sorted, AnnotationMirror anno, String parentName) {
         DeclaredType annotationType = anno.getAnnotationType();
-        this.setName(annotationType.asElement().getSimpleName().toString());
-        this.processParentId(parentId);
+        this.processName(this.obtainName(annotationType.asElement()), parentName);
         this.setTypeKind(annotationType.getKind().name());
         this.setTypeName(annotationType.toString());
+        this.setRelationType(DocRelationTypeEnum.SUP_AND_SUB.getType());
+        this.setSorted(String.valueOf(sorted));
         anno.getElementValues().forEach((methodSymbol, attribute) ->
                 annotationAttributes.put(methodSymbol.getSimpleName().toString(), attribute.getValue().toString()));
     }
 
-    public static <E extends Element> List<AnnotationDocData> obtainAnnotationDocDataList(E element, String parentId) {
+    public static <E extends Element> List<DocVariableAnnotationData> obtainAnnotationDocDataList(E element, String parentId) {
         List<? extends AnnotationMirror> annotationMirrors = element.getAnnotationMirrors();
         if (CollectionUtils.isEmpty(annotationMirrors)) {
             return List.of();
         }
-        return element.getAnnotationMirrors().stream().map(a -> new AnnotationDocData(a, parentId)).toList();
+        AtomicInteger annotationSorted = new AtomicInteger(0);
+        return element.getAnnotationMirrors().stream().map(a -> new DocVariableAnnotationData(annotationSorted.getAndIncrement(), a, parentId)).toList();
     }
 
 }

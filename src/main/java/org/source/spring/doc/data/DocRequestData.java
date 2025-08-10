@@ -11,16 +11,17 @@ import org.source.utility.constant.Constants;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class RequestDocData extends DocData {
+public class DocRequestData extends DocData {
     private String methodId;
     @JsonIgnore
     @EqualsAndHashCode.Exclude
     private ObjectNode<String, ObjectElement<DocData>> methodNode;
 
-    public RequestDocData(MethodDocData methodDocData, String parentId) {
-        this.setMethodId(methodDocData.getFullName());
-        this.setName(methodDocData.getName() + Constants.COLON + "request");
+    public DocRequestData(Integer sorted, DocMethodData docMethodData, String parentName) {
+        this.setMethodId(docMethodData.getFullName());
+        String name = docMethodData.getName() + Constants.COLON + "request";
+        this.processName(name, parentName);
         this.setTitle("接口请求");
-        this.processParentId(parentId);
+        this.setSorted(String.valueOf(sorted));
     }
 }

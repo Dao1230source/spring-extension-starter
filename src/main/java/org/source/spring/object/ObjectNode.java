@@ -1,6 +1,5 @@
 package org.source.spring.object;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.source.utility.tree.EnhanceNode;
@@ -13,10 +12,8 @@ import java.util.Objects;
 @Getter
 public class ObjectNode<I extends Comparable<I>, E extends EnhanceElement<I>> extends EnhanceNode<I, E, ObjectNode<I, E>> {
     private StatusEnum status;
-    @JsonIgnore
-    private E oldElement;
-    @JsonIgnore
-    private StatusEnum oldStatus;
+
+    private Integer relationType;
 
     @Override
     public ObjectNode<I, E> emptyNode() {

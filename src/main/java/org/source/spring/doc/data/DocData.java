@@ -1,81 +1,83 @@
 package org.source.spring.doc.data;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sun.source.doctree.DocCommentTree;
-import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.TextTree;
 import com.sun.source.util.DocTrees;
 import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.jetbrains.annotations.NotNull;
-import org.source.spring.doc.object.AbstractDocProcessor;
 import org.source.spring.doc.object.enums.DocRelationTypeEnum;
 import org.source.spring.object.AbstractValue;
+import org.source.spring.uid.Ids;
 import org.source.utility.constant.Constants;
 
 import javax.lang.model.element.Element;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class DocData extends AbstractValue {
-    private String name;
-    private String parentName;
-    private String fullName;
+    public static final String PARENT_NAME_DEFAULT = "root";
     private String title;
     private String text;
+    private String parentName;
+    private String fullName;
 
-    /**
-     * 默认的与其他数据的关系
-     */
-    @JsonIgnore
-    @EqualsAndHashCode.Exclude
-    private Integer relationType = DocRelationTypeEnum.BELONG.getType();
-
-    public <E extends Element> DocData(DocletEnvironment env, E element, String parentId) {
-        this.processName(element);
-        this.processComment(env, element);
-        this.processParentId(parentId);
-    }
-
-    public DocData(@NotNull String name, String title, String text) {
-        this.name = name;
+    public DocData(Integer sorted, String name, String title, String text, String parentName) {
         this.title = title;
         this.text = text;
-        this.processParentId(null);
+        this.processName(name, parentName);
+        this.setSorted(String.valueOf(sorted));
+        this.setObjectId(Ids.stringId());
+        this.setRelationType(DocRelationTypeEnum.SUP_AND_SUB.getType());
     }
 
-    protected <E extends Element> void processName(E element) {
-        this.setName(element.getSimpleName().toString());
+    protected void processName(String name, String parentName) {
+        this.setName(name);
+        this.parentName = this.obtainParentName(parentName);
+        this.fullName = obtainFullName(this.getName(), this.parentName);
     }
 
-    protected void processParentId(String parentId) {
-        this.parentName = Objects.nonNull(parentId) ? parentId : AbstractDocProcessor.PARENT_NAME_DEFAULT;
+    public DocData(Integer sorted, String name, String title, String text) {
+        this(sorted, name, title, text, null);
     }
 
-    protected <E extends Element> void processComment(DocletEnvironment env, E element) {
-        DocTrees trees = env.getDocTrees();
-        DocCommentTree docCommentTree = trees.getDocCommentTree(element);
-        if (Objects.isNull(docCommentTree)) {
+    public <E extends Element> DocData(Integer sorted, DocletEnvironment env, E element, String parentName) {
+        this.processName(this.obtainName(element), parentName);
+        this.processComment(this.obtainCommentLines(env, element));
+        this.setSorted(String.valueOf(sorted));
+        this.setObjectId(Ids.stringId());
+        this.setRelationType(DocRelationTypeEnum.SUP_AND_SUB.getType());
+    }
+
+    protected <E extends Element> String obtainName(E element) {
+        return element.getSimpleName().toString();
+    }
+
+    protected String obtainParentName(String parentName) {
+        return Objects.nonNull(parentName) ? parentName : PARENT_NAME_DEFAULT;
+    }
+
+    protected void processComment(List<String> commentLines) {
+        if (commentLines.isEmpty()) {
             return;
         }
-        this.processComment(docCommentTree.getFullBody());
-    }
-
-    protected void processComment(List<? extends DocTree> commentDocList) {
-        String comment = commentDocList.stream().map(TextTree.class::cast).map(TextTree::getBody)
-                .collect(Collectors.joining(Constants.NEWLINE));
-        List<String> commentLines = Arrays.asList(comment.split(Constants.NEWLINE));
         this.setTitle(commentLines.get(0));
         if (commentLines.size() > 1) {
             this.setText(String.join(Constants.NEWLINE, commentLines.subList(1, commentLines.size())));
         }
+    }
+
+    protected <E extends Element> List<String> obtainCommentLines(DocletEnvironment env, E element) {
+        DocTrees trees = env.getDocTrees();
+        DocCommentTree docCommentTree = trees.getDocCommentTree(element);
+        if (Objects.isNull(docCommentTree)) {
+            return List.of();
+        }
+        return docCommentTree.getFullBody().stream().map(TextTree.class::cast).map(TextTree::getBody).toList();
     }
 
     public <D extends DocData> void merge(D docData) {
@@ -87,15 +89,8 @@ public class DocData extends AbstractValue {
         }
     }
 
-    public String getFullName() {
-        if (Objects.isNull(this.fullName)) {
-            this.fullName = obtainFullName(this.name, this.parentName);
-        }
-        return this.fullName;
-    }
-
     public static String obtainFullName(String name, String parentName) {
-        return AbstractDocProcessor.PARENT_NAME_DEFAULT.equals(parentName) ? name : parentName + Constants.COLON + name;
+        return PARENT_NAME_DEFAULT.equals(parentName) ? name : parentName + Constants.COLON + name;
     }
 
 }

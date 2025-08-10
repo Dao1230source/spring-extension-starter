@@ -10,9 +10,9 @@ import javax.lang.model.element.TypeElement;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class VariableClassDocData extends ClassDocData {
+public class DocClassVariableData extends DocClassData {
 
-    public <E extends TypeElement> VariableClassDocData(DocletEnvironment env, E type, String parentId) {
-        super(env, type, parentId);
+    public <E extends TypeElement> DocClassVariableData(Integer sorted, DocletEnvironment env, E type, String parentId) {
+        super(sorted, env, type, parentId);
     }
 }

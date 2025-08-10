@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.source.utility.constant.Constants;
 import org.springframework.util.CollectionUtils;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import java.util.ArrayList;
@@ -16,18 +17,21 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class MethodDocData extends DocData implements Path {
+public class DocMethodData extends DocData implements Path {
     private List<String> paths;
     private List<String> requestMethods;
 
-    private List<VariableDocData> params = new ArrayList<>();
-    private VariableDocData returnValue;
+    private List<DocVariableData> params = new ArrayList<>();
+    private DocVariableData returnValue;
 
-    public MethodDocData(DocletEnvironment env, ExecutableElement method, String parentId) {
-        this.setName(methodName(method));
-        this.processParentId(parentId);
+    public DocMethodData(Integer sorted, DocletEnvironment env, ExecutableElement method, String parentId) {
+        super(sorted, env, method, parentId);
         this.processMapping(method);
-        this.processComment(env, method);
+    }
+
+    @Override
+    protected <E extends Element> String obtainName(E element) {
+        return methodName((ExecutableElement) element);
     }
 
     protected static String methodName(ExecutableElement method) {

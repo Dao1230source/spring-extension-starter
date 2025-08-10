@@ -4,6 +4,7 @@ package org.source.spring.object;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.jetbrains.annotations.NotNull;
+import org.source.utility.tree.define.Element;
 import org.source.utility.tree.define.EnhanceElement;
 
 import java.time.LocalDateTime;
@@ -15,21 +16,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 public class ObjectElement<V extends AbstractValue> extends EnhanceElement<String> {
-
-    /**
-     * 对象ID，唯一
-     */
-    @EqualsAndHashCode.Exclude
-    private String objectId;
-
-    /**
-     * 父对象ID
-     */
-    @EqualsAndHashCode.Exclude
-    private String parentObjectId;
-
-    @EqualsAndHashCode.Exclude
-    private String sourceObjectId;
 
     /**
      * 名称
@@ -72,10 +58,16 @@ public class ObjectElement<V extends AbstractValue> extends EnhanceElement<Strin
     private LocalDateTime updateTime;
 
     /**
-     * node status
+     * 对象ID，唯一
      */
     @EqualsAndHashCode.Exclude
-    private StatusEnum status;
+    private String objectId;
+
+    /**
+     * 父对象ID
+     */
+    @EqualsAndHashCode.Exclude
+    private String parentObjectId;
 
     @JsonIgnore
     @Override
@@ -89,14 +81,8 @@ public class ObjectElement<V extends AbstractValue> extends EnhanceElement<Strin
         return parentObjectId;
     }
 
-
-    @Override
-    public String getSourceId() {
-        return getSourceObjectId();
-    }
-
     @Override
     public int compareTo(@NotNull EnhanceElement<String> o) {
-        return EnhanceElement.comparator(this, (ObjectElement<V>) o, ObjectElement::getId);
+        return Element.comparator(this, (ObjectElement<V>) o, ObjectElement::getId);
     }
 }

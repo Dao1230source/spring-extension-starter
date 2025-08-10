@@ -114,9 +114,23 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
             }
             this.handleDbDataTree().add(dataFromDbList);
         }
-        Collection<ObjectElement<V>> objectElements = Streams.map(vs, this::convert2Object).filter(Objects::nonNull).toList();
+        Collection<ObjectElement<V>> objectElements = Streams.map(vs, this::convert2ObjectElement).filter(Objects::nonNull).toList();
         this.handleValueDataTree().add(objectElements);
         this.afterTransfer();
+    }
+
+    /**
+     * 需要校验是否在数据库是否存在的V
+     *
+     * @param vs vs
+     * @return vs
+     */
+    public Collection<V> needValidExistsInDb(Collection<V> vs) {
+        Map<String, ObjectNode<String, ObjectElement<V>>> idMap = this.getObjectTree().getIdMap();
+        return Streams.retain(vs, v -> {
+            ObjectNode<String, ObjectElement<V>> node = idMap.get(this.getValueIdGetter().apply(v));
+            return Objects.isNull(node) || !StatusEnum.DATABASE.equals(node.getStatus());
+        }).toList();
     }
 
     public EnhanceTree<String, ObjectElement<V>, ObjectNode<String, ObjectElement<V>>> handleDbDataTree() {
@@ -149,43 +163,93 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     @SuppressWarnings("unchecked")
     public void save() {
         this.beforePersist();
-        List<ObjectElement<V>> objectElements = this.obtainObjectData();
-        if (log.isDebugEnabled()) {
-            log.debug("ObjectProcessor.save, objectElements:{}", Jsons.str(objectElements));
+        List<ObjectNode<String, ObjectElement<V>>> objectNodes = this.obtainObjectData();
+        if (CollectionUtils.isEmpty(objectNodes)) {
+            return;
         }
-        List<O> objectList = this.data2ObjectEntities(objectElements);
-        List<B> objectBodyList = this.data2ObjectBodyEntities(objectElements);
-        List<R> relationList = this.data2RelationEntities(objectElements);
+        if (log.isDebugEnabled()) {
+            log.debug("ObjectProcessor.save, objectNodes:{}", Jsons.str(objectNodes));
+        }
+        ObjectNodesToEntitiesTemp<O, B, R> temp = this.nodeConvertToEntities(objectNodes);
+        List<O> objectList = temp.getObjectList();
+        List<B> objectBodyList = temp.getObjectBodyList();
+        List<R> relationList = temp.getRelationList();
         ((AbstractObjectProcessor<O, R, B, V, T, K>) AopContext.currentProxy()).saveObjectData(objectList, objectBodyList, relationList);
-        this.afterPersist();
         this.objectTreeThreadLocal.remove();
+        this.afterPersist();
     }
 
     /**
      * 对 this.getDocTree() 做一些操作
      */
     public void beforePersist() {
-        this.getObjectTree().forEach((i, n) -> {
-            if (StatusEnum.DATABASE.equals(n.getOldStatus())
-                    && Objects.nonNull(n.getOldElement())
-                    && n.getOldElement().equals(n.getElement())) {
-                n.setStatus(StatusEnum.DATABASE);
-            }
-        });
     }
 
-    public List<ObjectElement<V>> obtainObjectData() {
+    public List<ObjectNode<String, ObjectElement<V>>> obtainObjectData() {
         return this.getObjectTree().getIdMap().values().stream()
                 .filter(n -> !StatusEnum.DATABASE.equals(n.getStatus()))
-                .map(n -> {
-                    ObjectElement<V> data = n.getElement();
-                    if (Objects.isNull(data)) {
-                        return null;
-                    }
-                    data.setStatus(n.getStatus());
-                    return data;
-                }).filter(Objects::nonNull).toList();
+                .toList();
     }
+
+    @AllArgsConstructor
+    @Data
+    public static class ObjectNodesToEntitiesTemp<O, B, R> {
+        private List<O> objectList;
+        private List<B> objectBodyList;
+        private List<R> relationList;
+    }
+
+    public ObjectNodesToEntitiesTemp<O, B, R> nodeConvertToEntities(List<ObjectNode<String, ObjectElement<V>>> objectNodes) {
+        List<O> objectList = new ArrayList<>(objectNodes.size());
+        List<B> objectBodyList = new ArrayList<>(objectNodes.size());
+        List<R> relationList = new ArrayList<>(objectNodes.size());
+        objectNodes.stream().filter(n -> Objects.nonNull(n.getElement())).forEach(n -> {
+            if (StatusEnum.updateObject(n.getStatus())) {
+                objectList.add(this.data2ObjectEntity(n));
+            }
+            if (StatusEnum.updateObjectBody(n.getStatus())) {
+                objectBodyList.add(this.data2ObjectBodyEntity(n));
+            }
+            if (StatusEnum.updateRelation(n.getStatus()) && !CollectionUtils.isEmpty(n.getParents())) {
+                n.getParents().forEach(p -> relationList.add(this.data2RelationEntity(n, p)));
+            }
+        });
+        return new ObjectNodesToEntitiesTemp<>(objectList, objectBodyList, relationList);
+    }
+
+    public O data2ObjectEntity(ObjectNode<String, ObjectElement<V>> node) {
+        O entity = this.objectDbHandler.newObjectEntity();
+        ObjectElement<V> element = node.getElement();
+        entity.setObjectId(this.getElementIdGetter().apply(element));
+        entity.setType(element.getType());
+        entity.setSpaceId(TraceContext.getSpaceIdOrDefault());
+        entity.setDeleted(Boolean.FALSE);
+        entity.setCreateUser(TraceContext.getUserIdOrDefault());
+        return entity;
+    }
+
+    public B data2ObjectBodyEntity(ObjectNode<String, ObjectElement<V>> node) {
+        B entity = this.objectBodyDbHandler.newObjectBodyEntity();
+        ObjectElement<V> element = node.getElement();
+        entity.setObjectId(this.getElementIdGetter().apply(element));
+        entity.setName(element.getName());
+        entity.setValue(Jsons.str(element.getValue()));
+        entity.setCreateUser(TraceContext.getUserIdOrDefault());
+        entity.setUpdateUser(TraceContext.getUserIdOrDefault());
+        return entity;
+    }
+
+    public R data2RelationEntity(ObjectNode<String, ObjectElement<V>> node, ObjectNode<String, ObjectElement<V>> parent) {
+        R entity = this.relationDbHandler.newRelationEntity();
+        ObjectElement<V> element = node.getElement();
+        entity.setObjectId(this.getElementIdGetter().apply(element));
+        entity.setParentObjectId(this.getElementIdGetter().apply(parent.getElement()));
+        Integer relationType = Objects.requireNonNullElseGet(node.getRelationType(), element::getRelationType);
+        entity.setType(relationType);
+        entity.setCreateUser(TraceContext.getUserIdOrDefault());
+        return entity;
+    }
+
 
     public void afterPersist() {
         this.getObjectTree().forEach((i, n) -> n.setStatus(StatusEnum.DATABASE));
@@ -204,10 +268,10 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
             // 如果新的element与数据库的不相同，更新
             if (!StatusEnum.DATABASE.equals(n.getStatus()) && !this.nodeEquals(n, old)) {
                 log.debug("new object not from database and not equal old object.\nnew:{} \nold:{}", Jsons.str(n), Jsons.str(old));
-                old.setOldElement(old.getElement());
-                old.setOldStatus(old.getStatus());
-                n.getElement().setObjectId(old.getOldElement().getObjectId());
-                old.setElement(this.mergeValue(n.getElement(), old.getElement()));
+                ObjectElement<V> newElement = n.getElement();
+                ObjectElement<V> oldElement = old.getElement();
+                newElement.setObjectId(oldElement.getObjectId());
+                old.setElement(this.mergeValue(newElement, oldElement));
                 old.setStatus(StatusEnum.CACHED_OBJECT_BODY);
             }
             return old;
@@ -231,20 +295,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
      */
     public ObjectElement<V> mergeValue(ObjectElement<V> n, ObjectElement<V> old) {
         return n;
-    }
-
-    /**
-     * 需要校验是否在数据库是否存在的V
-     *
-     * @param vs vs
-     * @return vs
-     */
-    public Collection<V> needValidExistsInDb(Collection<V> vs) {
-        Map<String, ObjectNode<String, ObjectElement<V>>> idMap = this.getObjectTree().getIdMap();
-        return Streams.retain(vs, v -> {
-            ObjectNode<String, ObjectElement<V>> node = idMap.get(this.getValueIdGetter().apply(v));
-            return Objects.isNull(node) || !StatusEnum.DATABASE.equals(node.getStatus());
-        }).toList();
     }
 
     @Builder
@@ -276,8 +326,11 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 // 查询 objectBody
                 .addAcquire(this.objectBodyDbHandler::findObjectBodiesByKeys, this.objectBodyDbHandler::objectBodyToKey)
                 .throwException()
-                .afterProcessor((e, map) ->
-                        this.handlerAfterObjectBodyConvertToFullData(e.getFullData(), map))
+                .afterProcessor((e, map) -> {
+                    if (Objects.nonNull(e.getFullData())) {
+                        this.handlerAfterObjectBodyConvertToFullData(e.getFullData(), map);
+                    }
+                })
                 .addAction(k -> this.objectBodyDbHandler.valueToKey(k.getValue()))
                 // 给 objectBodyEntity、ObjectElement<V > 赋值
                 .addAssemble((e, b) -> {
@@ -314,7 +367,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .backSuper()
                 // 最终执行
                 .invoke()
-                // 展开，转换为 ObjectElement<V >
+                // 展开，转换为 ObjectElement<V>
                 .casts(es -> Streams.map(es, e -> {
                     List<ObjectElement<V>> fullData = new ArrayList<>(this.processFullData(e.getFullData(), e.getRelations()));
                     if (Objects.nonNull(e.getParentFullData())) {
@@ -354,13 +407,14 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     public void fullDataFillRelation(ObjectElement<V> fullData, R r) {
         fullData.setParentObjectId(r.getParentObjectId());
         fullData.setRelationType(r.getType());
-        fullData.setBelongId(r.getBelongId());
     }
 
-    public ObjectElement<V> convert2Object(V objectValue) {
+    public ObjectElement<V> convert2ObjectElement(V objectValue) {
         ObjectElement<V> objectElement = new ObjectElement<>();
         objectElement.setObjectId(objectValue.getObjectId());
         objectElement.setType(this.objectTypeHandler.getObjectType(objectValue).getType());
+        objectElement.setName(objectValue.getName());
+        objectElement.setRelationType(objectValue.getRelationType());
         objectElement.setValue(objectValue);
         return objectElement;
     }
@@ -369,7 +423,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
      * 数据保存处理
      */
     @Transactional(rollbackFor = Exception.class)
-    public void saveObjectData(List<O> objectList, List<B> objectBodyList, List<R> relationList) {
+    public void saveObjectData(Collection<O> objectList, Collection<B> objectBodyList, Collection<R> relationList) {
         if (!CollectionUtils.isEmpty(objectList)) {
             this.objectDbHandler.saveObjects(objectList);
         }
@@ -379,56 +433,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         if (!CollectionUtils.isEmpty(relationList)) {
             this.relationDbHandler.saveRelations(relationList);
         }
-    }
-
-    public List<O> data2ObjectEntities(Collection<ObjectElement<V>> objectData) {
-        return objectData.stream().filter(k -> StatusEnum.updateObject(k.getStatus()))
-                .map(this::data2ObjectEntity).toList();
-    }
-
-    public O data2ObjectEntity(ObjectElement<V> data) {
-        O entity = this.objectDbHandler.newObjectEntity();
-        BizExceptionEnum.OBJECT_NEW_OBJECT_ENTITY_NONNULL.nonNull(entity, data.getValue().getObjectId());
-        entity.setObjectId(data.getObjectId());
-        entity.setType(data.getType());
-        entity.setSpaceId(TraceContext.getSpaceIdOrDefault());
-        entity.setDeleted(Boolean.FALSE);
-        entity.setCreateUser(TraceContext.getUserIdOrDefault());
-        return entity;
-    }
-
-    public List<B> data2ObjectBodyEntities(Collection<ObjectElement<V>> objectData) {
-        return objectData.stream().filter(k -> StatusEnum.updateObjectBody(k.getStatus()))
-                .map(this::data2ObjectBodyEntity).toList();
-    }
-
-    public B data2ObjectBodyEntity(ObjectElement<V> data) {
-        B entity = this.objectBodyDbHandler.newObjectBodyEntity();
-        BizExceptionEnum.OBJECT_NEW_OBJECT_BODY_ENTITY_NONNULL.nonNull(entity, data.getValue().getObjectId());
-        entity.setObjectId(data.getObjectId());
-        entity.setName(data.getName());
-        entity.setValue(Jsons.str(data.getValue()));
-        entity.setCreateUser(TraceContext.getUserIdOrDefault());
-        entity.setUpdateUser(TraceContext.getUserIdOrDefault());
-        return entity;
-    }
-
-    public List<R> data2RelationEntities(Collection<ObjectElement<V>> objectData) {
-        return objectData.stream()
-                .filter(k -> StatusEnum.updateRelation(k.getStatus()))
-                .filter(k -> Objects.nonNull(k.getParentObjectId()))
-                .map(this::data2RelationEntity).toList();
-    }
-
-    public R data2RelationEntity(ObjectElement<V> data) {
-        R entity = this.relationDbHandler.newRelationEntity();
-        BizExceptionEnum.OBJECT_NEW_RELATION_ENTITY_NONNULL.nonNull(entity, data.getValue().getObjectId());
-        entity.setObjectId(data.getObjectId());
-        entity.setParentObjectId(data.getParentObjectId());
-        entity.setType(data.getRelationType());
-        entity.setBelongId(data.getBelongId());
-        entity.setCreateUser(TraceContext.getUserIdOrDefault());
-        return entity;
     }
 
     @Builder
@@ -457,7 +461,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .addAction(ObjectTemp::getObjectId)
                 .addAssemble(ObjectTemp::setRelations)
                 .backAcquire().backAssign().invoke()
-                // ObjectTemp 转为 ObjectElement<AbstractValue >
+                // ObjectTemp 转为 ObjectElement<AbstractValue>
                 .casts(es -> Streams.map(es, k -> {
                     if (Objects.isNull(k.getObject())) {
                         return List.<ObjectElement<AbstractValue>>of();
@@ -474,7 +478,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                         ObjectElement<AbstractValue> copy = ObjectElementMapper.INSTANCE.copy(data);
                         copy.setObjectId(r.getObjectId());
                         copy.setParentObjectId(r.getParentObjectId());
-                        copy.setBelongId(r.getBelongId());
                         copy.setRelationType(r.getType());
                         return copy;
                     }).collect(Collectors.toList());
@@ -490,15 +493,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     protected Function<Collection<String>, Map<String, List<R>>> belongIdRelationsGroupMapping() {
         return ks -> {
             List<R> relations = this.relationDbHandler.findRelationsByParentObjectIds(ks);
-            List<R> relationsByBelongIds = this.relationDbHandler.findRelationsByBelongIds(ks);
-            Set<R> rs = new HashSet<>(relations);
-            rs.addAll(relationsByBelongIds);
-            rs.forEach(r -> {
-                if (Objects.isNull(r.getBelongId())) {
-                    r.setBelongId(r.getObjectId());
-                }
-            });
-            return Streams.groupBy(rs, R::getBelongId);
+            return Streams.groupBy(relations, R::getParentObjectId);
         };
     }
 

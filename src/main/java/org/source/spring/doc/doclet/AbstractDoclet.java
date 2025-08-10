@@ -8,9 +8,9 @@ import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.MyOption;
 import org.source.spring.doc.MyOptions;
 import org.source.spring.doc.OptionEnum;
-import org.source.spring.doc.data.ClassDocData;
+import org.source.spring.doc.data.DocClassData;
 import org.source.spring.doc.data.DocData;
-import org.source.spring.doc.data.VariableDocData;
+import org.source.spring.doc.data.DocVariableData;
 import org.source.spring.doc.object.AbstractDocProcessor;
 import org.source.spring.utility.SpringUtil;
 import org.source.utility.utils.Streams;
@@ -69,8 +69,8 @@ public abstract class AbstractDoclet implements Doclet {
 
     protected Set<String> obtainExtraSuperClsNames(List<DocData> docDataList) {
         return docDataList.stream()
-                .filter(ClassDocData.class::isInstance).map(ClassDocData.class::cast)
-                .map(ClassDocData::obtainSuperClassNames).flatMap(Collection::stream).collect(Collectors.toSet());
+                .filter(DocClassData.class::isInstance).map(DocClassData.class::cast)
+                .map(DocClassData::obtainSuperClassNames).flatMap(Collection::stream).collect(Collectors.toSet());
     }
 
     protected void processExtraSuper(Set<String> extraSuperClsNames) {
@@ -84,8 +84,8 @@ public abstract class AbstractDoclet implements Doclet {
 
     protected Set<String> obtainExtraVariableClsNames(List<DocData> docDataList) {
         return docDataList.stream()
-                .filter(VariableDocData.class::isInstance).map(VariableDocData.class::cast)
-                .filter(VariableDocData::notBaseType).map(VariableDocData::getTypeName)
+                .filter(DocVariableData.class::isInstance).map(DocVariableData.class::cast)
+                .filter(DocVariableData::notBaseType).map(DocVariableData::getTypeName)
                 .collect(Collectors.toSet());
     }
 
