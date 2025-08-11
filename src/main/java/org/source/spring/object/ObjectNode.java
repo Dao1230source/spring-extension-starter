@@ -3,20 +3,20 @@ package org.source.spring.object;
 import lombok.Getter;
 import lombok.Setter;
 import org.source.utility.tree.EnhanceNode;
-import org.source.utility.tree.define.EnhanceElement;
 import org.source.utility.utils.Jsons;
 
+import java.util.List;
 import java.util.Objects;
 
 @Setter
 @Getter
-public class ObjectNode<I extends Comparable<I>, E extends EnhanceElement<I>> extends EnhanceNode<I, E, ObjectNode<I, E>> {
+public class ObjectNode<V extends AbstractValue> extends EnhanceNode<String, ObjectElement<V>, ObjectNode<V>> {
     private StatusEnum status;
 
-    private Integer relationType;
+    private List<Integer> relationTypes;
 
     @Override
-    public ObjectNode<I, E> emptyNode() {
+    public ObjectNode<V> emptyNode() {
         return new ObjectNode<>();
     }
 
@@ -28,7 +28,7 @@ public class ObjectNode<I extends Comparable<I>, E extends EnhanceElement<I>> ex
         if (!super.equals(o)) {
             return false;
         }
-        ObjectNode<?, ?> that = (ObjectNode<?, ?>) o;
+        ObjectNode<?> that = (ObjectNode<?>) o;
         return super.equals(o) && getStatus() == that.getStatus();
     }
 

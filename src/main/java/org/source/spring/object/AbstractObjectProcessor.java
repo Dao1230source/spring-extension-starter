@@ -35,8 +35,8 @@ import java.util.stream.Collectors;
 public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R extends RelationEntityDefiner,
         B extends ObjectBodyEntityDefiner, V extends AbstractValue, T extends ObjectTypeDefiner, K> {
 
-    protected final TransmittableThreadLocal<EnhanceTree<String, ObjectElement<V>, ObjectNode<String, ObjectElement<V>>>> objectTreeThreadLocal
-            = TransmittableThreadLocal.withInitial(() -> EnhanceTree.of(new ObjectNode<String, ObjectElement<V>>()));
+    protected final TransmittableThreadLocal<EnhanceTree<String, ObjectElement<V>, ObjectNode<V>>> objectTreeThreadLocal
+            = TransmittableThreadLocal.withInitial(() -> EnhanceTree.of(new ObjectNode<>()));
 
     private final ObjectDbHandlerDefiner<O> objectDbHandler;
     private final ObjectBodyDbHandlerDefiner<B, V, K> objectBodyDbHandler;
@@ -69,11 +69,11 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .addOperates(ObjectEntityDefiner::getType, this.objectTypeHandler.allTypeObjectConsumers());
     }
 
-    public ObjectNode<String, ObjectElement<AbstractValue>> findByObjectIds(Collection<String> objectIds) {
+    public ObjectNode<AbstractValue> findByObjectIds(Collection<String> objectIds) {
         return this.find(objectIds);
     }
 
-    public EnhanceTree<String, ObjectElement<V>, ObjectNode<String, ObjectElement<V>>> getObjectTree() {
+    public EnhanceTree<String, ObjectElement<V>, ObjectNode<V>> getObjectTree() {
         return objectTreeThreadLocal.get();
     }
 
@@ -126,15 +126,15 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
      * @return vs
      */
     public Collection<V> needValidExistsInDb(Collection<V> vs) {
-        Map<String, ObjectNode<String, ObjectElement<V>>> idMap = this.getObjectTree().getIdMap();
+        Map<String, ObjectNode<V>> idMap = this.getObjectTree().getIdMap();
         return Streams.retain(vs, v -> {
-            ObjectNode<String, ObjectElement<V>> node = idMap.get(this.getValueIdGetter().apply(v));
+            ObjectNode<V> node = idMap.get(this.getValueIdGetter().apply(v));
             return Objects.isNull(node) || !StatusEnum.DATABASE.equals(node.getStatus());
         }).toList();
     }
 
-    public EnhanceTree<String, ObjectElement<V>, ObjectNode<String, ObjectElement<V>>> handleDbDataTree() {
-        EnhanceTree<String, ObjectElement<V>, ObjectNode<String, ObjectElement<V>>> tree = this.getObjectTree();
+    public EnhanceTree<String, ObjectElement<V>, ObjectNode<V>> handleDbDataTree() {
+        EnhanceTree<String, ObjectElement<V>, ObjectNode<V>> tree = this.getObjectTree();
         tree.setIdGetter(n -> Node.getProperty(n, this.getElementIdGetter()));
         tree.setParentIdGetter(n -> Node.getProperty(n, this.getElementParentIdGetter()));
         tree.setAfterCreateHandler(n -> n.setStatus(StatusEnum.DATABASE));
@@ -142,8 +142,8 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         return tree;
     }
 
-    public EnhanceTree<String, ObjectElement<V>, ObjectNode<String, ObjectElement<V>>> handleValueDataTree() {
-        EnhanceTree<String, ObjectElement<V>, ObjectNode<String, ObjectElement<V>>> tree = this.getObjectTree();
+    public EnhanceTree<String, ObjectElement<V>, ObjectNode<V>> handleValueDataTree() {
+        EnhanceTree<String, ObjectElement<V>, ObjectNode<V>> tree = this.getObjectTree();
         tree.setAfterCreateHandler(n -> {
             n.setStatus(StatusEnum.CREATED);
             if (Objects.isNull(n.getElement().getObjectId())) {
@@ -163,12 +163,9 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     @SuppressWarnings("unchecked")
     public void save() {
         this.beforePersist();
-        List<ObjectNode<String, ObjectElement<V>>> objectNodes = this.obtainObjectData();
+        List<ObjectNode<V>> objectNodes = this.obtainObjectData();
         if (CollectionUtils.isEmpty(objectNodes)) {
             return;
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("ObjectProcessor.save, objectNodes:{}", Jsons.str(objectNodes));
         }
         ObjectNodesToEntitiesTemp<O, B, R> temp = this.nodeConvertToEntities(objectNodes);
         List<O> objectList = temp.getObjectList();
@@ -185,7 +182,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     public void beforePersist() {
     }
 
-    public List<ObjectNode<String, ObjectElement<V>>> obtainObjectData() {
+    public List<ObjectNode<V>> obtainObjectData() {
         return this.getObjectTree().getIdMap().values().stream()
                 .filter(n -> !StatusEnum.DATABASE.equals(n.getStatus()))
                 .toList();
@@ -199,11 +196,14 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         private List<R> relationList;
     }
 
-    public ObjectNodesToEntitiesTemp<O, B, R> nodeConvertToEntities(List<ObjectNode<String, ObjectElement<V>>> objectNodes) {
+    public ObjectNodesToEntitiesTemp<O, B, R> nodeConvertToEntities(List<ObjectNode<V>> objectNodes) {
         List<O> objectList = new ArrayList<>(objectNodes.size());
         List<B> objectBodyList = new ArrayList<>(objectNodes.size());
         List<R> relationList = new ArrayList<>(objectNodes.size());
         objectNodes.stream().filter(n -> Objects.nonNull(n.getElement())).forEach(n -> {
+            if (log.isDebugEnabled()) {
+                log.debug("nodeConvertToEntities, objectNodes:{}", Jsons.str(n.getElement()));
+            }
             if (StatusEnum.updateObject(n.getStatus())) {
                 objectList.add(this.data2ObjectEntity(n));
             }
@@ -211,13 +211,15 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 objectBodyList.add(this.data2ObjectBodyEntity(n));
             }
             if (StatusEnum.updateRelation(n.getStatus()) && !CollectionUtils.isEmpty(n.getParents())) {
-                n.getParents().forEach(p -> relationList.add(this.data2RelationEntity(n, p)));
+                Iterator<Integer> iterator = Objects.requireNonNullElse(n.getRelationTypes(), List.<Integer>of()).iterator();
+                n.getParents().stream().filter(Node::hasElement).forEach(p ->
+                        relationList.add(this.data2RelationEntity(n, p, iterator.hasNext() ? iterator.next() : null)));
             }
         });
         return new ObjectNodesToEntitiesTemp<>(objectList, objectBodyList, relationList);
     }
 
-    public O data2ObjectEntity(ObjectNode<String, ObjectElement<V>> node) {
+    public O data2ObjectEntity(ObjectNode<V> node) {
         O entity = this.objectDbHandler.newObjectEntity();
         ObjectElement<V> element = node.getElement();
         entity.setObjectId(this.getElementIdGetter().apply(element));
@@ -228,7 +230,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         return entity;
     }
 
-    public B data2ObjectBodyEntity(ObjectNode<String, ObjectElement<V>> node) {
+    public B data2ObjectBodyEntity(ObjectNode<V> node) {
         B entity = this.objectBodyDbHandler.newObjectBodyEntity();
         ObjectElement<V> element = node.getElement();
         entity.setObjectId(this.getElementIdGetter().apply(element));
@@ -239,13 +241,12 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         return entity;
     }
 
-    public R data2RelationEntity(ObjectNode<String, ObjectElement<V>> node, ObjectNode<String, ObjectElement<V>> parent) {
+    public R data2RelationEntity(ObjectNode<V> node, ObjectNode<V> parent, Integer relationType) {
         R entity = this.relationDbHandler.newRelationEntity();
         ObjectElement<V> element = node.getElement();
         entity.setObjectId(this.getElementIdGetter().apply(element));
         entity.setParentObjectId(this.getElementIdGetter().apply(parent.getElement()));
-        Integer relationType = Objects.requireNonNullElseGet(node.getRelationType(), element::getRelationType);
-        entity.setType(relationType);
+        entity.setType(Objects.requireNonNullElseGet(relationType, element::getRelationType));
         entity.setCreateUser(TraceContext.getUserIdOrDefault());
         return entity;
     }
@@ -255,7 +256,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         this.getObjectTree().forEach((i, n) -> n.setStatus(StatusEnum.DATABASE));
     }
 
-    public ObjectNode<String, ObjectElement<V>> mergeNode(ObjectNode<String, ObjectElement<V>> n, ObjectNode<String, ObjectElement<V>> old) {
+    public ObjectNode<V> mergeNode(ObjectNode<V> n, ObjectNode<V> old) {
         log.debug("new object id:{}, status:{}", n.getId(), n.getStatus());
         if (Objects.isNull(old)) {
             // 默认CREATED
@@ -284,7 +285,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         return old;
     }
 
-    public boolean nodeEquals(ObjectNode<String, ObjectElement<V>> n, ObjectNode<String, ObjectElement<V>> old) {
+    public boolean nodeEquals(ObjectNode<V> n, ObjectNode<V> old) {
         return n.equals(old);
     }
 
@@ -445,7 +446,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         private List<R> relations;
     }
 
-    protected ObjectNode<String, ObjectElement<AbstractValue>> find(Collection<String> objectIds) {
+    protected ObjectNode<AbstractValue> find(Collection<String> objectIds) {
         Collection<ObjectElement<AbstractValue>> fullData = Assign.build(objectIds)
                 // objectId 转为 ObjectTemp
                 .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
@@ -487,7 +488,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .addBranches(ObjectElement::getType, this.objectTypeHandler.allTypeAssigners()).invoke()
                 .toList();
         // 组成 tree 结构
-        return EnhanceTree.of(new ObjectNode<String, ObjectElement<AbstractValue>>()).add(fullData);
+        return EnhanceTree.of(new ObjectNode<>()).add(fullData);
     }
 
     protected Function<Collection<String>, Map<String, List<R>>> belongIdRelationsGroupMapping() {

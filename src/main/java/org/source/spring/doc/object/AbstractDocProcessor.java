@@ -6,6 +6,7 @@ import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.data.*;
 import org.source.spring.doc.object.entity.DocEntityDefiner;
 import org.source.spring.doc.object.enums.DocObjectTypeEnum;
+import org.source.spring.doc.object.enums.DocRelationTypeEnum;
 import org.source.spring.object.AbstractObjectProcessor;
 import org.source.spring.object.ObjectElement;
 import org.source.spring.object.ObjectNode;
@@ -63,18 +64,18 @@ public abstract class AbstractDocProcessor
 
 
     @Override
-    public EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> handleDbDataTree() {
+    public EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> handleDbDataTree() {
         return docCustomTree(super.handleDbDataTree());
     }
 
     @Override
-    public EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> handleValueDataTree() {
+    public EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> handleValueDataTree() {
         return docCustomTree(super.handleValueDataTree());
     }
 
     @NotNull
-    private EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> docCustomTree(
-            EnhanceTree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> tree) {
+    private EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> docCustomTree(
+            EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> tree) {
         tree.setIdGetter(n -> Node.getProperty(n, this.getElementIdGetter()));
         tree.setParentIdGetter(n -> Node.getProperty(n, this.getElementParentIdGetter()));
         tree.setAfterAddHandler((n, parent) ->
@@ -83,7 +84,7 @@ public abstract class AbstractDocProcessor
     }
 
     @Override
-    public boolean nodeEquals(ObjectNode<String, ObjectElement<DocData>> n, ObjectNode<String, ObjectElement<DocData>> old) {
+    public boolean nodeEquals(ObjectNode<DocData> n, ObjectNode<DocData> old) {
         ObjectElement<DocData> eleNew = n.getElement();
         ObjectElement<DocData> eleOld = old.getElement();
         return eleNew.getValue().equals(eleOld.getValue())
@@ -96,7 +97,7 @@ public abstract class AbstractDocProcessor
         super.beforePersist();
         this.getObjectTree().forEach((k, v) -> {
             if (v.getElement().getValue() instanceof DocRequestData docRequestData && Objects.nonNull(docRequestData.getMethodNode())) {
-                List<ObjectNode<String, ObjectElement<DocData>>> objectNodes = Node.recursiveChildren(docRequestData.getMethodNode(), true);
+                List<ObjectNode<DocData>> objectNodes = Node.recursiveChildren(docRequestData.getMethodNode(), true);
                 List<String> objectIds = Streams.map(objectNodes, n -> n.getElement().getObjectId())
                         .filter(Objects::nonNull).toList();
                 // 接口请求对应的node设置 belongId
@@ -118,11 +119,11 @@ public abstract class AbstractDocProcessor
      */
     @Override
     public void afterTransfer() {
-        Tree<String, ObjectElement<DocData>, ObjectNode<String, ObjectElement<DocData>>> objectTree = this.getObjectTree();
+        Tree<String, ObjectElement<DocData>, ObjectNode<DocData>> objectTree = this.getObjectTree();
         // 变量不是基础类型的
-        List<ObjectNode<String, ObjectElement<DocData>>> notBaseTypeVariableList = this.getObjectTree().find(n ->
+        List<ObjectNode<DocData>> notBaseTypeVariableList = this.getObjectTree().find(n ->
                 n.getElement().getValue() instanceof DocVariableData variableDocData && variableDocData.notBaseType());
-        Function<Collection<String>, Collection<ObjectNode<String, ObjectElement<DocData>>>> fetcher =
+        Function<Collection<String>, Collection<ObjectNode<DocData>>> fetcher =
                 ks -> objectTree.find(n -> ks.contains(n.getElement().getName()));
         Assign.build(notBaseTypeVariableList)
                 .addAcquire(fetcher, k -> k.getElement().getName())
@@ -133,29 +134,33 @@ public abstract class AbstractDocProcessor
             // 接口文档对象
             if (n.getElement().getValue() instanceof DocRequestData docRequestData) {
                 String methodId = docRequestData.getMethodId();
-                ObjectNode<String, ObjectElement<DocData>> methodNode = objectTree.getIdMap().get(methodId);
+                ObjectNode<DocData> methodNode = objectTree.getIdMap().get(methodId);
                 Node.recursiveChildren(methodNode, true).forEach(on -> {
                     on.appendToParent(n);
-                    n.addChild(on);
+                    if (CollectionUtils.isEmpty(n.getRelationTypes())) {
+                        n.setRelationTypes(new ArrayList<>());
+                        n.getRelationTypes().add(on.getElement().getRelationType());
+                    }
+                    n.getRelationTypes().add(DocRelationTypeEnum.REQUEST.getType());
                 });
             }
             this.mergeSuperClassData(n);
         });
     }
 
-    private void mergeSuperClassData(ObjectNode<String, ObjectElement<DocData>> n) {
+    private void mergeSuperClassData(ObjectNode<DocData> n) {
         // 与父类或接口的数据合并
         if (n.getElement().getValue() instanceof DocClassData docClassData) {
             List<String> superClassNames = docClassData.obtainSuperClassNames();
             if (CollectionUtils.isEmpty(superClassNames)) {
                 return;
             }
-            Optional<ObjectNode<String, ObjectElement<DocData>>> superClsNodeOptional = superClassNames.stream()
+            Optional<ObjectNode<DocData>> superClsNodeOptional = superClassNames.stream()
                     .map(this.getObjectTree()::getById).filter(Objects::nonNull).findFirst();
             if (superClsNodeOptional.isEmpty()) {
                 return;
             }
-            ObjectNode<String, ObjectElement<DocData>> superNode = superClsNodeOptional.get();
+            ObjectNode<DocData> superNode = superClsNodeOptional.get();
             DocData docData = superNode.getElement().getValue();
             if (!(docData instanceof DocClassData superClsDocData)) {
                 return;
@@ -171,7 +176,7 @@ public abstract class AbstractDocProcessor
     }
 
     @Override
-    public B data2ObjectBodyEntity(ObjectNode<String, ObjectElement<DocData>> data) {
+    public B data2ObjectBodyEntity(ObjectNode<DocData> data) {
         B b = super.data2ObjectBodyEntity(data);
         b.setParentName(Objects.requireNonNullElse(data.getElement().getValue().getParentName(), PARENT_NAME_DEFAULT));
         return b;

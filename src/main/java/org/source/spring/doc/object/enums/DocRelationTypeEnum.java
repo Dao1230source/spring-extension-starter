@@ -10,7 +10,7 @@ import org.source.spring.object.enums.RelationTypeDefiner;
 @Getter
 public enum DocRelationTypeEnum implements RelationTypeDefiner {
     SUP_AND_SUB(RelationScopeEnum.SUP_AND_SUB, 10000, "上下级"),
-    VAR_ANNOTATION(RelationScopeEnum.CONSTITUENT, 10001, "变量注解"),
+    REQUEST(RelationScopeEnum.CONSTITUENT, 10001, "网络请求"),
     ;
     private final RelationScopeEnum relationScope;
     private final Integer type;

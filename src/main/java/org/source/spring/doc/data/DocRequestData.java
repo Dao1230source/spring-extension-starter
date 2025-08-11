@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.source.spring.object.ObjectElement;
 import org.source.spring.object.ObjectNode;
 import org.source.utility.constant.Constants;
 
@@ -15,7 +14,7 @@ public class DocRequestData extends DocData {
     private String methodId;
     @JsonIgnore
     @EqualsAndHashCode.Exclude
-    private ObjectNode<String, ObjectElement<DocData>> methodNode;
+    private ObjectNode<DocData> methodNode;
 
     public DocRequestData(Integer sorted, DocMethodData docMethodData, String parentName) {
         this.setMethodId(docMethodData.getFullName());
