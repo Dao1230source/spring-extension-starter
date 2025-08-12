@@ -3,7 +3,6 @@ package org.source.spring.doc.data;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.source.spring.doc.object.enums.DocRelationTypeEnum;
 import org.springframework.util.CollectionUtils;
 
 import javax.lang.model.element.AnnotationMirror;
@@ -22,12 +21,10 @@ public class DocVariableAnnotationData extends DocVariableData {
     private Map<String, String> annotationAttributes = HashMap.newHashMap(16);
 
     public DocVariableAnnotationData(Integer sorted, AnnotationMirror anno, String parentName) {
+        super(sorted, null, anno.getAnnotationType().asElement(), parentName);
         DeclaredType annotationType = anno.getAnnotationType();
-        this.processName(this.obtainName(annotationType.asElement()), parentName);
         this.setTypeKind(annotationType.getKind().name());
         this.setTypeName(annotationType.toString());
-        this.setRelationType(DocRelationTypeEnum.SUP_AND_SUB.getType());
-        this.setSorted(String.valueOf(sorted));
         anno.getElementValues().forEach((methodSymbol, attribute) ->
                 annotationAttributes.put(methodSymbol.getSimpleName().toString(), attribute.getValue().toString()));
     }

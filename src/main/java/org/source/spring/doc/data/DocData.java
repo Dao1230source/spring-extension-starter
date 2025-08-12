@@ -72,6 +72,9 @@ public class DocData extends AbstractValue {
     }
 
     protected <E extends Element> List<String> obtainCommentLines(DocletEnvironment env, E element) {
+        if (Objects.isNull(env) || Objects.isNull(element)) {
+            return List.of();
+        }
         DocTrees trees = env.getDocTrees();
         DocCommentTree docCommentTree = trees.getDocCommentTree(element);
         if (Objects.isNull(docCommentTree)) {

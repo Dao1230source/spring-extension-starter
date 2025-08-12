@@ -43,9 +43,9 @@ public class ObjectElement<V extends AbstractValue> extends EnhanceElement<Strin
     private Integer relationType;
 
     /**
-     * 属主ID
+     * 排序
      */
-    private String belongId;
+    private String sorted;
 
     private Boolean deleted;
 

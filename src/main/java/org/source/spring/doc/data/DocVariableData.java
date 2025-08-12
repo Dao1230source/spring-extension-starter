@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.util.CollectionUtils;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -17,8 +18,16 @@ public class DocVariableData extends DocData {
     private String typeKind;
     private String typeName;
 
-    public <E extends VariableElement> DocVariableData(Integer sorted, DocletEnvironment env, E variableElement, String parentId) {
-        super(sorted, env, variableElement, parentId);
+    public DocVariableData(Integer sorted, String name, String title, String text, String parentName) {
+        super(sorted, name, title, text, parentName);
+    }
+
+    public <E extends Element> DocVariableData(Integer sorted, DocletEnvironment env, E element, String parentName) {
+        super(sorted, env, element, parentName);
+    }
+
+    public <E extends VariableElement> DocVariableData(Integer sorted, DocletEnvironment env, E variableElement, String parentName) {
+        super(sorted, env, variableElement, parentName);
         this.processVariable(variableElement);
     }
 

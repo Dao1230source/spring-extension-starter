@@ -57,7 +57,7 @@ public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V e
         return Jsons.obj(objectBodyEntity.getValue(), objectType.getValueClass());
     }
 
-    default ObjectElement<V> convert2FullData(ObjectTypeDefiner objectType, B entity) {
+    default ObjectElement<V> convertToObjectElement(ObjectTypeDefiner objectType, B entity) {
         ObjectElement<V> fullData = new ObjectElement<>();
         fullData.setType(objectType.getType());
         fullData.setName(entity.getName());

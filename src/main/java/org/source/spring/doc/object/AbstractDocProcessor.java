@@ -183,7 +183,7 @@ public abstract class AbstractDocProcessor
     }
 
     @Override
-    public void handlerAfterObjectBodyConvertToFullData(ObjectElement<DocData> fullData, Map<K, B> objectMap) {
+    public void convertToObjectElementAfterProcessor(ObjectElement<DocData> fullData, Map<String, O> objectMap) {
         if (fullData.getValue().getClass().isAssignableFrom(DocData.class)) {
             fullData.setRelationType(fullData.getValue().getRelationType());
         }

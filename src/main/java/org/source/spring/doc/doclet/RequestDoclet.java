@@ -22,10 +22,11 @@ public class RequestDoclet extends AbstractDoclet {
             List<ExecutableElement> executableElementList = type.getEnclosedElements().stream()
                     .filter(t -> ElementKind.METHOD.equals(t.getKind())).map(ExecutableElement.class::cast).toList();
             AtomicInteger methodSorted = new AtomicInteger(0);
+            AtomicInteger requestSorted = new AtomicInteger(0);
             executableElementList.forEach(method -> {
                 DocMethodData docMethodData = new DocMethodData(methodSorted.getAndIncrement(), env, method, requestClassDocData.getFullName());
                 docDataContainer.add(docMethodData);
-                DocRequestData docRequestData = new DocRequestData(methodSorted.getAndIncrement(), docMethodData, requestClassDocData.getFullName());
+                DocRequestData docRequestData = new DocRequestData(requestSorted.getAndIncrement(), docMethodData, requestClassDocData.getFullName());
                 docDataContainer.add(docRequestData);
                 AtomicInteger paramSorted = new AtomicInteger(0);
                 method.getParameters().forEach(p -> {

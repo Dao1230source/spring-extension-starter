@@ -3,7 +3,6 @@ package org.source.spring.object;
 import com.alibaba.ttl.TransmittableThreadLocal;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.source.spring.exception.BizExceptionEnum;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
@@ -28,6 +27,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @AllArgsConstructor
 @Getter
@@ -108,7 +108,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 log.debug("maybeExistsInDb:{}", maybeExistsInDb);
             }
             // 从数据中查询数据并添加到tree中
-            List<ObjectElement<V>> dataFromDbList = this.findFromDbAndConvert2FullData(maybeExistsInDb);
+            List<ObjectElement<V>> dataFromDbList = this.findFromDbAndConvertToObjectElement(maybeExistsInDb);
             if (log.isDebugEnabled()) {
                 log.debug("dataFromDbList:{}", dataFromDbList);
             }
@@ -222,7 +222,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     public O data2ObjectEntity(ObjectNode<V> node) {
         O entity = this.objectDbHandler.newObjectEntity();
         ObjectElement<V> element = node.getElement();
-        entity.setObjectId(this.getElementIdGetter().apply(element));
+        entity.setObjectId(element.getObjectId());
         entity.setType(element.getType());
         entity.setSpaceId(TraceContext.getSpaceIdOrDefault());
         entity.setDeleted(Boolean.FALSE);
@@ -233,7 +233,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     public B data2ObjectBodyEntity(ObjectNode<V> node) {
         B entity = this.objectBodyDbHandler.newObjectBodyEntity();
         ObjectElement<V> element = node.getElement();
-        entity.setObjectId(this.getElementIdGetter().apply(element));
+        entity.setObjectId(element.getObjectId());
         entity.setName(element.getName());
         entity.setValue(Jsons.str(element.getValue()));
         entity.setCreateUser(TraceContext.getUserIdOrDefault());
@@ -244,9 +244,10 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     public R data2RelationEntity(ObjectNode<V> node, ObjectNode<V> parent, Integer relationType) {
         R entity = this.relationDbHandler.newRelationEntity();
         ObjectElement<V> element = node.getElement();
-        entity.setObjectId(this.getElementIdGetter().apply(element));
-        entity.setParentObjectId(this.getElementIdGetter().apply(parent.getElement()));
+        entity.setObjectId(element.getObjectId());
+        entity.setParentObjectId(parent.getElement().getObjectId());
         entity.setType(Objects.requireNonNullElseGet(relationType, element::getRelationType));
+        entity.setSorted(element.getSorted());
         entity.setCreateUser(TraceContext.getUserIdOrDefault());
         return entity;
     }
@@ -302,112 +303,144 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     @NoArgsConstructor
     @AllArgsConstructor
     @Data
-    public static class FindEntityAndToFullDataTemp<O, B, R, V extends AbstractValue> {
+    public static class FindEntityAndToObjectElementTemp<O, B, R, V extends AbstractValue> {
         private V value;
-        private B objectBodyEntity;
-        private ObjectElement<V> fullData;
-        private List<R> relations;
 
+        private String objectId;
+        private B objectBodyEntity;
+        private O objectEntity;
+        private ObjectElement<V> objectElement;
+
+        private String parentObjectId;
         private B parentObjectBodyEntity;
         private O parentObjectEntity;
-        private ObjectElement<V> parentFullData;
+        private ObjectElement<V> parentObjectElement;
+
+        private List<R> relations;
     }
 
     /**
      * ObjectElement 的key批量查询
      *
      * @param vs vs
-     * @return {@literal Collection<ObjectElement>}
+     * @return {@literal Collection<ObjectElement<V>>}
      */
-    public List<ObjectElement<V>> findFromDbAndConvert2FullData(Collection<V> vs) {
-        Map<String, V> valueTypeMap = Streams.toMap(vs, this.getValueIdGetter());
-        return Assign.build(vs)
-                .cast(v -> FindEntityAndToFullDataTemp.<O, B, R, V>builder().value(v).build())
-                .name("get objectBody and parent objectBody")
+    public List<ObjectElement<V>> findFromDbAndConvertToObjectElement(Collection<V> vs) {
+        Assign<FindEntityAndToObjectElementTemp<O, B, R, V>> assign = Assign.build(vs)
+                .cast(v -> FindEntityAndToObjectElementTemp.<O, B, R, V>builder().value(v).build())
+                .name("get_objectBodies")
                 // 查询 objectBody
                 .addAcquire(this.objectBodyDbHandler::findObjectBodiesByKeys, this.objectBodyDbHandler::objectBodyToKey)
                 .throwException()
-                .afterProcessor((e, map) -> {
-                    if (Objects.nonNull(e.getFullData())) {
-                        this.handlerAfterObjectBodyConvertToFullData(e.getFullData(), map);
-                    }
-                })
+                // ObjectBody key
                 .addAction(k -> this.objectBodyDbHandler.valueToKey(k.getValue()))
-                // 给 objectBodyEntity、ObjectElement<V > 赋值
                 .addAssemble((e, b) -> {
                     e.setObjectBodyEntity(b);
-                    String objectBodyId = this.getObjectBodyIdGetter().apply(b);
-                    V v = valueTypeMap.get(objectBodyId);
-                    BizExceptionEnum.OBJECT_CANNOT_FIND_VALUE.nonNull(v, objectBodyId);
-                    ObjectTypeDefiner type = this.objectTypeHandler.getObjectType(v);
-                    e.setFullData(this.objectTypeHandler.convert2FullData(type, b));
+                    e.setObjectId(b.getObjectId());
                 })
                 .backAcquire()
+                // ObjectBodyEntity parentKey
                 .addAction(k -> this.objectBodyDbHandler.valueToParentKey(k.getValue()))
-                .addAssemble(FindEntityAndToFullDataTemp::setParentObjectBodyEntity)
+                .addAssemble((e, b) -> {
+                    e.setParentObjectBodyEntity(b);
+                    e.setParentObjectId(b.getObjectId());
+                })
                 .backAcquire().backAssign()
-                .addBranch(e -> Objects.nonNull(e.getParentObjectBodyEntity()))
-                .name("get parent fullData")
+                .addBranch(e -> Objects.nonNull(e.getObjectBodyEntity()) || Objects.nonNull(e.getParentObjectBodyEntity()))
+                .name("get_objects")
                 .addAcquire(this.objectDbHandler::findObjects, O::getObjectId)
-                .addAction(e -> e.getParentObjectBodyEntity().getObjectId())
+                .addAction(FindEntityAndToObjectElementTemp::getObjectId)
+                .addAssemble((e, o) -> {
+                    e.setObjectEntity(o);
+                    ObjectTypeDefiner type = this.objectTypeHandler.getObjectType(o.getType());
+                    e.setObjectElement(this.objectTypeHandler.convertToObjectElement(type, e.getObjectBodyEntity()));
+                })
+                .backAcquire()
+                .addAction(FindEntityAndToObjectElementTemp::getParentObjectId)
                 .addAssemble((e, o) -> {
                     e.setParentObjectEntity(o);
                     ObjectTypeDefiner type = this.objectTypeHandler.getObjectType(o.getType());
-                    e.setParentFullData(this.objectTypeHandler.convert2FullData(type, e.getParentObjectBodyEntity()));
+                    e.setParentObjectElement(this.objectTypeHandler.convertToObjectElement(type, e.getParentObjectBodyEntity()));
                 })
-                .backAcquire().backAssign()
+                .backAcquire()
+                .afterProcessor((e, map) -> {
+                    if (Objects.nonNull(e.getObjectElement())) {
+                        this.convertToObjectElementAfterProcessor(e.getObjectElement(), map);
+                    }
+                })
+                .backAssign()
                 .backSuper()
                 // 这里新建分支是因为需要先查询 objectBody，有依赖关系
-                .addBranch(e -> Objects.nonNull(e.getObjectBodyEntity()))
-                .name("get relations")
+                .addBranch(e -> Objects.nonNull(e.getObjectElement()))
+                .name("get_relations")
                 // 根据 objectId 查询 relations ，按objectId 分组，因为一个对象可能有多个父级
                 .<String, List<R>>addAcquire(ks -> Streams.of(this.relationDbHandler.findRelationsByObjectIds(ks)).collect(Collectors.groupingBy(R::getObjectId)))
                 .addAction(e -> e.getObjectBodyEntity().getObjectId())
-                .addAssemble(FindEntityAndToFullDataTemp::setRelations)
+                .addAssemble(FindEntityAndToObjectElementTemp::setRelations)
                 .backAcquire().backAssign()
                 .backSuper()
                 // 最终执行
-                .invoke()
-                // 展开，转换为 ObjectElement<V>
-                .casts(es -> Streams.map(es, e -> {
-                    List<ObjectElement<V>> fullData = new ArrayList<>(this.processFullData(e.getFullData(), e.getRelations()));
-                    if (Objects.nonNull(e.getParentFullData())) {
-                        fullData.add(e.getParentFullData());
-                    }
-                    return fullData;
-                }).flatMap(Collection::stream).toList())
-                .toList();
+                .invoke();
+        // 展开，转换为 ObjectElement<V>
+        List<FindEntityAndToObjectElementTemp<O, B, R, V>> tempList = assign.toList();
+        List<ObjectElement<V>> objectElements = Streams.map(tempList, e -> {
+            List<ObjectElement<V>> elements = new ArrayList<>(this.flatRelations(e.getObjectElement(), e.getRelations()));
+            if (Objects.nonNull(e.getParentObjectElement())) {
+                elements.add(e.getParentObjectElement());
+            }
+            return elements;
+        }).flatMap(Collection::stream).toList();
+        Set<String> objectIds = Streams.map(objectElements, k -> new String[]{k.getObjectId(), k.getParentObjectId()})
+                .flatMap(Stream::of).filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<String> otherParentObjectIds = Streams.map(tempList, k ->
+                        Streams.map(k.getRelations(), R::getParentObjectId).toList())
+                .flatMap(Collection::stream).filter(objectIds::contains).collect(Collectors.toSet());
+        List<ObjectElement<V>> otherElements = Assign.build(otherParentObjectIds)
+                .cast(k -> FindEntityAndToObjectElementTemp.<O, B, R, V>builder().objectId(k).build())
+                .addAcquire(this.objectDbHandler::findObjects, O::getObjectId)
+                .addAction(FindEntityAndToObjectElementTemp::getObjectId)
+                .addAssemble(FindEntityAndToObjectElementTemp::setObjectEntity)
+                .backAcquire().backAssign()
+                .addAcquire(this.objectBodyDbHandler::findObjectBodies, B::getObjectId)
+                .addAction(FindEntityAndToObjectElementTemp::getObjectId)
+                .addAssemble((e, b) -> {
+                    e.setObjectBodyEntity(b);
+                    ObjectTypeDefiner type = this.objectTypeHandler.getObjectType(e.getObjectEntity().getType());
+                    e.setObjectElement(this.objectTypeHandler.convertToObjectElement(type, e.getObjectBodyEntity()));
+                })
+                .backAcquire().backAssign().invoke()
+                .toList().stream().map(FindEntityAndToObjectElementTemp::getObjectElement).toList();
+        return Stream.concat(objectElements.stream(), otherElements.stream()).toList();
     }
 
     /**
      * object 转换为 ObjectElement<V > 时做一些特殊处理
      *
-     * @param fullData  fullData
-     * @param objectMap {@literal <K, ObjectBodyEntity >}
+     * @param objectElement objectElement
+     * @param objectMap     {@literal <K, ObjectBodyEntity >}
      */
-    public void handlerAfterObjectBodyConvertToFullData(ObjectElement<V> fullData, Map<K, B> objectMap) {
+    public void convertToObjectElementAfterProcessor(ObjectElement<V> objectElement, Map<String, O> objectMap) {
 
     }
 
-    public List<ObjectElement<V>> processFullData(ObjectElement<V> objectElement, List<R> rs) {
+    public List<ObjectElement<V>> flatRelations(ObjectElement<V> objectElement, List<R> rs) {
         if (Objects.isNull(objectElement)) {
             return List.of();
         }
         if (CollectionUtils.isEmpty(rs)) {
             return List.of(objectElement);
-        } else {
-            return Streams.map(rs, r -> {
-                @SuppressWarnings("unchecked")
-                ObjectElement<V> copy = (ObjectElement<V>) ObjectElementMapper.INSTANCE.copy((ObjectElement<AbstractValue>) objectElement);
-                this.fullDataFillRelation(copy, r);
-                return copy;
-            }).toList();
         }
+        return Streams.map(rs, r -> {
+            @SuppressWarnings("unchecked")
+            ObjectElement<V> copy = (ObjectElement<V>) ObjectElementMapper.INSTANCE.copy((ObjectElement<AbstractValue>) objectElement);
+            return this.flatRelation(copy, r);
+        }).toList();
     }
 
-    public void fullDataFillRelation(ObjectElement<V> fullData, R r) {
-        fullData.setParentObjectId(r.getParentObjectId());
-        fullData.setRelationType(r.getType());
+    public ObjectElement<V> flatRelation(ObjectElement<V> objectElement, R r) {
+        objectElement.setParentObjectId(r.getParentObjectId());
+        objectElement.setRelationType(r.getType());
+        return objectElement;
     }
 
     public ObjectElement<V> convert2ObjectElement(V objectValue) {
@@ -417,6 +450,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         objectElement.setName(objectValue.getName());
         objectElement.setRelationType(objectValue.getRelationType());
         objectElement.setValue(objectValue);
+        objectElement.setSorted(objectValue.getSorted());
         return objectElement;
     }
 
