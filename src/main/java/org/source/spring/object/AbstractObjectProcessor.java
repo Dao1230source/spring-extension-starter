@@ -144,6 +144,8 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
 
     public EnhanceTree<String, ObjectElement<V>, ObjectNode<V>> handleValueDataTree() {
         EnhanceTree<String, ObjectElement<V>, ObjectNode<V>> tree = this.getObjectTree();
+        tree.setIdGetter(n -> Node.getProperty(n, this.getElementIdGetter()));
+        tree.setParentIdGetter(n -> Node.getProperty(n, this.getElementParentIdGetter()));
         tree.setAfterCreateHandler(n -> {
             n.setStatus(StatusEnum.CREATED);
             if (Objects.isNull(n.getElement().getObjectId())) {
@@ -362,14 +364,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                     ObjectTypeDefiner type = this.objectTypeHandler.getObjectType(o.getType());
                     e.setParentObjectElement(this.objectTypeHandler.convertToObjectElement(type, e.getParentObjectBodyEntity()));
                 })
-                .backAcquire()
-                .afterProcessor((e, map) -> {
-                    if (Objects.nonNull(e.getObjectElement())) {
-                        this.convertToObjectElementAfterProcessor(e.getObjectElement(), map);
-                    }
-                })
-                .backAssign()
-                .backSuper()
+                .backAcquire().backAssign().backSuper()
                 // 这里新建分支是因为需要先查询 objectBody，有依赖关系
                 .addBranch(e -> Objects.nonNull(e.getObjectElement()))
                 .name("get_relations")
@@ -411,16 +406,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .backAcquire().backAssign().invoke()
                 .toList().stream().map(FindEntityAndToObjectElementTemp::getObjectElement).toList();
         return Stream.concat(objectElements.stream(), otherElements.stream()).toList();
-    }
-
-    /**
-     * object 转换为 ObjectElement<V > 时做一些特殊处理
-     *
-     * @param objectElement objectElement
-     * @param objectMap     {@literal <K, ObjectBodyEntity >}
-     */
-    public void convertToObjectElementAfterProcessor(ObjectElement<V> objectElement, Map<String, O> objectMap) {
-
     }
 
     public List<ObjectElement<V>> flatRelations(ObjectElement<V> objectElement, List<R> rs) {

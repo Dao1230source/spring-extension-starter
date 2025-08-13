@@ -3,7 +3,10 @@ package org.source.spring.doc.doclet;
 import jdk.javadoc.doclet.DocletEnvironment;
 import lombok.extern.slf4j.Slf4j;
 import org.source.spring.doc.DocDataContainer;
-import org.source.spring.doc.data.*;
+import org.source.spring.doc.data.DocClassData;
+import org.source.spring.doc.data.DocClassVariableData;
+import org.source.spring.doc.data.DocData;
+import org.source.spring.doc.data.DocVariableFieldData;
 
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.VariableElement;
@@ -23,13 +26,11 @@ public class VariableDoclet extends AbstractDoclet {
             DocClassVariableData classDocData = new DocClassVariableData(typeSorted.getAndIncrement(), env, type, appDocData.getFullName());
             docDataContainer.add(classDocData);
             List<VariableElement> variableElementList = type.getEnclosedElements().stream()
-                    .filter(t -> ElementKind.FIELD.equals(t.getKind())).map(VariableElement.class::cast)
-                    .toList();
+                    .filter(t -> ElementKind.FIELD.equals(t.getKind())).map(VariableElement.class::cast).toList();
             AtomicInteger variableSorted = new AtomicInteger(0);
             variableElementList.forEach(f -> {
                 DocVariableFieldData fieldDocData = new DocVariableFieldData(variableSorted.getAndIncrement(), env, f, classDocData.getFullName());
-                docDataContainer.add(fieldDocData);
-                docDataContainer.add(DocVariableAnnotationData.obtainAnnotationDocDataList(f, fieldDocData.getFullName()));
+                docDataContainer.addVariableData(fieldDocData, f, appDocData);
             });
         });
     }

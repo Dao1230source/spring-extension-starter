@@ -31,8 +31,7 @@ public class RequestDoclet extends AbstractDoclet {
                 AtomicInteger paramSorted = new AtomicInteger(0);
                 method.getParameters().forEach(p -> {
                     DocVariableParamData paramDocData = new DocVariableParamData(paramSorted.getAndIncrement(), env, p, docMethodData.getFullName(), method);
-                    docDataContainer.add(paramDocData);
-                    docDataContainer.add(DocVariableAnnotationData.obtainAnnotationDocDataList(p, paramDocData.getFullName()));
+                    docDataContainer.addVariableData(paramDocData, p, appDocData);
                 });
                 docDataContainer.add(new DocVariableReturnData(methodSorted.getAndIncrement(), method, docMethodData.getFullName()));
             });

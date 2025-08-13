@@ -17,10 +17,7 @@ public class DocRequestData extends DocData {
     private ObjectNode<DocData> methodNode;
 
     public DocRequestData(Integer sorted, DocMethodData docMethodData, String parentName) {
+        super(sorted, docMethodData.getName() + Constants.COLON + "request", "接口请求", null, parentName);
         this.setMethodId(docMethodData.getFullName());
-        String name = docMethodData.getName() + Constants.COLON + "request";
-        this.processName(name, parentName);
-        this.setTitle("接口请求");
-        this.setSorted(String.valueOf(sorted));
     }
 }

@@ -11,6 +11,7 @@ public enum DocObjectTypeEnum implements ObjectTypeDefiner {
      * 接口文档
      */
     DOC(10000, "doc", AbstractDocProcessor.class, DocData.class),
+    DOC_BASE_VARIABLE(10000, "doc", AbstractDocProcessor.class, DocBaseVariableData.class),
     CLASS(10010, "类", AbstractDocProcessor.class, DocClassData.class),
     CLASS_REQUEST(10011, "接口请求类", AbstractDocProcessor.class, DocClassRequestData.class),
     CLASS_VARIABLE(10012, "变量类", AbstractDocProcessor.class, DocClassVariableData.class),

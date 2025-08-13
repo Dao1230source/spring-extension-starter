@@ -32,7 +32,6 @@ import java.util.function.Function;
 public abstract class AbstractDocProcessor
         <O extends ObjectEntityDefiner, R extends RelationEntityDefiner, B extends DocEntityDefiner, K extends DocUniqueKey>
         extends AbstractObjectProcessor<O, R, B, DocData, DocObjectTypeEnum, K> {
-    public static final String PARENT_NAME_DEFAULT = "root";
     private final DocDataContainer docDataContainer = new DocDataContainer();
 
     protected AbstractDocProcessor(ObjectDbHandlerDefiner<O> objectDbHandlerDefiner,
@@ -62,12 +61,6 @@ public abstract class AbstractDocProcessor
         return o -> o.getValue().getParentName();
     }
 
-
-    @Override
-    public EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> handleDbDataTree() {
-        return docCustomTree(super.handleDbDataTree());
-    }
-
     @Override
     public EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> handleValueDataTree() {
         return docCustomTree(super.handleValueDataTree());
@@ -76,8 +69,6 @@ public abstract class AbstractDocProcessor
     @NotNull
     private EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> docCustomTree(
             EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> tree) {
-        tree.setIdGetter(n -> Node.getProperty(n, this.getElementIdGetter()));
-        tree.setParentIdGetter(n -> Node.getProperty(n, this.getElementParentIdGetter()));
         tree.setAfterAddHandler((n, parent) ->
                 Node.setProperty(n, ObjectElement::setParentObjectId, Node.getProperty(parent, ObjectElement::getObjectId)));
         return tree;
@@ -120,8 +111,33 @@ public abstract class AbstractDocProcessor
     @Override
     public void afterTransfer() {
         Tree<String, ObjectElement<DocData>, ObjectNode<DocData>> objectTree = this.getObjectTree();
+        this.processBaseTypes(objectTree);
+        this.processNotBaseTypes(objectTree);
+        objectTree.forEach((k, n) -> {
+            this.processRequestData(n, objectTree);
+            this.mergeSuperClassData(n);
+        });
+    }
+
+    private void processBaseTypes(Tree<String, ObjectElement<DocData>, ObjectNode<DocData>> objectTree) {
+        // 基础变量类型
+        List<ObjectNode<DocData>> baseTypeVariableList = objectTree.find(n ->
+                n.getElement().getValue() instanceof DocVariableData variableDocData && variableDocData.baseType());
+        Function<Collection<String>, Collection<ObjectNode<DocData>>> fetcher = ks -> objectTree.find(n ->
+                DocObjectTypeEnum.DOC_BASE_VARIABLE.getType().equals(n.getElement().getType()) && ks.contains(n.getElement().getName()));
+        Assign.build(baseTypeVariableList)
+                .addAcquire(fetcher, k -> k.getElement().getName())
+                .addAction(n -> n.getElement().getName())
+                .addAssemble((e, t) -> {
+                    e.addChild(t);
+                    t.appendToParent(e);
+                })
+                .backAcquire().backAssign().invoke();
+    }
+
+    private void processNotBaseTypes(Tree<String, ObjectElement<DocData>, ObjectNode<DocData>> objectTree) {
         // 变量不是基础类型的
-        List<ObjectNode<DocData>> notBaseTypeVariableList = this.getObjectTree().find(n ->
+        List<ObjectNode<DocData>> notBaseTypeVariableList = objectTree.find(n ->
                 n.getElement().getValue() instanceof DocVariableData variableDocData && variableDocData.notBaseType());
         Function<Collection<String>, Collection<ObjectNode<DocData>>> fetcher =
                 ks -> objectTree.find(n -> ks.contains(n.getElement().getName()));
@@ -130,22 +146,22 @@ public abstract class AbstractDocProcessor
                 .addAction(n -> ((DocVariableData) n.getElement().getValue()).getTypeName())
                 .addAssemble(AbstractNode::addChild)
                 .backAcquire().backAssign().invoke();
-        objectTree.forEach((k, n) -> {
-            // 接口文档对象
-            if (n.getElement().getValue() instanceof DocRequestData docRequestData) {
-                String methodId = docRequestData.getMethodId();
-                ObjectNode<DocData> methodNode = objectTree.getIdMap().get(methodId);
-                Node.recursiveChildren(methodNode, true).forEach(on -> {
-                    on.appendToParent(n);
-                    if (CollectionUtils.isEmpty(n.getRelationTypes())) {
-                        n.setRelationTypes(new ArrayList<>());
-                        n.getRelationTypes().add(on.getElement().getRelationType());
-                    }
-                    n.getRelationTypes().add(DocRelationTypeEnum.REQUEST.getType());
-                });
-            }
-            this.mergeSuperClassData(n);
-        });
+    }
+
+    private void processRequestData(ObjectNode<DocData> n, Tree<String, ObjectElement<DocData>, ObjectNode<DocData>> objectTree) {
+        // 接口文档对象
+        if (n.getElement().getValue() instanceof DocRequestData docRequestData) {
+            String methodId = docRequestData.getMethodId();
+            ObjectNode<DocData> methodNode = objectTree.getIdMap().get(methodId);
+            Node.recursiveChildren(methodNode, true).forEach(on -> {
+                on.appendToParent(n);
+                if (CollectionUtils.isEmpty(on.getRelationTypes())) {
+                    on.setRelationTypes(new ArrayList<>());
+                    on.getRelationTypes().add(on.getElement().getRelationType());
+                }
+                on.getRelationTypes().add(DocRelationTypeEnum.REQUEST.getType());
+            });
+        }
     }
 
     private void mergeSuperClassData(ObjectNode<DocData> n) {
@@ -172,20 +188,6 @@ public abstract class AbstractDocProcessor
                             .findFirst().ifPresent(sc -> this.mergeValue(c.getElement(), sc.getElement()));
                 }
             });
-        }
-    }
-
-    @Override
-    public B data2ObjectBodyEntity(ObjectNode<DocData> data) {
-        B b = super.data2ObjectBodyEntity(data);
-        b.setParentName(Objects.requireNonNullElse(data.getElement().getValue().getParentName(), PARENT_NAME_DEFAULT));
-        return b;
-    }
-
-    @Override
-    public void convertToObjectElementAfterProcessor(ObjectElement<DocData> fullData, Map<String, O> objectMap) {
-        if (fullData.getValue().getClass().isAssignableFrom(DocData.class)) {
-            fullData.setRelationType(fullData.getValue().getRelationType());
         }
     }
 }
