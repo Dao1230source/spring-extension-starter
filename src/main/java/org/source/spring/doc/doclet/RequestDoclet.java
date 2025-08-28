@@ -17,7 +17,8 @@ public class RequestDoclet extends AbstractDoclet {
     protected void processDoc(DocletEnvironment env, DocDataContainer docDataContainer, DocData appDocData) {
         AtomicInteger typeSorted = new AtomicInteger(0);
         this.obtainScannedResult(env).forEach(type -> {
-            DocClassRequestData requestClassDocData = new DocClassRequestData(typeSorted.getAndIncrement(), env, type, appDocData.getFullName(), this.myOptions.isDocUseSimpleName());
+            DocClassRequestData requestClassDocData = new DocClassRequestData(typeSorted.getAndIncrement(), env, type,
+                    appDocData.getFullName(), this.myOptions.isDocUseSimpleName());
             docDataContainer.add(requestClassDocData);
             List<ExecutableElement> executableElementList = type.getEnclosedElements().stream()
                     .filter(t -> ElementKind.METHOD.equals(t.getKind())).map(ExecutableElement.class::cast).toList();

@@ -40,8 +40,9 @@ public enum BizExceptionEnum implements EnumProcessor<BizException> {
     LOG_METHOD_PARAM_RESULT_MUST_EQUAL_SIZE("方法的参数和结果集合大小必须相等"),
 
     /**
-     *
+     * object
      */
+    OBJECT_MERGE_ERROR("AbstractObjectProcessor.merge() error"),
     OBJECT_VALUE_CLASS_NOT_DEFINED("object value class not defined"),
     OBJECT_TYPE_NOT_DEFINED("object type not defined"),
     OBJECT_CANNOT_FIND_VALUE("cannot find value by id"),

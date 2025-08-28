@@ -21,10 +21,14 @@ public class DocClassData extends DocData {
 
     private String superClass;
     private List<String> interfaceClasses;
+    private boolean docUseSimpleName;
 
-    protected <E extends TypeElement> DocClassData(Integer sorted, DocletEnvironment env, E type, String parentId) {
-        super(sorted, env, type, parentId);
-        this.processSuperClass(type);
+    protected <E extends TypeElement> DocClassData(Integer sorted, DocletEnvironment env, E element,
+                                                   String parentId, boolean docUseSimpleName) {
+        super(sorted, env, element, parentId);
+        this.docUseSimpleName = docUseSimpleName;
+        this.processSuperClass(element);
+        this.processName(this.obtainName(element), parentId);
     }
 
     protected <E extends TypeElement> void processSuperClass(E type) {
@@ -34,7 +38,11 @@ public class DocClassData extends DocData {
 
     @Override
     protected <E extends Element> String obtainName(E element) {
-        return ((TypeElement) element).getQualifiedName().toString();
+        if (this.isDocUseSimpleName()) {
+            return element.getSimpleName().toString();
+        } else {
+            return ((TypeElement) element).getQualifiedName().toString();
+        }
     }
 
     public List<String> obtainSuperClassNames() {

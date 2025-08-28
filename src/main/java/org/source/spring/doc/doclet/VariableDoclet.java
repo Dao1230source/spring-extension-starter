@@ -23,7 +23,8 @@ public class VariableDoclet extends AbstractDoclet {
     protected void processDoc(DocletEnvironment env, DocDataContainer docDataContainer, DocData appDocData) {
         AtomicInteger typeSorted = new AtomicInteger(0);
         this.obtainScannedResult(env).forEach(type -> {
-            DocClassVariableData classDocData = new DocClassVariableData(typeSorted.getAndIncrement(), env, type, appDocData.getFullName());
+            DocClassVariableData classDocData = new DocClassVariableData(typeSorted.getAndIncrement(), env, type,
+                    appDocData.getFullName(), this.myOptions.isDocUseSimpleName());
             docDataContainer.add(classDocData);
             List<VariableElement> variableElementList = type.getEnclosedElements().stream()
                     .filter(t -> ElementKind.FIELD.equals(t.getKind())).map(VariableElement.class::cast).toList();

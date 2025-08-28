@@ -3,6 +3,7 @@ package org.source.spring.object;
 import com.alibaba.ttl.TransmittableThreadLocal;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.source.spring.exception.BizExceptionEnum;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
@@ -99,24 +100,31 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
      * @param vs es
      */
     public void merge(Collection<V> vs) {
-        if (log.isDebugEnabled()) {
-            log.debug("source values:{}", Jsons.str(vs));
-        }
-        Collection<V> maybeExistsInDb = this.needValidExistsInDb(vs);
-        if (!CollectionUtils.isEmpty(maybeExistsInDb)) {
+        try {
             if (log.isDebugEnabled()) {
-                log.debug("maybeExistsInDb:{}", maybeExistsInDb);
+                log.debug("source values:{}", Jsons.str(vs));
             }
-            // 从数据中查询数据并添加到tree中
-            List<ObjectElement<V>> dataFromDbList = this.findFromDbAndConvertToObjectElement(maybeExistsInDb);
-            if (log.isDebugEnabled()) {
-                log.debug("dataFromDbList:{}", dataFromDbList);
+            Collection<V> maybeExistsInDb = this.needValidExistsInDb(vs);
+            if (!CollectionUtils.isEmpty(maybeExistsInDb)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("maybeExistsInDb:{}", maybeExistsInDb);
+                }
+                // 从数据中查询数据并添加到tree中
+                List<ObjectElement<V>> dataFromDbList = this.findFromDbAndConvertToObjectElement(maybeExistsInDb);
+                if (log.isDebugEnabled()) {
+                    log.debug("dataFromDbList:{}", dataFromDbList);
+                }
+                this.handleDbDataTree().add(dataFromDbList);
             }
-            this.handleDbDataTree().add(dataFromDbList);
+            Collection<ObjectElement<V>> objectElements = Streams.map(vs, this::convert2ObjectElement).filter(Objects::nonNull).toList();
+            this.handleValueDataTree().add(objectElements);
+            this.afterTransfer();
+        } catch (Exception e) {
+            this.getObjectTree().clear();
+            log.error("AbstractObjectProcessor.merge error", e);
+            throw BizExceptionEnum.OBJECT_MERGE_ERROR.except(e);
+
         }
-        Collection<ObjectElement<V>> objectElements = Streams.map(vs, this::convert2ObjectElement).filter(Objects::nonNull).toList();
-        this.handleValueDataTree().add(objectElements);
-        this.afterTransfer();
     }
 
     /**

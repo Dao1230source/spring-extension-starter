@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.util.CollectionUtils;
 
-import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import java.util.List;
 
@@ -20,22 +19,11 @@ public class DocClassRequestData extends DocClassData implements Path {
 
     private List<String> paths;
     private List<String> requestMethods;
-    private boolean docUseSimpleName;
 
-    public <E extends TypeElement> DocClassRequestData(Integer sorted, DocletEnvironment env, E element, String parentId, boolean docUseSimpleName) {
-        super(sorted, env, element, parentId);
-        this.docUseSimpleName = docUseSimpleName;
-        this.processName(this.obtainName(element), parentId);
+    public <E extends TypeElement> DocClassRequestData(Integer sorted, DocletEnvironment env, E element,
+                                                       String parentId, boolean docUseSimpleName) {
+        super(sorted, env, element, parentId, docUseSimpleName);
         this.processRequestMapping(element);
-    }
-
-    @Override
-    protected <E extends Element> String obtainName(E element) {
-        if (docUseSimpleName) {
-            return element.getSimpleName().toString();
-        } else {
-            return ((TypeElement) element).getQualifiedName().toString();
-        }
     }
 
     @Override

@@ -2,6 +2,7 @@ package org.source.spring.doc.data;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.source.spring.doc.object.enums.DocRelationTypeEnum;
 
 /**
  * 基础变量
@@ -16,5 +17,6 @@ public class DocBaseVariableData extends DocData {
 
     public <V extends DocVariableData> DocBaseVariableData(V paramData, String parentName) {
         super(0, paramData.getName(), paramData.getTitle(), paramData.getText(), parentName);
+        this.setRelationType(DocRelationTypeEnum.BASE_VARIABLE.getType());
     }
 }

@@ -11,7 +11,7 @@ public enum DocObjectTypeEnum implements ObjectTypeDefiner {
      * 接口文档
      */
     DOC(10000, "doc", AbstractDocProcessor.class, DocData.class),
-    DOC_BASE_VARIABLE(10000, "doc", AbstractDocProcessor.class, DocBaseVariableData.class),
+    BASE_VARIABLE(10001, "doc", AbstractDocProcessor.class, DocBaseVariableData.class),
     CLASS(10010, "类", AbstractDocProcessor.class, DocClassData.class),
     CLASS_REQUEST(10011, "接口请求类", AbstractDocProcessor.class, DocClassRequestData.class),
     CLASS_VARIABLE(10012, "变量类", AbstractDocProcessor.class, DocClassVariableData.class),
@@ -20,7 +20,7 @@ public enum DocObjectTypeEnum implements ObjectTypeDefiner {
     VARIABLE_PARAM(10031, "参数", AbstractDocProcessor.class, DocVariableParamData.class),
     VARIABLE_FIELD(10032, "字段", AbstractDocProcessor.class, DocVariableFieldData.class),
     VARIABLE_RETURN(10033, "返回值", AbstractDocProcessor.class, DocVariableReturnData.class),
-    ANNOTATION(10040, "注解", AbstractDocProcessor.class, DocVariableAnnotationData.class),
+    VARIABLE_ANNOTATION(10040, "注解", AbstractDocProcessor.class, DocVariableAnnotationData.class),
     REQUEST(10050, "接口", AbstractDocProcessor.class, DocRequestData.class),
     ;
     private final Integer type;

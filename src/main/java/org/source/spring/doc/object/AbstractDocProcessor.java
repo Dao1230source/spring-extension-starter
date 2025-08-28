@@ -124,7 +124,7 @@ public abstract class AbstractDocProcessor
         List<ObjectNode<DocData>> baseTypeVariableList = objectTree.find(n ->
                 n.getElement().getValue() instanceof DocVariableData variableDocData && variableDocData.baseType());
         Function<Collection<String>, Collection<ObjectNode<DocData>>> fetcher = ks -> objectTree.find(n ->
-                DocObjectTypeEnum.DOC_BASE_VARIABLE.getType().equals(n.getElement().getType()) && ks.contains(n.getElement().getName()));
+                DocObjectTypeEnum.BASE_VARIABLE.getType().equals(n.getElement().getType()) && ks.contains(n.getElement().getName()));
         Assign.build(baseTypeVariableList)
                 .addAcquire(fetcher, k -> k.getElement().getName())
                 .addAction(n -> n.getElement().getName())
@@ -189,5 +189,16 @@ public abstract class AbstractDocProcessor
                 }
             });
         }
+    }
+
+    @Override
+    public B data2ObjectBodyEntity(ObjectNode<DocData> node) {
+        B b = super.data2ObjectBodyEntity(node);
+        DocData docData = Node.getProperty(node, ObjectElement::getValue);
+        if (Objects.nonNull(docData)) {
+            b.setName(docData.getFullName());
+            b.setParentName(docData.getParentName());
+        }
+        return b;
     }
 }
