@@ -123,7 +123,6 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
             this.getObjectTree().clear();
             log.error("AbstractObjectProcessor.merge error", e);
             throw BizExceptionEnum.OBJECT_MERGE_ERROR.except(e);
-
         }
     }
 
