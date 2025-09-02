@@ -2,6 +2,7 @@ package org.source.spring.doc.data;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.source.spring.doc.object.enums.DocRelationTypeEnum;
 
 /**
@@ -11,6 +12,7 @@ import org.source.spring.doc.object.enums.DocRelationTypeEnum;
  * 可以和sql表字段对应
  * </pre>
  */
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class DocBaseVariableData extends DocData {

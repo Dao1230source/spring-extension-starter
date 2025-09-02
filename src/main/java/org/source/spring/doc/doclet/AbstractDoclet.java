@@ -78,6 +78,7 @@ public abstract class AbstractDoclet implements Doclet {
         if (Objects.nonNull(options)) {
             options.setDocletClass(RequestDoclet.class);
             options.setAccessKind(MyOptions.AccessKindEnum.PUBLIC);
+            options.setDocUseSimpleName(this.myOptions.isDocUseSimpleName());
             MyOptions.getTask(options).call();
         }
     }
@@ -94,6 +95,7 @@ public abstract class AbstractDoclet implements Doclet {
         if (Objects.nonNull(options)) {
             options.setDocletClass(VariableDoclet.class);
             options.setAccessKind(MyOptions.AccessKindEnum.PRIVATE);
+            options.setDocUseSimpleName(this.myOptions.isDocUseSimpleName());
             MyOptions.getTask(options).call();
         }
     }

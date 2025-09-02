@@ -1,10 +1,10 @@
 package org.source.spring.doc.object.handler;
 
-import org.apache.commons.lang3.StringUtils;
 import org.source.spring.doc.data.DocData;
 import org.source.spring.doc.object.entity.DocEntityDefiner;
 import org.source.spring.object.handler.ObjectBodyDbHandlerDefiner;
 import org.source.utility.constant.Constants;
+import org.springframework.util.StringUtils;
 
 public abstract class AbstractDocDbHandler<B extends DocEntityDefiner, K> implements ObjectBodyDbHandlerDefiner<B, DocData, K> {
 
@@ -23,7 +23,7 @@ public abstract class AbstractDocDbHandler<B extends DocEntityDefiner, K> implem
     @Override
     public K valueToParentKey(DocData docData) {
         String parentName = docData.getParentName();
-        if (StringUtils.isBlank(parentName)) {
+        if (!StringUtils.hasText(parentName)) {
             return null;
         }
         int i = parentName.lastIndexOf(Constants.COLON);
