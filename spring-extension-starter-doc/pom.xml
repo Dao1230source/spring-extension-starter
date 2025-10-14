@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.github.dao1230source</groupId>
+        <artifactId>parent</artifactId>
+        <version>0.0.12</version>
+        <relativePath/>
+    </parent>
+    <artifactId>spring-extension-starter-doc</artifactId>
+    <dependencies>
+    </dependencies>
+
+    <name>spring-extension-starter-doc</name>
+    <description>
+        spring-extension-starter-doc
+    </description>
+    <url>https://github.com/Dao1230source/spring-extension-starter.git</url>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>Zeng FuGen</name>
+            <email>dao1230.source@gmail.com</email>
+            <organization>dao1230</organization>
+            <organizationUrl>https://github.com/Dao1230source</organizationUrl>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:git://github.com/Dao1230source/spring-extension-starter.git</connection>
+        <developerConnection>scm:git:ssh://Dao1230source/spring-extension-starter.git</developerConnection>
+        <url>https://github.com/Dao1230source/spring-extension-starter/tree/master</url>
+    </scm>
+
+</project>
