@@ -6,12 +6,23 @@
     <parent>
         <groupId>io.github.dao1230source</groupId>
         <artifactId>parent</artifactId>
-        <version>0.0.11</version>
+        <version>0.0.12</version>
         <relativePath/>
     </parent>
 
     <artifactId>spring-extension-starter</artifactId>
-    <version>0.0.12</version>
+    <packaging>pom</packaging>
+    <properties>
+        <spring-extension-starter-version>0.0.12</spring-extension-starter-version>
+        <java.version>21</java.version>
+    </properties>
+
+    <modules>
+        <module>spring-extension-starter-common</module>
+        <module>spring-extension-starter-rest</module>
+        <module>spring-extension-starter-cache</module>
+        <module>spring-extension-starter-trace</module>
+    </modules>
 
     <dependencies>
         <dependency>
@@ -82,6 +93,10 @@
         <dependency>
             <groupId>net.ttddyy</groupId>
             <artifactId>datasource-proxy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
         </dependency>
 
     </dependencies>

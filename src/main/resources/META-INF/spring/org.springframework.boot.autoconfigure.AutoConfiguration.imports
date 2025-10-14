@@ -2,7 +2,7 @@
 org.source.spring.EnableAopConfig
 # cache
 org.source.spring.cache.ScanProcessorConfig
-org.source.spring.cache.ConfigureCacheConfig
+org.source.spring.cache.ConfigureCacheUtil
 org.source.spring.cache.ConfigureInterceptorConfig
 org.source.spring.cache.ConfigureTtlProperties
 # doc
@@ -12,8 +12,6 @@ org.source.spring.exception.ExtendPackagesConfig
 # i18n
 org.source.spring.i18n.I18nConfig
 org.source.spring.i18n.I18nScanConfig
-# io
-org.source.spring.io.ValidateConfig
 # json
 org.source.spring.json.JacksonConfig
 # log
@@ -30,16 +28,12 @@ org.source.spring.properties.SecurityProperties
 # redis
 org.source.spring.redis.config.RedisConfig
 org.source.spring.redis.pubsub.RedisPubsubConfig
-org.source.spring.redis.lock.DistributedLockAspect
+org.source.spring.redis.lock.LockAspect
 org.source.spring.redis.redisson.RedissonConfig
-# request
-org.source.spring.request.RetrofitConfig
-org.source.spring.request.RequestProperties
-org.source.spring.request.BizRequestConfig
 # scan
 org.source.spring.scan.ScanConfig
 # uid
-org.source.spring.uid.IdConfig
+org.source.spring.uid.UidConfig
 # utility
 org.source.spring.utility.SystemUtil
 org.source.spring.utility.SpringUtil
