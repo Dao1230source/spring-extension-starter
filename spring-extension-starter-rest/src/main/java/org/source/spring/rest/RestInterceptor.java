@@ -2,7 +2,6 @@ package org.source.spring.rest;
 
 import okhttp3.Interceptor;
 import okhttp3.Response;
-import org.jetbrains.annotations.NotNull;
 import org.source.spring.trace.TraceContext;
 import org.source.utility.enums.BaseExceptionEnum;
 
@@ -15,9 +14,8 @@ public class RestInterceptor implements Interceptor {
         this.secretKey = secretKey;
     }
 
-    @NotNull
     @Override
-    public Response intercept(@NotNull Interceptor.Chain chain) throws IOException {
+    public Response intercept(Interceptor.Chain chain) throws IOException {
         okhttp3.Request original = chain.request();
         BaseExceptionEnum.NOT_NULL.nonNull(secretKey,
                 "org.source.common.secretKey must be configured");
