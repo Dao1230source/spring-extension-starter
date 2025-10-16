@@ -5,7 +5,6 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -25,7 +24,6 @@ import java.util.Map;
  *
  * @author zengfugen
  */
-@ConditionalOnMissingBean
 @AutoConfiguration
 public class RedisPubsubConfig implements BeanFactoryAware {
 

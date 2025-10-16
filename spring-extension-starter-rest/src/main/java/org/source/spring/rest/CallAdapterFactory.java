@@ -2,11 +2,9 @@ package org.source.spring.rest;
 
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.ResponseBody;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.source.utility.enums.BaseExceptionEnum;
 import org.source.utility.exceptions.BaseException;
-import org.source.utility.utils.Jsons;
 import retrofit2.Call;
 import retrofit2.CallAdapter;
 import retrofit2.Response;
@@ -21,9 +19,8 @@ import java.util.Objects;
 public class CallAdapterFactory extends CallAdapter.Factory {
     @Nullable
     @Override
-    public CallAdapter<?, ?> get(@NotNull Type returnType, Annotation @NotNull [] annotations, @NotNull Retrofit retrofit) {
+    public CallAdapter<?, ?> get(Type returnType, Annotation[] annotations, Retrofit retrofit) {
         return new UnwrapCallAdapter<>(returnType);
-
     }
 
     static final class UnwrapCallAdapter<R> implements CallAdapter<R, R> {
@@ -34,12 +31,12 @@ public class CallAdapterFactory extends CallAdapter.Factory {
         }
 
         @Override
-        public @NotNull Type responseType() {
+        public Type responseType() {
             return returnType;
         }
 
         @Override
-        public @NotNull R adapt(@NotNull Call<R> call) {
+        public R adapt(Call<R> call) {
             try {
                 return doCall(call);
             } catch (Exception e) {
@@ -54,14 +51,10 @@ public class CallAdapterFactory extends CallAdapter.Factory {
             }
             Response<R> response = call.execute();
             if (response.isSuccessful()) {
-                return response.body();
+                return Objects.requireNonNullElse(response.body(), null);
             } else {
                 try (ResponseBody errorBody = response.errorBody()) {
-                    if (Objects.isNull(errorBody)) {
-                        throw BaseExceptionEnum.REQUEST_DO_CALL_EXCEPTION.except();
-                    }
-                    BaseException bizException = Jsons.obj(errorBody.string(), BaseException.class);
-                    throw BaseException.except(bizException, () -> BaseExceptionEnum.REQUEST_DO_CALL_EXCEPTION.except(errorBody.toString()));
+                    throw BaseExceptionEnum.REQUEST_DO_CALL_EXCEPTION.except(Objects.nonNull(errorBody) ? errorBody.string() : null);
                 }
             }
         }

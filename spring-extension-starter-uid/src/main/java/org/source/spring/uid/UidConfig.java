@@ -6,7 +6,6 @@ import org.source.spring.common.utility.SystemUtil;
 import org.source.utility.utils.Dates;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
@@ -17,7 +16,6 @@ import java.util.Collections;
 
 @Slf4j
 @RequiredArgsConstructor
-@EnableConfigurationProperties(UidProperties.class)
 @AutoConfiguration
 public class UidConfig {
     public static final String NODE_ID_KEY = "unique_id::node_id::key";

@@ -13,7 +13,6 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 /**
  * @author zengfugen
  */
-@ConditionalOnMissingBean
 @AutoConfiguration
 public class RedisConfig {
 

@@ -22,6 +22,8 @@
         <module>spring-extension-starter-rest</module>
         <module>spring-extension-starter-cache</module>
         <module>spring-extension-starter-trace</module>
+        <module>spring-extension-starter-uid</module>
+        <module>spring-extension-starter-redis</module>
     </modules>
 
     <dependencies>

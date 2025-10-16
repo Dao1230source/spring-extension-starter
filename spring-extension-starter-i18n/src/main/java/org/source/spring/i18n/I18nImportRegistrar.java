@@ -1,7 +1,7 @@
 package org.source.spring.i18n;
 
 import lombok.extern.slf4j.Slf4j;
-import org.source.spring.common.utility.EnableAnnotationUtil;
+import org.source.spring.common.utility.ImportRegistrarUtil;
 import org.source.spring.i18n.annotation.I18nServer;
 import org.source.spring.i18n.enums.I18nRefTypeEnum;
 import org.source.spring.i18n.facade.data.Dict;
@@ -33,7 +33,7 @@ public class I18nImportRegistrar implements ImportBeanDefinitionRegistrar {
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         // 添加包含过滤器，只扫描带有注解的类
         scanner.addIncludeFilter(new AnnotationTypeFilter(I18nServer.class));
-        String[] basePackages = EnableAnnotationUtil.getBasePackages(importingClassMetadata, EnableExtendedI18n.class.getName());
+        String[] basePackages = ImportRegistrarUtil.getBasePackages(importingClassMetadata, EnableExtendedI18n.class.getName());
         Streams.of(basePackages)
                 .map(basePackage -> Streams.of(scanner.findCandidateComponents(basePackage))
                         .map(beanDefinition -> Reflects.classForName(beanDefinition.getBeanClassName())).toList())

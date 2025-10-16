@@ -1,37 +1,39 @@
 package org.source.spring.rest;
 
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
-import org.source.utility.constant.Constants;
+import org.source.spring.common.utility.ImportRegistrarUtil;
 import org.source.utility.enums.BaseExceptionEnum;
 import org.source.utility.utils.Jsons;
-import org.source.utility.utils.Reflects;
-import org.source.utility.utils.Strings;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 import retrofit2.Retrofit;
 
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 public class RestInterfaceScanner extends ClassPathScanningCandidateComponentProvider {
     public static final String PROPERTIES_PREFIX_SECURITY = "org.source.security.";
     public static final String PROPERTIES_PREFIX_REST = "org.source.spring.rests.";
     private final BeanDefinitionRegistry registry;
     private final Environment environment;
+    private final ResourceLoader resourceLoader;
     private final OkHttpClient okHttpClient;
 
-    public RestInterfaceScanner(BeanDefinitionRegistry registry, Environment environment) {
+    public RestInterfaceScanner(BeanDefinitionRegistry registry, Environment environment, ResourceLoader resourceLoader) {
         super(false);
-        setResourceLoader((registry instanceof ResourceLoader resourceLoader ? resourceLoader : null));
+        setResourceLoader(resourceLoader);
         this.registry = registry;
         this.environment = environment;
+        this.resourceLoader = resourceLoader;
         this.okHttpClient = this.obtainOkHttpClient();
     }
 
@@ -64,31 +66,28 @@ public class RestInterfaceScanner extends ClassPathScanningCandidateComponentPro
     protected void registerInterfaceBeanDefinition(BeanDefinition beanDefinition) {
         // 实际注册逻辑
         String className = beanDefinition.getBeanClassName();
-        System.out.println("Registering interface: " + className);
+        log.debug("Registering interface: {}", className);
         AnnotationMetadata annotationMetadata = ((AnnotatedBeanDefinition) beanDefinition).getMetadata();
         Map<String, Object> annotationAttributes = annotationMetadata.getAnnotationAttributes(Rest.class.getName());
         assert annotationAttributes != null;
         String restName = (String) annotationAttributes.get("name");
-        RestProperties properties = this.obtainRestProperties(restName);
+        RestProperties.NamedRestProperties properties = this.obtainRestProperties(restName);
         AdviceJacksonConverterFactory converterFactory = new AdviceJacksonConverterFactory(
                 restName, Jsons.getInstance(), properties.isAutoUnpackResponse(), properties.isAutoPackRequest());
         Retrofit retrofit = new Retrofit.Builder().client(this.okHttpClient).addCallAdapterFactory(new CallAdapterFactory())
                 .addConverterFactory(converterFactory).baseUrl(properties.getBaseUrl()).build();
-        Class<?> restClass = Reflects.classForNameOrDefault(beanDefinition.getBeanClassName(), null);
-        GenericBeanDefinition restBeanDefinition = new GenericBeanDefinition();
-        restBeanDefinition.setInstanceSupplier(() -> retrofit.create(restClass));
-        String beanName = Strings.removePrefixAndLowerFirst(restClass.getSimpleName(), Constants.EMPTY);
-        this.registry.registerBeanDefinition(beanName, restBeanDefinition);
+        Class<?> restClass = ClassUtils.resolveClassName(restName, this.resourceLoader.getClassLoader());
+        ImportRegistrarUtil.registerBeanDefinition(registry, restClass, () -> retrofit.create(restClass));
     }
 
-    protected RestProperties obtainRestProperties(String restName) {
+    protected RestProperties.NamedRestProperties obtainRestProperties(String restName) {
         String baseUrl = environment.getProperty(PROPERTIES_PREFIX_REST + restName + ".baseUrl");
         if (!StringUtils.hasLength(baseUrl)) {
             throw new IllegalArgumentException(String.format("properties of name:%s is null", restName));
         }
         boolean autoUnpackResponse = Boolean.parseBoolean(environment.getProperty(PROPERTIES_PREFIX_REST + restName + ".autoUnpackResponse", "true"));
         boolean autoPackRequest = Boolean.parseBoolean(environment.getProperty(PROPERTIES_PREFIX_REST + restName + ".autoPackRequest", "false"));
-        return new RestProperties(baseUrl, autoUnpackResponse, autoPackRequest);
+        return new RestProperties.NamedRestProperties(baseUrl, autoUnpackResponse, autoPackRequest);
     }
 
 }
