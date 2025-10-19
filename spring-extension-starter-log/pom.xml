@@ -4,17 +4,41 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.github.dao1230source</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>spring-extension-starter-parent</artifactId>
         <version>0.0.12</version>
         <relativePath/>
     </parent>
-    <artifactId>spring-extension-starter-doc</artifactId>
+    <artifactId>spring-extension-starter-log</artifactId>
     <dependencies>
+        <dependency>
+            <groupId>io.github.dao1230source</groupId>
+            <artifactId>spring-extension-starter-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.dao1230source</groupId>
+            <artifactId>spring-extension-starter-trace</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.ttddyy</groupId>
+            <artifactId>datasource-proxy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+            <version>3.5.6</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>6.2.3</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
-    <name>spring-extension-starter-doc</name>
+    <name>spring-extension-starter-log</name>
     <description>
-        spring-extension-starter-doc
+        spring-extension-starter-log
     </description>
     <url>https://github.com/Dao1230source/spring-extension-starter.git</url>
     <licenses>

@@ -5,6 +5,7 @@ import lombok.Setter;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.context.expression.MethodBasedEvaluationContext;
 import org.springframework.core.ParameterNameDiscoverer;
+import org.springframework.lang.Nullable;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -42,7 +43,7 @@ public class ExtendEvaluationContext<T extends ExtendRootObject> extends MethodB
         super.setVariable(VariableConstants.METHOD_LOCATION, root.getMethodLocation());
     }
 
-    public void setMethodResult(Object methodResult) {
+    public void setMethodResult(@Nullable Object methodResult) {
         this.root.setMethodResult(methodResult);
         if (Objects.nonNull(methodResult)) {
             super.setVariable(VariableConstants.METHOD_RESULT, methodResult);

@@ -3,6 +3,7 @@ package org.source.spring.common.spel;
 import lombok.Data;
 import org.aopalliance.intercept.MethodInvocation;
 import org.source.utility.constant.Constants;
+import org.springframework.lang.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.Objects;
@@ -17,9 +18,11 @@ public class ExtendRootObject {
     /*
      * 扩展属性
      */
+    @Nullable
     private Object methodResult;
     private String methodLocation;
     private Object param;
+    @Nullable
     private Object result;
 
     public ExtendRootObject(MethodInvocation invocation) {

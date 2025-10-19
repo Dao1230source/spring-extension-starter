@@ -18,19 +18,17 @@
     </properties>
 
     <modules>
+        <module>spring-extension-starter-parent</module>
         <module>spring-extension-starter-common</module>
         <module>spring-extension-starter-rest</module>
         <module>spring-extension-starter-cache</module>
         <module>spring-extension-starter-trace</module>
         <module>spring-extension-starter-uid</module>
         <module>spring-extension-starter-redis</module>
+        <module>spring-extension-starter-log</module>
     </modules>
 
     <dependencies>
-        <dependency>
-            <groupId>io.github.dao1230source</groupId>
-            <artifactId>utility</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
@@ -38,6 +36,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure-processor</artifactId>
+        </dependency>
+        <!--
+        <dependency>
+            <groupId>io.github.dao1230source</groupId>
+            <artifactId>utility</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.data</groupId>
@@ -79,7 +82,7 @@
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
         </dependency>
-        <!-- others -->
+        &lt;!&ndash; others &ndash;&gt;
         <dependency>
             <groupId>com.squareup.retrofit2</groupId>
             <artifactId>retrofit</artifactId>
@@ -100,7 +103,7 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
         </dependency>
-
+-->
     </dependencies>
 
     <name>spring-extension-starter</name>

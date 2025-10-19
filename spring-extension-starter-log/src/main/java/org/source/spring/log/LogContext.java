@@ -3,7 +3,7 @@ package org.source.spring.log;
 import com.alibaba.ttl.TransmittableThreadLocal;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
+import org.springframework.lang.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,13 +14,11 @@ public class LogContext {
     private static final ThreadLocal<Map<String, Deque<Map<String, Object>>>> VARIABLES =
             TransmittableThreadLocal.withInitial(ConcurrentHashMap::new);
 
-    @NotNull
     private static Deque<Map<String, Object>> getDeque(String scopeName) {
         Map<String, Deque<Map<String, Object>>> nameDequeMap = VARIABLES.get();
         return nameDequeMap.computeIfAbsent(scopeName, k -> new ArrayDeque<>());
     }
 
-    @NotNull
     private static Map<String, Object> getData(String scopeName) {
         Deque<Map<String, Object>> deque = getDeque(scopeName);
         Map<String, Object> variables = deque.peekFirst();
@@ -35,11 +33,11 @@ public class LogContext {
         getDeque(scopeName).remove();
     }
 
-    public static Object get(String scopeName, String key) {
+    public static @Nullable Object get(String scopeName, String key) {
         return getData(scopeName).get(key);
     }
 
-    public static void set(String scopeName, String k, Object v) {
+    public static void set(String scopeName, String k, @Nullable Object v) {
         Map<String, Object> map = getData(scopeName);
         if (Objects.nonNull(v)) {
             map.put(k, v);
@@ -56,7 +54,7 @@ public class LogContext {
         VARIABLES.remove();
     }
 
-    static Object searchAll(String scopeName, String k) {
+    static @Nullable Object searchAll(String scopeName, String k) {
         Deque<Map<String, Object>> deque = getDeque(scopeName);
         Map<String, Object> maps = new ArrayList<>(deque).stream().reduce(HashMap.newHashMap(4), (m1, m2) -> {
             m1.putAll(m2);

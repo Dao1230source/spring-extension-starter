@@ -4,11 +4,10 @@ import lombok.Data;
 import lombok.Getter;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.source.spring.expression.ExtendEvaluationContext;
-import org.source.spring.expression.ExtendRootObject;
+import org.source.spring.common.spel.ExtendEvaluationContext;
+import org.source.spring.common.spel.ExtendRootObject;
 import org.springframework.core.Ordered;
+import org.springframework.lang.Nullable;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -46,7 +45,7 @@ public abstract class LogAnnotationHandler<A extends Annotation, P extends LogAn
 
     public abstract void finals(MethodDetail<A> detail);
 
-    public abstract boolean matches(@NotNull Method method, @NotNull Class<?> targetClass);
+    public abstract boolean matches(Method method, Class<?> targetClass);
 
     public abstract P getProcessor();
 
@@ -60,7 +59,7 @@ public abstract class LogAnnotationHandler<A extends Annotation, P extends LogAn
         this.before(detail);
     }
 
-    public void doAfter(MethodDetail<A> detail, Object result) {
+    public void doAfter(MethodDetail<A> detail, @Nullable Object result) {
         detail.logData.setEndTime(LocalDateTime.now());
         detail.evaluationContext.setMethodResult(result);
         this.after(detail);

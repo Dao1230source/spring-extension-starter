@@ -1,18 +1,15 @@
 package org.source.spring.log.handler;
 
-import org.jetbrains.annotations.NotNull;
 import org.source.spring.log.LogAnnotationHandler;
 import org.source.spring.log.Logs;
 import org.source.spring.log.annotation.LogContext;
 import org.source.spring.log.enums.LogSystemTypeEnum;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.reflect.Method;
 
-@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "log", havingValue = "true", matchIfMissing = true)
 @AutoConfiguration
 public class ControllerScopeHandler extends LogAnnotationHandler<LogContext, ControllerScopeHandler> {
 
@@ -28,7 +25,7 @@ public class ControllerScopeHandler extends LogAnnotationHandler<LogContext, Con
     }
 
     @Override
-    public boolean matches(@NotNull Method method, @NotNull Class<?> targetClass) {
+    public boolean matches(Method method, Class<?> targetClass) {
         return targetClass.isAnnotationPresent(RestController.class) || targetClass.isAnnotationPresent(Controller.class);
     }
 

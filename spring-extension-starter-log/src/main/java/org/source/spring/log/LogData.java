@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.source.spring.log.enums.LogBizTypeEnum;
 import org.source.spring.log.enums.LogSystemTypeEnum;
+import org.springframework.lang.Nullable;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -79,6 +80,7 @@ public class LogData {
     /**
      * 返回数据
      */
+    @Nullable
     private Object result;
     /*
     扩展数据

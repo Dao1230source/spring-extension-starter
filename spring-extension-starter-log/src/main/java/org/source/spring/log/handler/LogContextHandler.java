@@ -6,7 +6,6 @@ import org.source.spring.log.Logs;
 import org.source.spring.log.annotation.LogContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.lang.NonNull;
 
 import java.lang.reflect.Method;
 import java.util.Objects;
@@ -38,7 +37,7 @@ public class LogContextHandler extends LogAnnotationHandler<LogContext, LogConte
     }
 
     @Override
-    public boolean matches(@NonNull Method method, @NonNull Class<?> targetClass) {
+    public boolean matches(Method method, Class<?> targetClass) {
         return method.isAnnotationPresent(LogContext.class) || targetClass.isAnnotationPresent(LogContext.class);
     }
 

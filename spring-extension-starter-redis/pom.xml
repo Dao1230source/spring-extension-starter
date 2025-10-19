@@ -4,16 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.github.dao1230source</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>spring-extension-starter-parent</artifactId>
         <version>0.0.12</version>
         <relativePath/>
     </parent>
     <artifactId>spring-extension-starter-redis</artifactId>
     <dependencies>
-        <dependency>
-            <groupId>io.github.dao1230source</groupId>
-            <artifactId>utility</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.github.dao1230source</groupId>
             <artifactId>spring-extension-starter-common</artifactId>

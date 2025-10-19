@@ -1,6 +1,5 @@
 package org.source.spring.log;
 
-import org.jetbrains.annotations.NotNull;
 import org.springframework.aop.support.StaticMethodMatcherPointcutAdvisor;
 
 import java.lang.annotation.Annotation;
@@ -15,7 +14,7 @@ public class LogMethodAdviser<A extends Annotation, P extends LogAnnotationHandl
     }
 
     @Override
-    public boolean matches(@NotNull Method method, @NotNull Class<?> targetClass) {
+    public boolean matches(Method method, Class<?> targetClass) {
         return logMethodInterceptor.getProcessor().matches(method, targetClass);
     }
 

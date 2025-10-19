@@ -1,6 +1,5 @@
 package org.source.spring.log.datasource;
 
-import jakarta.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import net.ttddyy.dsproxy.listener.logging.CommonsLogLevel;
 import net.ttddyy.dsproxy.support.ProxyDataSource;
@@ -11,6 +10,7 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.Ordered;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
@@ -27,7 +27,7 @@ public class DataSourceProxyBeanPostProcessor implements BeanPostProcessor, Orde
     }
 
     @Override
-    public Object postProcessAfterInitialization(@Nonnull Object bean, @Nonnull String beanName) throws BeansException {
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         if (bean instanceof DataSource actualDataSource && !(bean instanceof ProxyDataSource)) {
             final ProxyFactory proxyFactory = new ProxyFactory(actualDataSource);
             proxyFactory.addAdvice(new ProxyDataSourceInterceptor(actualDataSource));
@@ -50,7 +50,7 @@ public class DataSourceProxyBeanPostProcessor implements BeanPostProcessor, Orde
         }
 
         @Override
-        public Object invoke(final MethodInvocation invocation) throws Throwable {
+        public @Nullable Object invoke(final MethodInvocation invocation) throws Throwable {
             final Method proxyMethod = ReflectionUtils.findMethod(this.dataSource.getClass(),
                     invocation.getMethod().getName());
             if (proxyMethod != null) {

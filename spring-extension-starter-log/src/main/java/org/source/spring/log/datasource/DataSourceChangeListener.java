@@ -11,6 +11,8 @@ import org.source.spring.log.enums.LogSystemTypeEnum;
 import org.source.spring.log.enums.PersistTypeEnum;
 import org.source.spring.trace.TraceContext;
 import org.source.utility.constant.Constants;
+import org.source.utility.utils.Streams;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -55,7 +57,7 @@ public class DataSourceChangeListener extends AbstractQueryLoggingListener {
             } catch (Exception e) {
                 log.error("datasource proxy parse sql:{}", sql, e);
             }
-            if (excludeTableNames.contains(tableInfo.getTableName())) {
+            if (!CollectionUtils.isEmpty(excludeTableNames) && excludeTableNames.contains(tableInfo.getTableName())) {
                 return;
             }
             List<DataSourceRecordLog> recordLogs = queryInfoLog(execInfo, queryInfo, tableInfo);
@@ -75,8 +77,8 @@ public class DataSourceChangeListener extends AbstractQueryLoggingListener {
     }
 
     protected List<DataSourceRecordLog> queryInfoLog(ExecutionInfo execInfo, QueryInfo queryInfo, DataSourceTableInfo tableInfo) {
-        List<String> keyColumns = Logs.getDataSourceKeyColumns();
-        List<String> excludeColumns = Logs.getDataSourceExcludeColumns();
+        List<String> keyColumns = Objects.requireNonNullElse(Logs.getDataSourceKeyColumns(), List.of());
+        List<String> excludeColumns = Objects.requireNonNullElse(Logs.getDataSourceExcludeColumns(), List.of());
         List<List<ParameterSetOperation>> parametersList = queryInfo.getParametersList();
         List<DataSourceRecordLog> logs = new ArrayList<>();
         for (int i = 0; i < parametersList.size(); i++) {
@@ -90,7 +92,7 @@ public class DataSourceChangeListener extends AbstractQueryLoggingListener {
             if (effectRecords <= 0) {
                 continue;
             }
-            String key = keyColumns.stream().map(columnValueMap::get).filter(Objects::nonNull).reduce(Constants.COLON, String::concat);
+            String key = Streams.of(keyColumns).map(columnValueMap::get).filter(Objects::nonNull).reduce(Constants.COLON, String::concat);
             tableInfo.getValueColumns().stream().filter(k -> !excludeColumns.contains(k)).forEach(c -> {
                 DataSourceRecordLog recordLog = DataSourceRecordLog.builder()
                         .logId(key)

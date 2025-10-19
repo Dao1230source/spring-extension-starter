@@ -1,15 +1,14 @@
 package org.source.spring.log.handler;
 
 import org.aopalliance.intercept.MethodInvocation;
-import org.jetbrains.annotations.NotNull;
-import org.source.spring.exception.BizExceptionEnum;
-import org.source.spring.expression.ExtendEvaluationContext;
-import org.source.spring.expression.ExtendRootObject;
-import org.source.spring.expression.VariableConstants;
+import org.source.spring.common.exception.SpExtExceptionEnum;
+import org.source.spring.common.spel.ExtendEvaluationContext;
+import org.source.spring.common.spel.ExtendRootObject;
+import org.source.spring.common.spel.VariableConstants;
+import org.source.spring.common.utility.SystemUtil;
 import org.source.spring.log.*;
 import org.source.spring.log.annotation.Log;
 import org.source.spring.trace.TraceContext;
-import org.source.spring.utility.SystemUtil;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.util.StringUtils;
@@ -39,7 +38,7 @@ public class LogHandler extends LogAnnotationHandler<Log, LogHandler> {
     }
 
     @Override
-    public boolean matches(@NotNull Method method, @NotNull Class<?> targetClass) {
+    public boolean matches(Method method, Class<?> targetClass) {
         return method.isAnnotationPresent(Log.class);
     }
 
@@ -70,11 +69,11 @@ public class LogHandler extends LogAnnotationHandler<Log, LogHandler> {
             Iterator<?> rIterator = null;
             // 需要解析方法结果
             if (needParseResult(logAnno)) {
-                BizExceptionEnum.LOG_RESULT_MUST_BE_COLLECTION.isTrue(result instanceof Collection<?>);
+                SpExtExceptionEnum.LOG_RESULT_MUST_BE_COLLECTION.isTrue(result instanceof Collection<?>);
                 // 消除警告
                 assert result instanceof Collection<?>;
                 Collection<?> rs = (Collection<?>) result;
-                BizExceptionEnum.LOG_METHOD_PARAM_RESULT_MUST_EQUAL_SIZE.isTrue(ps.size() == rs.size(),
+                SpExtExceptionEnum.LOG_METHOD_PARAM_RESULT_MUST_EQUAL_SIZE.isTrue(ps.size() == rs.size(),
                         "param size:{}, result size:{}", ps.size(), rs.size());
                 rIterator = rs.iterator();
             }

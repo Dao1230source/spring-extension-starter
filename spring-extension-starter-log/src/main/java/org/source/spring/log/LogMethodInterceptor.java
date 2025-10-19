@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
@@ -18,7 +17,7 @@ public class LogMethodInterceptor<A extends Annotation, P extends LogAnnotationH
 
     @Nullable
     @Override
-    public Object invoke(@NotNull MethodInvocation invocation) throws Throwable {
+    public Object invoke(MethodInvocation invocation) throws Throwable {
         log.debug("processor:{}, method:{}", processor.getClass().getSimpleName(), invocation.getMethod().getName());
         LogAnnotationHandler.MethodDetail<A> detail = processor.load(invocation);
         try {

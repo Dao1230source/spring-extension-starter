@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.source.spring.log.enums.LogBizTypeEnum;
 import org.source.spring.log.enums.LogSystemTypeEnum;
 import org.source.spring.trace.TraceContext;
+import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -33,7 +34,7 @@ public class Logs {
         LogContext.set(scopeName, k, v);
     }
 
-    public static Object get(String scopeName, String k) {
+    public static @Nullable Object get(String scopeName, String k) {
         return LogContext.get(scopeName, k);
     }
 
@@ -53,7 +54,7 @@ public class Logs {
         LogContext.remove(NameConstants.VARIABLES_LOG);
     }
 
-    public static String getLogId() {
+    public static @Nullable String getLogId() {
         return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.LOG_ID);
     }
 
@@ -61,7 +62,7 @@ public class Logs {
         LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.LOG_ID, logId);
     }
 
-    public static String getRefId() {
+    public static @Nullable String getRefId() {
         return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.REF_ID);
     }
 
@@ -69,7 +70,7 @@ public class Logs {
         LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.REF_ID, refId);
     }
 
-    public static String getDesc() {
+    public static @Nullable String getDesc() {
         return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.DESC);
     }
 
@@ -90,19 +91,19 @@ public class Logs {
 
     public static Integer getSystemType(LogSystemTypeEnum systemType) {
         // 非默认值，直接返回
-        if (Objects.nonNull(systemType) && !LogSystemTypeEnum.DEFAULT.equals(systemType)) {
+        if (!LogSystemTypeEnum.DEFAULT.equals(systemType)) {
             return systemType.getType();
         }
         return getSystemType();
     }
 
     public static void setSystemType(LogSystemTypeEnum systemType) {
-        if (Objects.nonNull(systemType) && !LogSystemTypeEnum.DEFAULT.equals(systemType)) {
+        if (!LogSystemTypeEnum.DEFAULT.equals(systemType)) {
             LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.SYSTEM_TYPE, systemType.getType());
         }
     }
 
-    public static String getParentLogId() {
+    public static @Nullable String getParentLogId() {
         return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.PARENT_LOG_ID);
     }
 
@@ -110,7 +111,7 @@ public class Logs {
         LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.PARENT_LOG_ID, parentLogId);
     }
 
-    public static String getTitle() {
+    public static @Nullable String getTitle() {
         return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.TITLE);
     }
 
@@ -118,7 +119,7 @@ public class Logs {
         LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.TITLE, title);
     }
 
-    public static String getUserId() {
+    public static @Nullable String getUserId() {
         return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.USER_ID);
     }
 
@@ -138,19 +139,19 @@ public class Logs {
     }
 
     public static Integer getBizType(LogBizTypeEnum bizType) {
-        if (Objects.nonNull(bizType) && !LogBizTypeEnum.DEFAULT.equals(bizType)) {
+        if (!LogBizTypeEnum.DEFAULT.equals(bizType)) {
             return bizType.getType();
         }
         return getBizType();
     }
 
     public static void setBizType(LogBizTypeEnum bizType) {
-        if (Objects.nonNull(bizType) && !LogBizTypeEnum.DEFAULT.equals(bizType)) {
+        if (!LogBizTypeEnum.DEFAULT.equals(bizType)) {
             LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.BIZ_TYPE, bizType.getType());
         }
     }
 
-    public static Object getParam() {
+    public static @Nullable Object getParam() {
         return LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.PARAM);
     }
 
@@ -158,7 +159,7 @@ public class Logs {
         LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.PARAM, param);
     }
 
-    public static Object getResult() {
+    public static @Nullable Object getResult() {
         return LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.RESULT);
     }
 
@@ -166,7 +167,7 @@ public class Logs {
         LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.RESULT, result);
     }
 
-    public static Object getExtra() {
+    public static @Nullable Object getExtra() {
         return LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.EXTRA);
     }
 
@@ -174,7 +175,7 @@ public class Logs {
         LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.EXTRA, extra);
     }
 
-    public static String getMethodLocation() {
+    public static @Nullable String getMethodLocation() {
         return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.METHOD_LOCATION);
     }
 
@@ -191,13 +192,13 @@ public class Logs {
     }
 
     public static void setLogContextSystemType(LogSystemTypeEnum systemType) {
-        if (Objects.nonNull(systemType) && !LogSystemTypeEnum.DEFAULT.equals(systemType)) {
+        if (!LogSystemTypeEnum.DEFAULT.equals(systemType)) {
             LogContext.set(NameConstants.VARIABLES_LOG_CONTEXT, NameConstants.SYSTEM_TYPE, systemType.getType());
         }
     }
 
     public static void setLogContextBizType(LogBizTypeEnum bizType) {
-        if (Objects.nonNull(bizType) && !LogBizTypeEnum.DEFAULT.equals(bizType)) {
+        if (!LogBizTypeEnum.DEFAULT.equals(bizType)) {
             LogContext.set(NameConstants.VARIABLES_LOG_CONTEXT, NameConstants.BIZ_TYPE, bizType.getType());
         }
     }
@@ -235,17 +236,17 @@ public class Logs {
     }
 
     @SuppressWarnings("unchecked")
-    public static List<String> getDataSourceKeyColumns() {
+    public static @Nullable List<String> getDataSourceKeyColumns() {
         return (List<String>) LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.KEY_COLUMNS);
     }
 
     @SuppressWarnings("unchecked")
-    public static List<String> getDataSourceExcludeTableNames() {
+    public static @Nullable List<String> getDataSourceExcludeTableNames() {
         return (List<String>) LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.EXCLUDE_TABLE_NAMES);
     }
 
     @SuppressWarnings("unchecked")
-    public static List<String> getDataSourceExcludeColumns() {
+    public static @Nullable List<String> getDataSourceExcludeColumns() {
         return (List<String>) LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.EXCLUDE_COLUMNS);
     }
 
