@@ -3,7 +3,7 @@ package org.source.spring.log;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-public class NameConstants {
+public class LogConstants {
     public static final String VARIABLES_LOG = "log";
     public static final String VARIABLES_LOG_CONTEXT = "log_context";
     public static final String VARIABLES_DATA_SOURCE = "data_source";

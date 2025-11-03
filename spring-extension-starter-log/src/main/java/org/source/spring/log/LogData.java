@@ -1,6 +1,5 @@
 package org.source.spring.log;
 
-import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,13 +26,13 @@ public class LogData {
      * ID
      * <br>
      */
-    @NotEmpty(message = "日志ID(logId)不能为空")
     private String logId;
     /**
      * 父ID
      * <br/>
      * 当该日志是某条日志的子项时填写该值，如订单明细（orderItem）之于订单(order)，parentId = orderId
      */
+    @Nullable
     private String parentLogId;
     /**
      * 关联ID
@@ -41,11 +40,11 @@ public class LogData {
      * 将多条日志关联为一个整体的ID，比如订单分为多个步骤：加购物车、提交、支付、卖家发货、签收等等步骤，
      * 每一个步骤都有自己的id，但它们的refId都是orderId
      */
+    @Nullable
     private String refId;
     /**
      * 标题
      */
-    @NotEmpty(message = "标题(title)不能为空")
     private String title;
     /**
      * 描述
@@ -57,6 +56,7 @@ public class LogData {
     /**
      * 默认登录用户
      */
+    @Nullable
     private String userId;
     /**
      * 系统代码层次的分类 {@link LogSystemTypeEnum}
@@ -76,6 +76,7 @@ public class LogData {
     /**
      * 请求数据
      */
+    @Nullable
     private Object param;
     /**
      * 返回数据
@@ -88,10 +89,12 @@ public class LogData {
     /**
      * 扩展数据
      */
+    @Nullable
     private Object extra;
     /**
      * 定位记录日志的方法
      */
+    @Nullable
     private String methodLocation;
     /*
     异常数据，自动赋值
@@ -99,6 +102,7 @@ public class LogData {
     /**
      * 异常信息
      */
+    @Nullable
     private String exceptionMessage;
     /*
     统计数据，自动赋值
@@ -112,13 +116,17 @@ public class LogData {
      */
     private LocalDateTime endTime;
 
-    public static <T> void setIfAbsent(LogData logData,
-                                       Function<LogData, T> getter,
-                                       BiConsumer<LogData, T> setter,
-                                       Supplier<T> supplier) {
-        if (Objects.isNull(getter.apply(logData))) {
-            setter.accept(logData, supplier.get());
+    public <E> void setIfAbsent(Function<LogData, E> getter,
+                                BiConsumer<LogData, E> setter,
+                                Supplier<E> supplier) {
+        if (Objects.isNull(getter.apply(this))) {
+            setter.accept(this, supplier.get());
         }
     }
 
+    public <E> void setNotNull(BiConsumer<LogData, E> setter, @Nullable E v) {
+        if (Objects.nonNull(v)) {
+            setter.accept(this, v);
+        }
+    }
 }

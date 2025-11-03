@@ -1,13 +1,14 @@
 package org.source.spring.log.annotation;
 
+import org.source.spring.common.spel.VariableConstants;
 import org.source.spring.log.enums.LogBizTypeEnum;
 import org.source.spring.log.enums.LogSystemTypeEnum;
 
 import java.lang.annotation.*;
 
 /**
- * 所有的String都是spEl表达式
- */
+* 所有的String都是spEl表达式
+*/
 @Documented
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -67,15 +68,15 @@ public @interface Log {
     /**
      * 返回数据，默认方法的返回值
      */
-    String result() default "#methodResult";
+    String result() default VariableConstants.METHOD_RESULT_SP_EL;
 
     /**
      * 方法定位
      */
-    String methodLocation() default "#methodLocation";
+    String methodLocation() default VariableConstants.METHOD_LOCATION_SP_EL;
 
     /**
      * 扩展数据
      */
-    String extra() default "";
+    String extra() default VariableConstants.EXTRA_SP_EL;
 }

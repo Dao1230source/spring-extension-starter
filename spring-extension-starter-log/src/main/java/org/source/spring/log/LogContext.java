@@ -29,12 +29,21 @@ public class LogContext {
         return variables;
     }
 
-    public static void remove(String scopeName) {
+    public static void clear(String scopeName) {
         getDeque(scopeName).remove();
     }
 
-    public static @Nullable Object get(String scopeName, String key) {
-        return getData(scopeName).get(key);
+    /**
+     * 获取当前层级指定域中的变量的值
+     *
+     * @param scopeName 域名称
+     * @param key       变量名
+     * @param <E>       泛型
+     * @return 变量的值
+     */
+    @SuppressWarnings("unchecked")
+    public static <E> @Nullable E get(String scopeName, String key) {
+        return (E) getData(scopeName).get(key);
     }
 
     public static void set(String scopeName, String k, @Nullable Object v) {
@@ -46,7 +55,7 @@ public class LogContext {
         }
     }
 
-    static void putEmpty(String scopeName) {
+    public static void init(String scopeName) {
         getDeque(scopeName).push(HashMap.newHashMap(16));
     }
 
@@ -54,12 +63,22 @@ public class LogContext {
         VARIABLES.remove();
     }
 
-    static @Nullable Object searchAll(String scopeName, String k) {
+    /**
+     * 获取所有层级指定域中的变量的值
+     *
+     * @param scopeName 域名称
+     * @param key       变量名
+     * @param <E>       泛型
+     * @return 变量的值
+     */
+    @SuppressWarnings("unchecked")
+    public static <E> @Nullable E find(String scopeName, String key) {
         Deque<Map<String, Object>> deque = getDeque(scopeName);
-        Map<String, Object> maps = new ArrayList<>(deque).stream().reduce(HashMap.newHashMap(4), (m1, m2) -> {
-            m1.putAll(m2);
-            return m1;
-        });
-        return maps.get(k);
+        Map<String, Object> maps = new ArrayList<>(deque).stream().reduce(HashMap.newHashMap(4),
+                (m1, m2) -> {
+                    m1.putAll(m2);
+                    return m1;
+                });
+        return (E) maps.get(key);
     }
 }

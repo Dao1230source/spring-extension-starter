@@ -1,15 +1,17 @@
 package org.source.spring.log;
 
+import jakarta.annotation.Nullable;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.source.spring.log.enums.LogBizTypeEnum;
 import org.source.spring.log.enums.LogSystemTypeEnum;
 import org.source.spring.trace.TraceContext;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
 
+@UtilityClass
 @Slf4j
 public class Logs {
     private static LogDataProcessor logDataProcessor;
@@ -19,15 +21,17 @@ public class Logs {
     }
 
     public static void save(List<LogData> logDataList) {
-        logDataProcessor.save(logDataList);
+        if (Objects.nonNull(logDataProcessor)) {
+            logDataProcessor.save(logDataList);
+        }
     }
 
     public static void save(LogData logData) {
-        logDataProcessor.save(List.of(logData));
+        save(List.of(logData));
     }
 
     public static void put(String scopeName) {
-        LogContext.putEmpty(scopeName);
+        LogContext.init(scopeName);
     }
 
     public static void put(String scopeName, String k, Object v) {
@@ -39,7 +43,7 @@ public class Logs {
     }
 
     public static void remove(String scopeName) {
-        LogContext.remove(scopeName);
+        LogContext.clear(scopeName);
     }
 
     public static void clear() {
@@ -47,41 +51,41 @@ public class Logs {
     }
 
     public static void putLog() {
-        LogContext.putEmpty(NameConstants.VARIABLES_LOG);
+        LogContext.init(LogConstants.VARIABLES_LOG);
     }
 
     public static void removeLog() {
-        LogContext.remove(NameConstants.VARIABLES_LOG);
+        LogContext.clear(LogConstants.VARIABLES_LOG);
     }
 
     public static @Nullable String getLogId() {
-        return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.LOG_ID);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.LOG_ID);
     }
 
     public static void setLogId(String logId) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.LOG_ID, logId);
+        LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.LOG_ID, logId);
     }
 
     public static @Nullable String getRefId() {
-        return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.REF_ID);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.REF_ID);
     }
 
     public static void setRefId(String refId) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.REF_ID, refId);
+        LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.REF_ID, refId);
     }
 
     public static @Nullable String getDesc() {
-        return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.DESC);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.DESC);
     }
 
     public static void setDesc(String desc) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.DESC, desc);
+        LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.DESC, desc);
     }
 
     public static Integer getSystemType() {
-        Integer systemType = (Integer) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.SYSTEM_TYPE);
+        Integer systemType = LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.SYSTEM_TYPE);
         if (Objects.isNull(systemType) || LogSystemTypeEnum.DEFAULT.getType().equals(systemType)) {
-            systemType = (Integer) LogContext.searchAll(NameConstants.VARIABLES_LOG_CONTEXT, NameConstants.SYSTEM_TYPE);
+            systemType = LogContext.find(LogConstants.VARIABLES_LOG_CONTEXT, LogConstants.SYSTEM_TYPE);
         }
         if (Objects.isNull(systemType)) {
             systemType = LogSystemTypeEnum.DEFAULT.getType();
@@ -99,38 +103,38 @@ public class Logs {
 
     public static void setSystemType(LogSystemTypeEnum systemType) {
         if (!LogSystemTypeEnum.DEFAULT.equals(systemType)) {
-            LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.SYSTEM_TYPE, systemType.getType());
+            LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.SYSTEM_TYPE, systemType.getType());
         }
     }
 
     public static @Nullable String getParentLogId() {
-        return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.PARENT_LOG_ID);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.PARENT_LOG_ID);
     }
 
     public static void setParentLogId(String parentLogId) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.PARENT_LOG_ID, parentLogId);
+        LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.PARENT_LOG_ID, parentLogId);
     }
 
     public static @Nullable String getTitle() {
-        return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.TITLE);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.TITLE);
     }
 
     public static void setTitle(String title) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.TITLE, title);
+        LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.TITLE, title);
     }
 
     public static @Nullable String getUserId() {
-        return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.USER_ID);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.USER_ID);
     }
 
     public static void setUserId(String userId) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.USER_ID, userId);
+        LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.USER_ID, userId);
     }
 
     public static Integer getBizType() {
-        Integer bizType = (Integer) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.BIZ_TYPE);
+        Integer bizType = LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.BIZ_TYPE);
         if (Objects.isNull(bizType) || LogBizTypeEnum.DEFAULT.getType().equals(bizType)) {
-            bizType = (Integer) LogContext.searchAll(NameConstants.VARIABLES_LOG_CONTEXT, NameConstants.BIZ_TYPE);
+            bizType = LogContext.find(LogConstants.VARIABLES_LOG_CONTEXT, LogConstants.BIZ_TYPE);
         }
         if (Objects.isNull(bizType)) {
             bizType = LogBizTypeEnum.DEFAULT.getType();
@@ -147,72 +151,68 @@ public class Logs {
 
     public static void setBizType(LogBizTypeEnum bizType) {
         if (!LogBizTypeEnum.DEFAULT.equals(bizType)) {
-            LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.BIZ_TYPE, bizType.getType());
+            LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.BIZ_TYPE, bizType.getType());
         }
     }
 
     public static @Nullable Object getParam() {
-        return LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.PARAM);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.PARAM);
     }
 
     public static void setParam(Object param) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.PARAM, param);
+        LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.PARAM, param);
     }
 
     public static @Nullable Object getResult() {
-        return LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.RESULT);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.RESULT);
     }
 
     public static void setResult(Object result) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.RESULT, result);
+        LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.RESULT, result);
     }
 
     public static @Nullable Object getExtra() {
-        return LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.EXTRA);
-    }
-
-    public static void setExtra(Object extra) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.EXTRA, extra);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.EXTRA);
     }
 
     public static @Nullable String getMethodLocation() {
-        return (String) LogContext.get(NameConstants.VARIABLES_LOG, NameConstants.METHOD_LOCATION);
+        return LogContext.get(LogConstants.VARIABLES_LOG, LogConstants.METHOD_LOCATION);
     }
 
-    public static void setMethodLocation(String methodLocation) {
-        LogContext.set(NameConstants.VARIABLES_LOG, NameConstants.METHOD_LOCATION, methodLocation);
+    public static void setExtra(Object extra) {
+        LogContext.set(LogConstants.VARIABLES_LOG, LogConstants.EXTRA, extra);
     }
 
     public static void putLogContext() {
-        LogContext.putEmpty(NameConstants.VARIABLES_LOG_CONTEXT);
+        LogContext.init(LogConstants.VARIABLES_LOG_CONTEXT);
     }
 
     public static void removeLogContext() {
-        LogContext.remove(NameConstants.VARIABLES_LOG_CONTEXT);
+        LogContext.clear(LogConstants.VARIABLES_LOG_CONTEXT);
     }
 
     public static void setLogContextSystemType(LogSystemTypeEnum systemType) {
         if (!LogSystemTypeEnum.DEFAULT.equals(systemType)) {
-            LogContext.set(NameConstants.VARIABLES_LOG_CONTEXT, NameConstants.SYSTEM_TYPE, systemType.getType());
+            LogContext.set(LogConstants.VARIABLES_LOG_CONTEXT, LogConstants.SYSTEM_TYPE, systemType.getType());
         }
     }
 
     public static void setLogContextBizType(LogBizTypeEnum bizType) {
         if (!LogBizTypeEnum.DEFAULT.equals(bizType)) {
-            LogContext.set(NameConstants.VARIABLES_LOG_CONTEXT, NameConstants.BIZ_TYPE, bizType.getType());
+            LogContext.set(LogConstants.VARIABLES_LOG_CONTEXT, LogConstants.BIZ_TYPE, bizType.getType());
         }
     }
 
     public static void putDataSource() {
-        LogContext.putEmpty(NameConstants.VARIABLES_DATA_SOURCE);
+        LogContext.init(LogConstants.VARIABLES_DATA_SOURCE);
     }
 
     public static void removeDataSource() {
-        LogContext.remove(NameConstants.VARIABLES_DATA_SOURCE);
+        LogContext.clear(LogConstants.VARIABLES_DATA_SOURCE);
     }
 
     public static boolean getDataSourceEnabled() {
-        Object o = LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.ENABLED);
+        Object o = LogContext.get(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.ENABLED);
         if (Objects.nonNull(o)) {
             return Boolean.parseBoolean(o.toString());
         }
@@ -220,7 +220,7 @@ public class Logs {
     }
 
     public static String getDataSourceParentLogId() {
-        String parentLogId = (String) LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.PARENT_LOG_ID);
+        String parentLogId = LogContext.get(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.PARENT_LOG_ID);
         if (!StringUtils.hasText(parentLogId)) {
             parentLogId = TraceContext.getTraceId();
         }
@@ -228,49 +228,46 @@ public class Logs {
     }
 
     public static String getDataSourceRefId() {
-        String refId = (String) LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.REF_ID);
+        String refId = LogContext.get(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.REF_ID);
         if (!StringUtils.hasText(refId)) {
             refId = TraceContext.getTraceId();
         }
         return refId;
     }
 
-    @SuppressWarnings("unchecked")
     public static @Nullable List<String> getDataSourceKeyColumns() {
-        return (List<String>) LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.KEY_COLUMNS);
+        return LogContext.get(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.KEY_COLUMNS);
     }
 
-    @SuppressWarnings("unchecked")
     public static @Nullable List<String> getDataSourceExcludeTableNames() {
-        return (List<String>) LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.EXCLUDE_TABLE_NAMES);
+        return LogContext.get(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.EXCLUDE_TABLE_NAMES);
     }
 
-    @SuppressWarnings("unchecked")
     public static @Nullable List<String> getDataSourceExcludeColumns() {
-        return (List<String>) LogContext.get(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.EXCLUDE_COLUMNS);
+        return LogContext.get(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.EXCLUDE_COLUMNS);
     }
 
     public static void setDataSourceEnabled(boolean enabled) {
-        LogContext.set(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.ENABLED, enabled);
+        LogContext.set(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.ENABLED, enabled);
     }
 
     public static void setDataSourceKeyColumns(List<String> keyColumns) {
-        LogContext.set(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.KEY_COLUMNS, keyColumns);
+        LogContext.set(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.KEY_COLUMNS, keyColumns);
     }
 
     public static void setDataSourceExcludeTableNames(List<String> excludeTableNames) {
-        LogContext.set(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.EXCLUDE_TABLE_NAMES, excludeTableNames);
+        LogContext.set(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.EXCLUDE_TABLE_NAMES, excludeTableNames);
     }
 
     public static void setDataSourceExcludeColumns(List<String> excludeColumns) {
-        LogContext.set(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.EXCLUDE_COLUMNS, excludeColumns);
+        LogContext.set(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.EXCLUDE_COLUMNS, excludeColumns);
     }
 
     public static void setDataSourceParentLogId(String parentLogId) {
-        LogContext.set(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.PARENT_LOG_ID, parentLogId);
+        LogContext.set(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.PARENT_LOG_ID, parentLogId);
     }
 
     public static void setDataSourceRefId(String refId) {
-        LogContext.set(NameConstants.VARIABLES_DATA_SOURCE, NameConstants.REF_ID, refId);
+        LogContext.set(LogConstants.VARIABLES_DATA_SOURCE, LogConstants.REF_ID, refId);
     }
 }

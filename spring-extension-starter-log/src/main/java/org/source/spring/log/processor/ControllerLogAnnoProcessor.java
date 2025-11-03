@@ -1,17 +1,14 @@
-package org.source.spring.log.handler;
+package org.source.spring.log.processor;
 
-import org.source.spring.log.LogAnnotationHandler;
 import org.source.spring.log.Logs;
 import org.source.spring.log.annotation.LogContext;
 import org.source.spring.log.enums.LogSystemTypeEnum;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.reflect.Method;
 
-@AutoConfiguration
-public class ControllerScopeHandler extends LogAnnotationHandler<LogContext, ControllerScopeHandler> {
+public class ControllerLogAnnoProcessor extends AbstractLogAnnotationProcessor<LogContext, ControllerLogAnnoProcessor> {
 
     @Override
     public void before(MethodDetail<LogContext> detail) {
@@ -30,12 +27,7 @@ public class ControllerScopeHandler extends LogAnnotationHandler<LogContext, Con
     }
 
     @Override
-    public ControllerScopeHandler getProcessor() {
-        return this;
-    }
-
-    @Override
-    protected int order() {
+    public int order() {
         return 1;
     }
 }

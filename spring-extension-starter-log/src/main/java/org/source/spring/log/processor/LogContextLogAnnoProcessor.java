@@ -1,18 +1,13 @@
-package org.source.spring.log.handler;
+package org.source.spring.log.processor;
 
 import org.aopalliance.intercept.MethodInvocation;
-import org.source.spring.log.LogAnnotationHandler;
 import org.source.spring.log.Logs;
 import org.source.spring.log.annotation.LogContext;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.lang.reflect.Method;
 import java.util.Objects;
 
-@ConditionalOnProperty(prefix = "org.source.spring.enabled", name = "log", havingValue = "true", matchIfMissing = true)
-@AutoConfiguration
-public class LogContextHandler extends LogAnnotationHandler<LogContext, LogContextHandler> {
+public class LogContextLogAnnoProcessor extends AbstractLogAnnotationProcessor<LogContext, LogContextLogAnnoProcessor> {
 
     @Override
     public LogContext obtainAnnotation(MethodInvocation invocation) {
@@ -42,12 +37,7 @@ public class LogContextHandler extends LogAnnotationHandler<LogContext, LogConte
     }
 
     @Override
-    public LogContextHandler getProcessor() {
-        return this;
-    }
-
-    @Override
-    protected int order() {
+    public int order() {
         return 2;
     }
 }

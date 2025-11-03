@@ -1,25 +1,21 @@
 package org.source.spring.log;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.jetbrains.annotations.Nullable;
+import org.source.spring.log.processor.AbstractLogAnnotationProcessor;
 
 import java.lang.annotation.Annotation;
 
 @Slf4j
-@Getter
-@AllArgsConstructor
-public class LogMethodInterceptor<A extends Annotation, P extends LogAnnotationHandler<A, P>> implements MethodInterceptor {
-    private final P processor;
-
+public record LogMethodInterceptor<A extends Annotation, P extends AbstractLogAnnotationProcessor<A, P>>(P processor)
+        implements MethodInterceptor {
     @Nullable
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
         log.debug("processor:{}, method:{}", processor.getClass().getSimpleName(), invocation.getMethod().getName());
-        LogAnnotationHandler.MethodDetail<A> detail = processor.load(invocation);
+        AbstractLogAnnotationProcessor.MethodDetail<A> detail = processor.load(invocation);
         try {
             processor.doBefore(detail);
             Object result = invocation.proceed();

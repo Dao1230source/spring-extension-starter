@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.source.spring.cache.configure.ConfigureCache;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
 import org.source.spring.cache.pubsub.ConfigureCacheMessageDelegate;
-import org.source.spring.common.AbstractContainerReadyImportRegistrar;
+import org.source.spring.common.AbstractImportRegistrar;
 import org.source.spring.common.utility.ImportRegistrarUtil;
 import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
@@ -28,12 +28,15 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class CacheImportRegistrar extends AbstractContainerReadyImportRegistrar {
+public class CacheImportRegistrar extends AbstractImportRegistrar {
+    public CacheImportRegistrar() {
+        super(true);
+    }
 
     @Override
-    protected void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
-                                           BeanDefinitionRegistry registry,
-                                           ApplicationContext applicationContext) {
+    protected void registerBeanDefinitionsAfterContainerReady(AnnotationMetadata importingClassMetadata,
+                                                              BeanDefinitionRegistry registry,
+                                                              ApplicationContext applicationContext) {
         log.debug("ImportBeanDefinitionRegistrar for @EnableExtendedCache");
         List<ConfigureCacheProperties> properties = this.obtainCacheProperties(importingClassMetadata, this.resourceLoader, applicationContext);
         RedisConnectionFactory redisConnectionFactory = applicationContext.getBean(RedisConnectionFactory.class);

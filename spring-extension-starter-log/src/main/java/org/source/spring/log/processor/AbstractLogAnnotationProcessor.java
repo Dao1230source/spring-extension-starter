@@ -1,4 +1,4 @@
-package org.source.spring.log;
+package org.source.spring.log.processor;
 
 import lombok.Data;
 import lombok.Getter;
@@ -6,6 +6,8 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.source.spring.common.spel.ExtendEvaluationContext;
 import org.source.spring.common.spel.ExtendRootObject;
+import org.source.spring.log.LogData;
+import org.source.spring.log.LogExpressionEvaluator;
 import org.springframework.core.Ordered;
 import org.springframework.lang.Nullable;
 
@@ -15,7 +17,7 @@ import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 
 @Getter
-public abstract class LogAnnotationHandler<A extends Annotation, P extends LogAnnotationHandler<A, P>> implements Serializable {
+public abstract class AbstractLogAnnotationProcessor<A extends Annotation, P extends AbstractLogAnnotationProcessor<A, P>> implements Serializable {
     protected static final LogExpressionEvaluator LOG_EVALUATOR = new LogExpressionEvaluator();
 
     @Data
@@ -47,8 +49,6 @@ public abstract class LogAnnotationHandler<A extends Annotation, P extends LogAn
 
     public abstract boolean matches(Method method, Class<?> targetClass);
 
-    public abstract P getProcessor();
-
     @Nullable
     public A obtainAnnotation(MethodInvocation invocation) {
         return null;
@@ -76,13 +76,7 @@ public abstract class LogAnnotationHandler<A extends Annotation, P extends LogAn
         this.finals(detail);
     }
 
-    protected int order() {
+    public int order() {
         return Ordered.LOWEST_PRECEDENCE;
-    }
-
-    public LogMethodAdviser<A, P> createMethodAdviser() {
-        LogMethodAdviser<A, P> logMethodAdviser = new LogMethodAdviser<>(new LogMethodInterceptor<>(this.getProcessor()));
-        logMethodAdviser.setOrder(this.order());
-        return logMethodAdviser;
     }
 }

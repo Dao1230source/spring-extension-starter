@@ -43,7 +43,17 @@ public class ImportRegistrarUtil {
         beanDefinition.setRole(BeanDefinition.ROLE_SUPPORT);
         beanDefinition.setInstanceSupplier(instance);
         String beanName = Strings.removePrefixAndLowerFirst(eClass.getSimpleName(), Constants.EMPTY);
-        log.debug("registerBeanDefinition:{}", beanName);
+        log.debug("registerBeanDefinition single:{}", beanName);
+        registry.registerBeanDefinition(beanName, beanDefinition);
+    }
+
+    public void registerBeanDefinitionPrototype(BeanDefinitionRegistry registry, Class<?> eClass, String beanName, Supplier<?> instance) {
+        GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
+        beanDefinition.setBeanClass(eClass);
+        beanDefinition.setScope(BeanDefinition.SCOPE_PROTOTYPE);
+        beanDefinition.setRole(BeanDefinition.ROLE_SUPPORT);
+        beanDefinition.setInstanceSupplier(instance);
+        log.debug("registerBeanDefinition prototype:{}", beanName);
         registry.registerBeanDefinition(beanName, beanDefinition);
     }
 }

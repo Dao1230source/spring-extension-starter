@@ -44,7 +44,7 @@ public class ExtendExpressionEvaluator<T extends ExtendRootObject, E extends Ext
         return spEl.contains(VariableConstants.RESULT_SP_EL) && !context.methodResultExists();
     }
 
-    public String replacePlaceHolder(String spEl, int idx) {
+    public String replacePlaceholder(String spEl, int idx) {
         spEl = spEl.replace(VariableConstants.PARAM_SP_EL, VariableConstants.PARAM_SP_EL + idx);
         spEl = spEl.replace(VariableConstants.RESULT_SP_EL, VariableConstants.RESULT_SP_EL + idx);
         return spEl;

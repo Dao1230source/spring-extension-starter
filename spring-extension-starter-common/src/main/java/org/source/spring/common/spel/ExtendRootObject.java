@@ -14,16 +14,19 @@ public class ExtendRootObject {
     private final Object[] args;
     private final Object target;
     private final Class<?> targetClass;
+    private String methodLocation;
 
     /*
      * 扩展属性
      */
     @Nullable
-    private Object methodResult;
-    private String methodLocation;
     private Object param;
     @Nullable
+    private Object methodResult;
+    @Nullable
     private Object result;
+    @Nullable
+    private Object extra;
 
     public ExtendRootObject(MethodInvocation invocation) {
         this.method = invocation.getMethod();

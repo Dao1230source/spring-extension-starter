@@ -1,4 +1,4 @@
 @NonNullApi
-package org.source.spring.log.handler;
+package org.source.spring.log.processor;
 
 import org.springframework.lang.NonNullApi;

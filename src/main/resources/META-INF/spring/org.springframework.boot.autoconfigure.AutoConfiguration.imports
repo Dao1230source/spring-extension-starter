@@ -15,11 +15,6 @@ org.source.spring.i18n.I18nScanConfig
 # json
 org.source.spring.json.JacksonConfig
 # log
-org.source.spring.log.handler.ControllerScopeHandler
-org.source.spring.log.handler.DataSourceLogHandler
-org.source.spring.log.handler.LogHandler
-org.source.spring.log.handler.LogContextHandler
-org.source.spring.log.LogConfig
 # mq
 org.source.spring.mq.config.MqMessageConverter
 # properties

@@ -10,6 +10,7 @@ import org.source.spring.log.Logs;
 import org.source.spring.log.enums.LogSystemTypeEnum;
 import org.source.spring.log.enums.PersistTypeEnum;
 import org.source.spring.trace.TraceContext;
+import org.source.spring.uid.Uids;
 import org.source.utility.constant.Constants;
 import org.source.utility.utils.Streams;
 import org.springframework.util.CollectionUtils;
@@ -37,6 +38,10 @@ public class DataSourceChangeListener extends AbstractQueryLoggingListener {
             return;
         }
         List<String> excludeTableNames = Logs.getDataSourceExcludeTableNames();
+        String parentLogId = Logs.getParentLogId();
+        String refId = Logs.getRefId();
+        List<String> keyColumns = Objects.requireNonNullElse(Logs.getDataSourceKeyColumns(), List.of());
+        List<String> excludeColumns = Objects.requireNonNullElse(Logs.getDataSourceExcludeColumns(), List.of());
         queryInfoList.forEach(queryInfo -> {
             String sql = queryInfo.getQuery().toLowerCase();
             // remove hibernate sql comments
@@ -60,12 +65,12 @@ public class DataSourceChangeListener extends AbstractQueryLoggingListener {
             if (!CollectionUtils.isEmpty(excludeTableNames) && excludeTableNames.contains(tableInfo.getTableName())) {
                 return;
             }
-            List<DataSourceRecordLog> recordLogs = queryInfoLog(execInfo, queryInfo, tableInfo);
+            List<DataSourceRecordLog> recordLogs = queryInfoLog(execInfo, queryInfo, tableInfo, keyColumns, excludeColumns);
             List<LogData> logDataList = recordLogs.stream().map(k -> {
                 LogData logData = new LogData();
                 logData.setLogId(k.getLogId());
-                logData.setParentLogId(Logs.getDataSourceParentLogId());
-                logData.setRefId(Logs.getDataSourceRefId());
+                logData.setParentLogId(Objects.requireNonNullElse(parentLogId, k.getLogId()));
+                logData.setRefId(refId);
                 logData.setDesc(k.getPersistTypeEnum().getDesc());
                 logData.setSystemType(LogSystemTypeEnum.DATABASE.getType());
                 logData.setExtra(k);
@@ -76,9 +81,8 @@ public class DataSourceChangeListener extends AbstractQueryLoggingListener {
         });
     }
 
-    protected List<DataSourceRecordLog> queryInfoLog(ExecutionInfo execInfo, QueryInfo queryInfo, DataSourceTableInfo tableInfo) {
-        List<String> keyColumns = Objects.requireNonNullElse(Logs.getDataSourceKeyColumns(), List.of());
-        List<String> excludeColumns = Objects.requireNonNullElse(Logs.getDataSourceExcludeColumns(), List.of());
+    protected List<DataSourceRecordLog> queryInfoLog(ExecutionInfo execInfo, QueryInfo queryInfo, DataSourceTableInfo tableInfo,
+                                                     List<String> keyColumns, List<String> excludeColumns) {
         List<List<ParameterSetOperation>> parametersList = queryInfo.getParametersList();
         List<DataSourceRecordLog> logs = new ArrayList<>();
         for (int i = 0; i < parametersList.size(); i++) {
@@ -95,7 +99,8 @@ public class DataSourceChangeListener extends AbstractQueryLoggingListener {
             String key = Streams.of(keyColumns).map(columnValueMap::get).filter(Objects::nonNull).reduce(Constants.COLON, String::concat);
             tableInfo.getValueColumns().stream().filter(k -> !excludeColumns.contains(k)).forEach(c -> {
                 DataSourceRecordLog recordLog = DataSourceRecordLog.builder()
-                        .logId(key)
+                        .logId(Uids.stringId())
+                        .uniqueKey(key)
                         .tableName(tableInfo.getTableName())
                         .effectRecordNum(effectRecords)
                         .columnName(c)
