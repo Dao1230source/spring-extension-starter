@@ -11,7 +11,6 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.Ordered;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
 import javax.sql.DataSource;
@@ -19,7 +18,6 @@ import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-@Component
 public class DataSourceProxyBeanPostProcessor implements BeanPostProcessor, Ordered {
     @Override
     public int getOrder() {

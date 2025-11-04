@@ -1,12 +1,13 @@
 package org.source.spring.uid;
 
+import com.github.yitter.contract.IdGeneratorOptions;
+import com.github.yitter.idgen.YitIdHelper;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.source.spring.common.utility.SystemUtil;
 import org.source.utility.utils.Dates;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.util.Assert;
@@ -38,19 +39,19 @@ public class UidConfig {
     private final UidProperties uidProperties;
     private final StringRedisTemplate redisTemplate;
 
-
-    @ConditionalOnMissingBean
-    @Bean
-    public UidGenerator idGenerator() {
+    @PostConstruct
+    public void init() {
         LocalDateTime localDateTime = Dates.strToLocalDateTime(uidProperties.getStartDate());
         long startTimestamp = Dates.localDateTimeToMilli(localDateTime);
         String nodeName = SystemUtil.getIp() + SystemUtil.getPort();
         String nodeId = redisTemplate.execute(RedisScript.of(NODE_ID_SCRIPT, String.class), Collections.singletonList(NODE_ID_KEY), nodeName);
         Assert.notNull(nodeId, "get nodeId null from redis");
         log.debug("nodeName:{}, nodeId:{}", nodeName, nodeId);
-        UidGenerator uidGenerator = new UidGenerator(Long.parseLong(nodeId), startTimestamp, uidProperties.getNodeIdBits(), uidProperties.getSequenceBits());
-        Uids.setUidGenerator(uidGenerator);
-        return uidGenerator;
+        IdGeneratorOptions options = new IdGeneratorOptions(Short.parseShort(nodeId));
+        options.BaseTime = startTimestamp;
+        options.WorkerIdBitLength = uidProperties.getNodeIdBits();
+        options.SeqBitLength = uidProperties.getSequenceBits();
+        YitIdHelper.setIdGenerator(options);
     }
 
 }

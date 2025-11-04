@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Data
 public class DataSourceRecordLog {
     private String logId;
+    private String bizId;
     private String tableName;
     private String columnName;
     private String columnValue;

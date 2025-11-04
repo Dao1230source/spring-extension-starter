@@ -1,30 +1,25 @@
 package org.source.spring.uid;
 
+import com.github.yitter.idgen.YitIdHelper;
 import lombok.experimental.UtilityClass;
-
-import java.util.Objects;
+import org.springframework.util.StringUtils;
 
 @UtilityClass
 public class Uids {
-    private static UidGenerator uidGenerator;
-
-    public static synchronized void setUidGenerator(UidGenerator uidGenerator) {
-        Uids.uidGenerator = uidGenerator;
-    }
-
     public static Long longId() {
-        if (Objects.isNull(uidGenerator)) {
-            return null;
-        }
-        return uidGenerator.nextId();
+        return YitIdHelper.nextId();
     }
 
     public static String stringId() {
+        return stringId("");
+    }
+
+    public static String stringId(String prefix) {
         Long id = longId();
-        if (Objects.nonNull(id)) {
-            return String.valueOf(id);
+        if (StringUtils.hasText(prefix)) {
+            return prefix + id;
         }
-        return null;
+        return "" + id;
     }
 
 }

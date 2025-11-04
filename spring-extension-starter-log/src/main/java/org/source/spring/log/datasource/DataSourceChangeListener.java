@@ -100,7 +100,7 @@ public class DataSourceChangeListener extends AbstractQueryLoggingListener {
             tableInfo.getValueColumns().stream().filter(k -> !excludeColumns.contains(k)).forEach(c -> {
                 DataSourceRecordLog recordLog = DataSourceRecordLog.builder()
                         .logId(Uids.stringId())
-                        .uniqueKey(key)
+                        .bizId(key)
                         .tableName(tableInfo.getTableName())
                         .effectRecordNum(effectRecords)
                         .columnName(c)
