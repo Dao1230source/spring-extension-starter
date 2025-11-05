@@ -6,10 +6,18 @@ import org.source.spring.log.enums.PersistTypeEnum;
 
 import java.time.LocalDateTime;
 
+/**
+ * 数据库表变动日志数据，bizId是业务数据唯一值，按字段变化计转为多个变更对象。
+ * <pre>
+ * 比如新增用户：
+ * bizId=00001，tableName=user，columnName=userId，columnValue=00001
+ * bizId=00001，tableName=user，columnName=username，columnValue=Tom
+ * ...
+ * </pre>
+ */
 @Builder
 @Data
-public class DataSourceRecordLog {
-    private String logId;
+public class DataSourceLogData {
     private String bizId;
     private String tableName;
     private String columnName;

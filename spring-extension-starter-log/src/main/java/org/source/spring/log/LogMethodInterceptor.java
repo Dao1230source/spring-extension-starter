@@ -9,7 +9,7 @@ import org.source.spring.log.processor.AbstractLogAnnotationProcessor;
 import java.lang.annotation.Annotation;
 
 @Slf4j
-public record LogMethodInterceptor<A extends Annotation, P extends AbstractLogAnnotationProcessor<A, P>>(P processor)
+public record LogMethodInterceptor<A extends Annotation, P extends AbstractLogAnnotationProcessor<A>>(P processor)
         implements MethodInterceptor {
     @Nullable
     @Override

@@ -4,10 +4,6 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class LogConstants {
-    public static final String VARIABLES_LOG = "log";
-    public static final String VARIABLES_LOG_CONTEXT = "log_context";
-    public static final String VARIABLES_DATA_SOURCE = "data_source";
-
     public static final String LOG_ID = "logId";
     public static final String PARENT_LOG_ID = "parentLogId";
     public static final String REF_ID = "refId";

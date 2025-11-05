@@ -3,27 +3,29 @@ package org.source.spring.log.annotation;
 import org.source.spring.common.spel.VariableConstants;
 import org.source.spring.log.enums.LogBizTypeEnum;
 import org.source.spring.log.enums.LogSystemTypeEnum;
+import org.source.spring.uid.UidPrefix;
+import org.source.spring.uid.Uids;
 
 import java.lang.annotation.*;
 
 /**
-* 所有的String都是spEl表达式
-*/
+ * 所有的String都是spEl表达式
+ */
 @Documented
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Log {
     /**
-     * ID
+     * bizId
      */
-    String logId();
+    String bizId();
 
     /**
-     * 父ID
+     * parent log id
      * <br/>
      * 当该日志是某条日志的子项时填写该值，如订单明细（orderItem）之于订单(order)，parentId = orderId
      */
-    String parentLogId() default "";
+    String parentBizId() default "";
 
     /**
      * 关联ID
@@ -31,7 +33,7 @@ public @interface Log {
      * 将多条日志关联为一个整体的ID，比如订单分为多个步骤：加购物车、提交、支付、卖家发货、签收等等步骤，
      * 每一个步骤都有自己的id，但它们的refId都是orderId
      */
-    String refId() default "";
+    String refBizId() default "";
 
     /**
      * 标题
@@ -52,6 +54,11 @@ public @interface Log {
      * 实际业务层级的分类 {@link LogBizTypeEnum}
      */
     LogBizTypeEnum bizType() default LogBizTypeEnum.DEFAULT;
+
+    /**
+     * 系统自动生成的唯一ID，log id，默认{@link Uids#stringId(UidPrefix)}
+     */
+    String logId() default "";
 
     /**
      * 默认登录用户

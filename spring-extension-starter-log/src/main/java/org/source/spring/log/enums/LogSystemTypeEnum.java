@@ -18,7 +18,7 @@ public enum LogSystemTypeEnum {
     REST(20, "接口调用"),
     JOB(30, "定时任务"),
     MQ(40, "消息队列"),
-    DATABASE(50, "数据库变更"),
+    DB(50, "数据库变更"),
     ;
     private final Integer type;
     private final String desc;

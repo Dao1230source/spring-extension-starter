@@ -11,8 +11,8 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 public class RestImportRegistrar extends AbstractImportRegistrar {
 
     @Override
-    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
-                                        BeanDefinitionRegistry registry) {
+    public void registerBeanDefinitionsExtend(AnnotationMetadata importingClassMetadata,
+                                              BeanDefinitionRegistry registry) {
         log.debug("ImportBeanDefinitionRegistrar for @EnableRest");
         // 创建自定义扫描器，并关闭默认过滤器（这样只会扫描我们指定的注解）
         RestInterfaceScanner scanner = new RestInterfaceScanner(registry, this.environment, this.resourceLoader);

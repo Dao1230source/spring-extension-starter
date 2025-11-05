@@ -20,20 +20,19 @@ import java.util.function.Supplier;
 @Data
 public class LogData {
     /*
-    基础数据
+     基础数据
      */
     /**
-     * ID
-     * <br>
+     * bizId
      */
-    private String logId;
+    private String bizId;
     /**
      * 父ID
      * <br/>
      * 当该日志是某条日志的子项时填写该值，如订单明细（orderItem）之于订单(order)，parentId = orderId
      */
     @Nullable
-    private String parentLogId;
+    private String parentBizId;
     /**
      * 关联ID
      * <br>
@@ -41,7 +40,7 @@ public class LogData {
      * 每一个步骤都有自己的id，但它们的refId都是orderId
      */
     @Nullable
-    private String refId;
+    private String refBizId;
     /**
      * 标题
      */
@@ -50,14 +49,6 @@ public class LogData {
      * 描述
      */
     private String desc;
-    /*
-    辅助数据
-     */
-    /**
-     * 默认登录用户
-     */
-    @Nullable
-    private String userId;
     /**
      * 系统代码层次的分类 {@link LogSystemTypeEnum}
      */
@@ -66,10 +57,23 @@ public class LogData {
      * 实际业务层级的分类 {@link LogBizTypeEnum}
      */
     private Integer bizType;
+    /*
+    辅助数据
+     */
     /**
      * 应用名称
      */
     private String applicationName;
+    /**
+     * ID
+     * <br>
+     */
+    private String logId;
+    /**
+     * 默认登录用户
+     */
+    @Nullable
+    private String userId;
     /*
      方法数据，和方法有关的数据，辅助获得基础数据
      */
