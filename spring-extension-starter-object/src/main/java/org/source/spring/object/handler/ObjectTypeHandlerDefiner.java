@@ -1,6 +1,6 @@
 package org.source.spring.object.handler;
 
-import org.source.spring.exception.BizExceptionEnum;
+import org.source.spring.common.exception.SpExtExceptionEnum;
 import org.source.spring.object.AbstractObjectProcessor;
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.ObjectElement;
@@ -28,7 +28,9 @@ public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V e
 
     Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
             ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> allTypeProcessors();
+
     Map<Integer, Function<Collection<ObjectElement<AbstractValue>>, Assign<ObjectElement<AbstractValue>>>> allTypeAssigners();
+
     Map<Integer, Consumer<Collection<ObjectEntityDefiner>>> allTypeObjectConsumers();
 
     /**
@@ -37,7 +39,7 @@ public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V e
     default ObjectTypeDefiner getObjectType(V v) {
         ObjectTypeDefiner type = this.class2ObjectTypeMap().get(v.getClass());
         if (Objects.isNull(type)) {
-            throw BizExceptionEnum.OBJECT_VALUE_CLASS_NOT_DEFINED.except("class:{}", v.getClass());
+            throw SpExtExceptionEnum.OBJECT_VALUE_CLASS_NOT_DEFINED.except("class:{}", v.getClass());
         }
         return type;
     }
@@ -48,7 +50,7 @@ public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V e
     default ObjectTypeDefiner getObjectType(Integer type) {
         ObjectTypeDefiner objectType = this.type2ObjectTypeMap().get(type);
         if (Objects.isNull(objectType)) {
-            throw BizExceptionEnum.OBJECT_TYPE_NOT_DEFINED.except("type:{}", type);
+            throw SpExtExceptionEnum.OBJECT_TYPE_NOT_DEFINED.except("type:{}", type);
         }
         return objectType;
     }

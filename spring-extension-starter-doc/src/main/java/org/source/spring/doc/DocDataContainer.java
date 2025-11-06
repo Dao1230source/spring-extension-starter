@@ -1,13 +1,13 @@
 package org.source.spring.doc;
 
 import lombok.Data;
+import org.source.spring.common.utility.SpringUtil;
 import org.source.spring.doc.data.DocBaseVariableData;
 import org.source.spring.doc.data.DocData;
 import org.source.spring.doc.data.DocVariableAnnotationData;
 import org.source.spring.doc.data.DocVariableData;
 import org.source.spring.doc.object.AbstractDocProcessor;
 import org.source.spring.object.ObjectElement;
-import org.source.spring.utility.SpringUtil;
 import org.source.utility.tree.define.AbstractNode;
 
 import javax.lang.model.element.VariableElement;

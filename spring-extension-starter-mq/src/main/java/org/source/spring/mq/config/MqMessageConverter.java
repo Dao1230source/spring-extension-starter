@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JavaType;
 import lombok.extern.slf4j.Slf4j;
 import org.source.utility.utils.Jsons;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.AbstractMessageConverter;
@@ -14,7 +13,6 @@ import java.lang.reflect.Type;
 import java.util.*;
 
 @Slf4j
-@ConditionalOnProperty(prefix = "org.source.spring.enabled", value = "mq", matchIfMissing = true)
 @AutoConfigureBefore
 public class MqMessageConverter extends AbstractMessageConverter {
     @Override
@@ -57,7 +55,7 @@ public class MqMessageConverter extends AbstractMessageConverter {
         JavaType javaType;
         if (List.class.isAssignableFrom(targetClass) && conversionHint instanceof ParameterizedType parameterizedType) {
             Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
-            if (Objects.isNull(actualTypeArguments) || actualTypeArguments.length == 0) {
+            if (actualTypeArguments.length == 0) {
                 javaType = Jsons.getJavaType(parameterizedType.getRawType());
             } else {
                 Class<?>[] classes = Arrays.stream(actualTypeArguments).map(Class.class::cast).toArray(Class<?>[]::new);

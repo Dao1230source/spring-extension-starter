@@ -8,10 +8,10 @@ import org.source.spring.log.enums.LogPrefixEnum;
 import org.source.spring.log.enums.LogScopeEnum;
 import org.source.spring.uid.UidPrefix;
 import org.source.spring.uid.Uids;
+import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Objects;
 
 public class DataSourceLogAnnoProcessor extends AbstractLogAnnotationProcessor<DataSourceLog> {
 
@@ -34,11 +34,10 @@ public class DataSourceLogAnnoProcessor extends AbstractLogAnnotationProcessor<D
     public LogAnnoData obtainLogAnnoData(MethodDetail<DataSourceLog> detail) {
         DataSourceLog dataSourceLog = detail.getAnnotation();
         LogAnnoData logAnnoData = new LogAnnoData();
+        logAnnoData.setRefBizId(dataSourceLog.refBizId());
         // 由于数据库变更日志拆分到字段级别，一条sql变更会有多个变更日志对象，用refBizId统一标记，表示属于同一次变更
-        if (Objects.isNull(dataSourceLog.refBizId())) {
-            logAnnoData.setRefBizId(Uids.stringId(this.getUidPrefix()));
-        } else {
-            logAnnoData.setRefBizId(dataSourceLog.refBizId());
+        if (!StringUtils.hasText(dataSourceLog.refBizId())) {
+            Logs.setRefBizId(this.getLogScope(), Uids.stringId(this.getUidPrefix()));
         }
         logAnnoData.setTitle(dataSourceLog.title());
         logAnnoData.setDesc(dataSourceLog.desc());

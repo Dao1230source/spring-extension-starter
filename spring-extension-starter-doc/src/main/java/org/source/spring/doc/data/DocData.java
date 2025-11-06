@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.source.spring.doc.object.enums.DocRelationTypeEnum;
 import org.source.spring.object.AbstractValue;
-import org.source.spring.uid.Ids;
+import org.source.spring.uid.Uids;
 import org.source.utility.constant.Constants;
 
 import javax.lang.model.element.Element;
@@ -31,7 +31,7 @@ public class DocData extends AbstractValue {
         this.text = text;
         this.processName(name, parentName);
         this.setSorted(String.valueOf(sorted));
-        this.setObjectId(Ids.stringId());
+        this.setObjectId(Uids.stringId());
         this.setRelationType(DocRelationTypeEnum.SUP_AND_SUB.getType());
     }
 
@@ -49,7 +49,7 @@ public class DocData extends AbstractValue {
         this.processName(this.obtainName(element), parentName);
         this.processComment(this.obtainCommentLines(env, element));
         this.setSorted(String.valueOf(sorted));
-        this.setObjectId(Ids.stringId());
+        this.setObjectId(Uids.stringId());
         this.setRelationType(DocRelationTypeEnum.SUP_AND_SUB.getType());
     }
 
@@ -65,7 +65,7 @@ public class DocData extends AbstractValue {
         if (commentLines.isEmpty()) {
             return;
         }
-        this.setTitle(commentLines.get(0));
+        this.setTitle(commentLines.getFirst());
         if (commentLines.size() > 1) {
             this.setText(String.join(Constants.NEWLINE, commentLines.subList(1, commentLines.size())));
         }

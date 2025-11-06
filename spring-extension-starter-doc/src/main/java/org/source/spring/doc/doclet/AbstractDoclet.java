@@ -4,6 +4,7 @@ import jdk.javadoc.doclet.Doclet;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
 import lombok.extern.slf4j.Slf4j;
+import org.source.spring.common.utility.SpringUtil;
 import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.MyOption;
 import org.source.spring.doc.MyOptions;
@@ -12,7 +13,6 @@ import org.source.spring.doc.data.DocClassData;
 import org.source.spring.doc.data.DocData;
 import org.source.spring.doc.data.DocVariableData;
 import org.source.spring.doc.object.AbstractDocProcessor;
-import org.source.spring.utility.SpringUtil;
 import org.source.utility.utils.Streams;
 import org.springframework.util.CollectionUtils;
 
@@ -111,7 +111,7 @@ public abstract class AbstractDoclet implements Doclet {
             options.setProjectDir(myOptions.getProjectDir());
             options.setAppTitle(myOptions.getAppTitle());
             options.setAppText(myOptions.getAppText());
-            options.setAppDir(MyOptions.obtainAppDir(clsNames.get(0)));
+            options.setAppDir(MyOptions.obtainAppDir(clsNames.getFirst()));
             options.getClassNames().addAll(clsNames);
             options.setDocletClass(myOptions.getDocletClass());
             options.setAccessKind(myOptions.getAccessKind());

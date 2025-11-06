@@ -45,6 +45,9 @@ public class ExtendExpressionEvaluator<T extends ExtendRootObject, E extends Ext
     }
 
     public String replacePlaceholder(String spEl, int idx) {
+        if (!StringUtils.hasText(spEl)) {
+            return spEl;
+        }
         spEl = spEl.replace(VariableConstants.PARAM_SP_EL, VariableConstants.PARAM_SP_EL + idx);
         spEl = spEl.replace(VariableConstants.RESULT_SP_EL, VariableConstants.RESULT_SP_EL + idx);
         return spEl;

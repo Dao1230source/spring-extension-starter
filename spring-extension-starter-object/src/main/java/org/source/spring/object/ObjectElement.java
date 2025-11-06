@@ -1,6 +1,5 @@
 package org.source.spring.object;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.jetbrains.annotations.NotNull;
@@ -8,7 +7,6 @@ import org.source.utility.tree.define.Element;
 import org.source.utility.tree.define.EnhanceElement;
 
 import java.time.LocalDateTime;
-
 
 @EqualsAndHashCode(callSuper = false)
 @Builder

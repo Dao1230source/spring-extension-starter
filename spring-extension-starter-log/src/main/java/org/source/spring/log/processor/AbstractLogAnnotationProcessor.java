@@ -25,8 +25,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 @Getter
 public abstract class AbstractLogAnnotationProcessor<A extends Annotation> implements Serializable {
@@ -117,19 +116,19 @@ public abstract class AbstractLogAnnotationProcessor<A extends Annotation> imple
         LogData logData = detail.getLogData();
         ExtendEvaluationContext<ExtendRootObject> context = detail.getEvaluationContext();
         LogScopeEnum logScope = this.getLogScope();
-        syncFromContext(logData, logScope);
-        syncOnceData(logData, logAnno, logEvaluator, context);
+        this.syncFromContext(logData, logScope);
+        this.syncOnceData(logData, logAnno, logEvaluator, context);
         Object param = logData.getParam();
         Object result = logData.getResult();
         context.setParam(param);
         context.setResult(result);
-        context.setResult(logData.getExtra());
+        context.setExtra(logData.getExtra());
         boolean paramIsCollection = Objects.nonNull(param) && param instanceof Collection<?>;
         boolean resultIsCollection = Objects.nonNull(result) && result instanceof Collection<?>;
         // 单条
         if (!paramIsCollection && !resultIsCollection) {
             LogData copy = LogDataMapper.INSTANCE.copy(logData);
-            syncIteratorData(copy, logAnno, logEvaluator, context, Function.identity());
+            this.syncIteratorData(copy, logAnno, logEvaluator, context, UnaryOperator.identity());
             return List.of(copy);
         }
         // 批量
@@ -152,15 +151,17 @@ public abstract class AbstractLogAnnotationProcessor<A extends Annotation> imple
         List<LogData> logDataList = new ArrayList<>(ps.size());
         Iterator<?> pIterator = ps.iterator();
         Iterator<?> rIterator = rs.iterator();
-        AtomicInteger idx = new AtomicInteger(0);
+        int idx = 0;
         while (pIterator.hasNext()) {
             Object p = pIterator.next();
             Object r = rIterator.next();
             LogData copy = LogDataMapper.INSTANCE.copy(logData);
             copy.setParam(p);
             copy.setResult(r);
-            syncIteratorData(copy, logAnno, logEvaluator, context, s -> logEvaluator.replacePlaceholder(s, idx.getAndIncrement()));
+            final int i = idx;
+            this.syncIteratorData(copy, logAnno, logEvaluator, context, s -> logEvaluator.replacePlaceholder(s, i));
             logDataList.add(copy);
+            idx++;
         }
         return logDataList;
     }
@@ -171,12 +172,13 @@ public abstract class AbstractLogAnnotationProcessor<A extends Annotation> imple
      * @param logData 日志数据
      */
     protected void syncFromContext(LogData logData, LogScopeEnum scope) {
-        logData.setNotNull(LogData::setLogId, Logs.getLogId(scope));
-        logData.setNotNull(LogData::setParentBizId, Logs.getParentLogId(scope));
-        logData.setNotNull(LogData::setRefBizId, Logs.getRefId(scope));
+        logData.setNotNull(LogData::setBizId, Logs.getBizId(scope));
+        logData.setNotNull(LogData::setParentBizId, Logs.getParentBizId(scope));
+        logData.setNotNull(LogData::setRefBizId, Logs.getRefBizId(scope));
         logData.setNotNull(LogData::setTitle, Logs.getTitle(scope));
         logData.setNotNull(LogData::setDesc, Logs.getDesc(scope));
         // 辅助数据
+        logData.setNotNull(LogData::setLogId, Logs.getLogId(scope));
         logData.setNotNull(LogData::setUserId, Logs.getUserId(scope));
         logData.setNotNull(LogData::setSystemType, Logs.getSystemType(scope));
         logData.setNotNull(LogData::setBizType, Logs.getBizType(scope));
@@ -217,7 +219,7 @@ public abstract class AbstractLogAnnotationProcessor<A extends Annotation> imple
     protected void syncIteratorData(LogData logData, LogAnnoData logAnno,
                                     LogExpressionEvaluator logEvaluator,
                                     ExtendEvaluationContext<ExtendRootObject> context,
-                                    Function<String, String> spElHandler) {
+                                    UnaryOperator<String> spElHandler) {
         logData.setIfAbsent(LogData::getBizId, LogData::setBizId,
                 () -> logEvaluator.parse(context, spElHandler.apply(logAnno.getBizId()), String.class));
         logData.setIfAbsent(LogData::getParentBizId, LogData::setParentBizId,

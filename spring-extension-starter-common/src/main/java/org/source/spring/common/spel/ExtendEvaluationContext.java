@@ -64,7 +64,7 @@ public class ExtendEvaluationContext<T extends ExtendRootObject> extends MethodB
         }
     }
 
-    public void setExtraData(Object extraData) {
+    public void setExtra(Object extraData) {
         this.root.setExtra(extraData);
         if (Objects.nonNull(extraData)) {
             this.putVariable(VariableConstants.EXTRA, extraData);

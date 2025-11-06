@@ -57,29 +57,28 @@ public class Logs {
         LogContext.clear(scope.getScope());
     }
 
-    public static @Nullable String getLogId(LogScopeEnum scope) {
-        return LogContext.get(scope.getScope(), LogConstants.LOG_ID);
+    public static @Nullable String getBizId(LogScopeEnum scope) {
+        return LogContext.get(scope.getScope(), LogConstants.BIZ_ID);
     }
 
-    public static void setLogId(LogScopeEnum scope, String logId) {
-        LogContext.set(scope.getScope(), LogConstants.LOG_ID, logId);
+    public static void setBizId(LogScopeEnum scope, String bizId) {
+        LogContext.set(scope.getScope(), LogConstants.BIZ_ID, bizId);
     }
 
-    public static @Nullable String getParentLogId(LogScopeEnum scope) {
-        return LogContext.get(scope.getScope(), LogConstants.PARENT_LOG_ID);
+    public static @Nullable String getParentBizId(LogScopeEnum scope) {
+        return LogContext.get(scope.getScope(), LogConstants.PARENT_BIZ_ID);
     }
 
-    public static void setParentLogId(LogScopeEnum scope, String parentLogId) {
-        LogContext.set(scope.getScope(), LogConstants.PARENT_LOG_ID, parentLogId);
+    public static void setParentBizId(LogScopeEnum scope, String parentBizId) {
+        LogContext.set(scope.getScope(), LogConstants.PARENT_BIZ_ID, parentBizId);
     }
 
-
-    public static @Nullable String getRefId(LogScopeEnum scope) {
-        return LogContext.get(scope.getScope(), LogConstants.REF_ID);
+    public static @Nullable String getRefBizId(LogScopeEnum scope) {
+        return LogContext.get(scope.getScope(), LogConstants.REF_BIZ_ID);
     }
 
-    public static void setRefId(LogScopeEnum scope, String refId) {
-        LogContext.set(scope.getScope(), LogConstants.REF_ID, refId);
+    public static void setRefBizId(LogScopeEnum scope, String refBizId) {
+        LogContext.set(scope.getScope(), LogConstants.REF_BIZ_ID, refBizId);
     }
 
     public static @Nullable String getTitle(LogScopeEnum scope) {
@@ -145,6 +144,14 @@ public class Logs {
         if (!LogBizTypeEnum.DEFAULT.equals(bizType)) {
             LogContext.set(scope.getScope(), LogConstants.BIZ_TYPE, bizType.getType());
         }
+    }
+
+    public static @Nullable String getLogId(LogScopeEnum scope) {
+        return LogContext.get(scope.getScope(), LogConstants.LOG_ID);
+    }
+
+    public static void setLogId(LogScopeEnum scope, String logId) {
+        LogContext.set(scope.getScope(), LogConstants.LOG_ID, logId);
     }
 
     public static @Nullable String getUserId(LogScopeEnum scope) {

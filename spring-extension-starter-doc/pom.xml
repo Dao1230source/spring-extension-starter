@@ -4,12 +4,20 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.github.dao1230source</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>spring-extension-starter-parent</artifactId>
         <version>0.0.12</version>
         <relativePath/>
     </parent>
     <artifactId>spring-extension-starter-doc</artifactId>
     <dependencies>
+        <dependency>
+            <groupId>io.github.dao1230source</groupId>
+            <artifactId>spring-extension-starter-object</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
     </dependencies>
 
     <name>spring-extension-starter-doc</name>

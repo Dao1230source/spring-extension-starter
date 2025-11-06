@@ -1,6 +1,7 @@
 package org.source.spring.object.handler;
 
 import lombok.AllArgsConstructor;
+import org.source.spring.common.utility.SpringUtil;
 import org.source.spring.object.AbstractObjectProcessor;
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.ObjectElement;
@@ -8,7 +9,6 @@ import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
 import org.source.spring.object.enums.ObjectTypeDefiner;
-import org.source.spring.utility.SpringUtil;
 import org.source.utility.assign.Assign;
 import org.source.utility.utils.Streams;
 

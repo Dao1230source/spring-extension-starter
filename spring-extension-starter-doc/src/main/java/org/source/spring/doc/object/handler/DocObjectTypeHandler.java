@@ -1,5 +1,6 @@
 package org.source.spring.doc.object.handler;
 
+import org.source.spring.common.utility.SpringUtil;
 import org.source.spring.doc.data.DocData;
 import org.source.spring.doc.object.entity.DocEntityDefiner;
 import org.source.spring.doc.object.enums.DocObjectTypeEnum;
@@ -10,7 +11,6 @@ import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
 import org.source.spring.object.enums.ObjectTypeDefiner;
 import org.source.spring.object.handler.AbstractObjectTypeHandler;
-import org.source.spring.utility.SpringUtil;
 import org.source.utility.utils.Enums;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 

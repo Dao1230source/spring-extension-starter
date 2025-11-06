@@ -3,6 +3,7 @@ package org.source.spring.object;
 import com.alibaba.ttl.TransmittableThreadLocal;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.source.spring.common.exception.SpExtExceptionEnum;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
@@ -121,7 +122,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         } catch (Exception e) {
             this.getObjectTree().clear();
             log.error("AbstractObjectProcessor.merge error", e);
-            throw BizExceptionEnum.OBJECT_MERGE_ERROR.except(e);
+            throw SpExtExceptionEnum.OBJECT_MERGE_ERROR.except(e);
         }
     }
 
