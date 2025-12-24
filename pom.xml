@@ -26,8 +26,8 @@
         <module>spring-extension-starter-uid</module>
         <module>spring-extension-starter-redis</module>
         <module>spring-extension-starter-log</module>
-        <module>spring-extension-starter-mq</module>
         <module>spring-extension-starter-i18n</module>
+        <module>spring-extension-starter-stream</module>
         <module>spring-extension-starter-object</module>
         <module>spring-extension-starter-doc</module>
     </modules>
@@ -35,11 +35,11 @@
     <dependencies>
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-configuration-processor</artifactId>-->
+<!--            <artifactId>spring-boot-configuration-i18nProcessor</artifactId>-->
 <!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-autoconfigure-processor</artifactId>-->
+<!--            <artifactId>spring-boot-autoconfigure-i18nProcessor</artifactId>-->
 <!--        </dependency>-->
         <!--
         <dependency>

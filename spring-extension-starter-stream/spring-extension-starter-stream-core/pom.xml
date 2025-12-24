@@ -8,17 +8,21 @@
         <version>0.0.12</version>
         <relativePath/>
     </parent>
-    <artifactId>spring-extension-starter-mq</artifactId>
+    <artifactId>spring-extension-starter-stream-core</artifactId>
     <dependencies>
+        <dependency>
+            <groupId>io.github.dao1230source</groupId>
+            <artifactId>spring-extension-starter-common</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-stream</artifactId>
         </dependency>
     </dependencies>
 
-    <name>spring-extension-starter-mq</name>
+    <name>spring-extension-starter-stream-core</name>
     <description>
-        spring-extension-starter-mq
+        spring-extension-starter-stream-core
     </description>
     <url>https://github.com/Dao1230source/spring-extension-starter.git</url>
     <licenses>

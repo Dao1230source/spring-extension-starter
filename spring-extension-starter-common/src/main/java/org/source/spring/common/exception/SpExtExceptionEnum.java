@@ -19,6 +19,7 @@ public enum SpExtExceptionEnum implements EnumProcessor<SpExtException> {
      */
     PARAM_EXCEPTION("请求参数校验异常"),
     ENUM_EXCEPTION("枚举值校验异常"),
+    IS_NOT_AN_ENUM("不是一个枚举对象"),
 
     /**
      * utility
@@ -45,6 +46,10 @@ public enum SpExtExceptionEnum implements EnumProcessor<SpExtException> {
     OBJECT_NEW_OBJECT_ENTITY_NONNULL("新建 Object 实体类的方法返回值必须不为空"),
     OBJECT_NEW_OBJECT_BODY_ENTITY_NONNULL("新建 ObjectBody 实体类方法的返回值必须不为空"),
     OBJECT_NEW_RELATION_ENTITY_NONNULL("新建 Relation 实体类方法的返回值必须不为空"),
+    /**
+     * stream
+     */
+    STREAM_PRODUCER_PROCESSOR_NOT_FOUND("stream producer processor not found"),
     ;
 
     private final String message;

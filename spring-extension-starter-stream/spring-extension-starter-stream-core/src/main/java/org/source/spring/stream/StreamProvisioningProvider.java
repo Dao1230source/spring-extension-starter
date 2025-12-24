@@ -1,8 +1,8 @@
-package org.source.spring.mq.template;
+package org.source.spring.stream;
 
 import lombok.extern.slf4j.Slf4j;
-import org.source.spring.mq.properties.MqConsumerProperties;
-import org.source.spring.mq.properties.MqProducerProperties;
+import org.source.spring.stream.template.ConsumerProcessor;
+import org.source.spring.stream.template.ProducerProcessor;
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties;
 import org.springframework.cloud.stream.binder.ExtendedProducerProperties;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
@@ -11,7 +11,7 @@ import org.springframework.cloud.stream.provisioning.ProvisioningException;
 import org.springframework.cloud.stream.provisioning.ProvisioningProvider;
 
 @Slf4j
-public abstract class MqProvisioningProvider<C extends MqConsumerProperties, P extends MqProducerProperties>
+public class StreamProvisioningProvider<C extends ConsumerProcessor, P extends ProducerProcessor>
         implements ProvisioningProvider<ExtendedConsumerProperties<C>, ExtendedProducerProperties<P>> {
 
     /**
@@ -23,12 +23,11 @@ public abstract class MqProvisioningProvider<C extends MqConsumerProperties, P e
      * @throws ProvisioningException ProvisioningException
      */
     @Override
-    public ProducerDestination provisionProducerDestination(String name, ExtendedProducerProperties<P> properties)
-            throws ProvisioningException {
-        P mqProducerProperties = properties.getExtension();
-        MqProducer<?, ?> mqProducer = mqProducerProperties.createProducer();
-        log.info("message queue producerDestination:{} register successfully", name);
-        return new MqProducerDestination(name, 0, mqProducer);
+    public ProducerDestination provisionProducerDestination(String name, ExtendedProducerProperties<P> properties) throws ProvisioningException {
+        P producerProperties = properties.getExtension();
+        Producer producer = producerProperties.createProducer();
+        log.info("message producerDestination:{} register successfully", name);
+        return new StreamProducerDestination(name, 0, producer);
     }
 
     /**
@@ -42,10 +41,10 @@ public abstract class MqProvisioningProvider<C extends MqConsumerProperties, P e
      */
     @Override
     public ConsumerDestination provisionConsumerDestination(String name, String group, ExtendedConsumerProperties<C> properties) throws ProvisioningException {
-        C mqConsumerProperties = properties.getExtension();
-        MqListener mqListener = mqConsumerProperties.registerConsumer();
-        log.info("message queue consumerDestination:{} register successfully", name);
-        return new MqConsumerDestination(name, mqListener);
+        C consumerProperties = properties.getExtension();
+        Listener listener = consumerProperties.createConsumer();
+        log.info("message consumerDestination:{} register successfully", name);
+        return new StreamConsumerDestination(name, listener);
     }
 
 }

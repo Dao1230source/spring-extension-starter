@@ -9,14 +9,11 @@ org.source.spring.cache.ConfigureTtlProperties
 org.source.spring.doc.object.handler.DocObjectTypeHandler
 # exception
 org.source.spring.exception.ExtendPackagesConfig
-# i18n
-org.source.spring.i18n.I18nConfig
-org.source.spring.i18n.I18nScanConfig
 # json
 org.source.spring.json.JacksonConfig
 # log
 # mq
-org.source.spring.mq.config.MqMessageConverter
+#org.source.spring.mq.config.MqMessageConverter
 # properties
 org.source.spring.properties.EnableProperties
 org.source.spring.properties.SecurityProperties

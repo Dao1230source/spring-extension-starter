@@ -1,7 +1,7 @@
 /target/
 /.idea/
 .DS_Store
-*/.mvn/
-*/mvnw
-*/mvnw.cmd
-*/.gitattributes
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+**/.gitattributes
