@@ -8,17 +8,21 @@
         <version>0.0.12</version>
         <relativePath/>
     </parent>
-    <artifactId>spring-extension-starter-stream</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>spring-extension-starter-stream-rest</artifactId>
+    <dependencies>
+        <dependency>
+            <groupId>io.github.dao1230source</groupId>
+            <artifactId>spring-extension-starter-stream-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+    </dependencies>
 
-    <modules>
-        <module>spring-extension-starter-stream-core</module>
-        <module>spring-extension-starter-stream-rest</module>
-    </modules>
-
-    <name>spring-extension-starter-stream</name>
+    <name>spring-extension-starter-stream-rest</name>
     <description>
-        spring-extension-starter-stream
+        spring-extension-starter-stream-rest
     </description>
     <url>https://github.com/Dao1230source/spring-extension-starter.git</url>
     <licenses>
