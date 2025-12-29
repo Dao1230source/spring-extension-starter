@@ -10,7 +10,6 @@ import org.source.utility.enums.BaseExceptionEnum;
 import org.springframework.cloud.stream.provisioning.ProvisioningException;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -49,9 +48,8 @@ public class RestConsumerProcessor implements ConsumerProcessor {
         } catch (NoSuchMethodException e) {
             throw BaseExceptionEnum.RUNTIME_EXCEPTION.except(e);
         }
-        HandlerMethod handlerMethod = new HandlerMethod(restListener, method);
         // 注册映射
-        handlerMapping.registerMapping(mappingInfo, restListener, handlerMethod.getMethod());
+        handlerMapping.registerMapping(mappingInfo, restListener, method);
         return restListener;
     }
 }
