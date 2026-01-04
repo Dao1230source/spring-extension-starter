@@ -36,20 +36,24 @@ public class ImportRegistrarUtil {
         return getBasePackages(metadata, annotationClassName, BASE_PACKAGES_ATTRIBUTE_NAME);
     }
 
-    public void registerBeanDefinition(BeanDefinitionRegistry registry, Class<?> eClass, Supplier<?> instance) {
+    public void registerBeanDefinition(BeanDefinitionRegistry registry, Class<?> clz, Supplier<?> instance) {
+        String beanName = Strings.removePrefixAndLowerFirst(clz.getSimpleName(), Constants.EMPTY);
+        registerBeanDefinition(registry, clz, beanName, instance);
+    }
+
+    public void registerBeanDefinition(BeanDefinitionRegistry registry, Class<?> clz, String beanName, Supplier<?> instance) {
         GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
-        beanDefinition.setBeanClass(eClass);
+        beanDefinition.setBeanClass(clz);
         beanDefinition.setScope(BeanDefinition.SCOPE_SINGLETON);
         beanDefinition.setRole(BeanDefinition.ROLE_SUPPORT);
         beanDefinition.setInstanceSupplier(instance);
-        String beanName = Strings.removePrefixAndLowerFirst(eClass.getSimpleName(), Constants.EMPTY);
         log.debug("registerBeanDefinition single:{}", beanName);
         registry.registerBeanDefinition(beanName, beanDefinition);
     }
 
-    public void registerBeanDefinitionPrototype(BeanDefinitionRegistry registry, Class<?> eClass, String beanName, Supplier<?> instance) {
+    public void registerBeanDefinitionPrototype(BeanDefinitionRegistry registry, Class<?> clz, String beanName, Supplier<?> instance) {
         GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
-        beanDefinition.setBeanClass(eClass);
+        beanDefinition.setBeanClass(clz);
         beanDefinition.setScope(BeanDefinition.SCOPE_PROTOTYPE);
         beanDefinition.setRole(BeanDefinition.ROLE_SUPPORT);
         beanDefinition.setInstanceSupplier(instance);

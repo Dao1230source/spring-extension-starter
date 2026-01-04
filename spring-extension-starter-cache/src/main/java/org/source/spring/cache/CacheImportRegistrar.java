@@ -30,7 +30,7 @@ import java.util.Map;
 @Slf4j
 public class CacheImportRegistrar extends AbstractImportRegistrar {
     public CacheImportRegistrar() {
-        super(true);
+        super("cache");
     }
 
     @Override

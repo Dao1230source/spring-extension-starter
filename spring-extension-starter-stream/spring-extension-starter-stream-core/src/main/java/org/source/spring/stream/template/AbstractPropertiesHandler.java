@@ -1,45 +1,53 @@
 package org.source.spring.stream.template;
 
 import lombok.extern.slf4j.Slf4j;
-import org.source.spring.stream.PropertiesParser;
+import org.source.spring.stream.properties.*;
 import org.source.utility.utils.Maps;
+import org.springframework.lang.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
 public abstract class AbstractPropertiesHandler<C extends ConsumerProcessor, P extends ProducerProcessor,
-        C1 extends AbstractPropertiesHandler.ConsumerProperty,
-        P1 extends AbstractPropertiesHandler.ProducerProperty,
-        S extends AbstractPropertiesHandler.SystemProperty<C1, P1>>
-        implements PropertiesParser<C, P> {
+        C1 extends ConsumerProperty, P1 extends ProducerProperty, S extends SystemProperty<C1, P1>>
+        implements PropertiesHandler<C, P> {
 
     protected boolean isEnable = true;
 
-    protected abstract Map<String, S> getSystems();
+    public abstract Map<String, S> getSystems();
 
-    public interface SystemProperty<C1, P1> {
-        boolean isEnable();
-
-        Map<String, C1> getConsumers();
-
-        Map<String, P1> getProducers();
-    }
-
-    public interface ProducerProperty {
-        boolean isEnable();
-    }
-
-    public interface ConsumerProperty {
-        boolean isEnable();
-    }
-
+    /**
+     * 全量处理时使用
+     *
+     * @param systemName       系统名称
+     * @param systemProperty   系统公用配置
+     * @param producerName     生产者名称
+     * @param producerProperty 生产者配置
+     * @return P
+     */
     protected abstract P obtainProducer(String systemName, S systemProperty,
                                         String producerName, P1 producerProperty);
 
     protected abstract C obtainConsumer(String systemName, S systemProperty,
-                                        String producerName, C1 consumerProperty);
+                                        String consumerName, C1 consumerProperty);
 
+    /**
+     * 单个处理时使用，如配置刷新时只销毁/创建单个的生产者或消费者
+     *
+     * @param systemName   系统名称
+     * @param producerName 生产者名称
+     * @return P
+     */
+    @Nullable
+    protected P obtainProducer(String systemName, String producerName) {
+        return null;
+    }
+
+    @Nullable
+    protected P obtainConsumer(String systemName, String consumerName) {
+        return null;
+    }
 
     @Override
     public Map<String, C> obtainConsumers() {
@@ -53,7 +61,11 @@ public abstract class AbstractPropertiesHandler<C extends ConsumerProcessor, P e
             }
             system.getConsumers().forEach((consumerName, consumerProperty) -> {
                 if (this.canCreate(this.isEnable, system.isEnable(), consumerProperty.isEnable(), consumerName)) {
-                    consumerMap.put(consumerName, this.obtainConsumer(systemName, system, consumerName, consumerProperty));
+                    String contextName = String.join(".", systemName, consumerName);
+                    PropertyContext<C, P> context = new PropertyContext<>(contextName);
+                    context.setConsumerProcessor(() -> this.obtainConsumer(systemName, system, consumerName, consumerProperty));
+                    PropertiesHandler.PROPERTY_CONTEXTS.put(context.getName(), context);
+                    consumerMap.put(consumerName, context.getConsumerProcessor().get());
                 }
             });
         });
@@ -72,7 +84,11 @@ public abstract class AbstractPropertiesHandler<C extends ConsumerProcessor, P e
             }
             system.getProducers().forEach((producerName, producerProperty) -> {
                 if (this.canCreate(isEnable, system.isEnable(), producerProperty.isEnable(), producerName)) {
-                    producerMap.put(producerName, this.obtainProducer(systemName, system, producerName, producerProperty));
+                    String contextName = String.join(".", systemName, producerName);
+                    PropertyContext<C, P> context = new PropertyContext<>(contextName);
+                    context.setProducerProcessor(() -> this.obtainProducer(systemName, system, producerName, producerProperty));
+                    PropertiesHandler.PROPERTY_CONTEXTS.put(context.getName(), context);
+                    producerMap.put(producerName, context.getProducerProcessor().get());
                 }
             });
         });

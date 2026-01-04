@@ -1,1 +1,2 @@
 org.source.spring.stream.converter.StringMessageConverter
+org.source.spring.stream.properties.PropertiesChangeListener

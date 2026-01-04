@@ -1,7 +1,8 @@
 package org.source.spring.stream;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import org.source.spring.stream.properties.PropertiesHandler;
 import org.source.spring.stream.template.ConsumerProcessor;
 import org.source.spring.stream.template.ProducerProcessor;
 import org.springframework.cloud.stream.binder.BinderSpecificPropertiesProvider;
@@ -9,7 +10,7 @@ import org.springframework.cloud.stream.binder.ExtendedBindingProperties;
 
 import java.util.Map;
 
-@Data
+@Getter
 @AllArgsConstructor
 public class StreamBinderProperties<C extends ConsumerProcessor, P extends ProducerProcessor>
         implements ExtendedBindingProperties<C, P> {
@@ -17,12 +18,12 @@ public class StreamBinderProperties<C extends ConsumerProcessor, P extends Produ
     private Map<String, C> consumers;
     private Map<String, P> producers;
 
-    private PropertiesParser<C, P> propertiesParser;
+    private PropertiesHandler<C, P> propertiesHandler;
 
-    public StreamBinderProperties(PropertiesParser<C, P> propertiesParser) {
-        this.propertiesParser = propertiesParser;
-        this.consumers = propertiesParser.obtainConsumers();
-        this.producers = propertiesParser.obtainProducers();
+    public StreamBinderProperties(PropertiesHandler<C, P> propertiesHandler) {
+        this.propertiesHandler = propertiesHandler;
+        this.consumers = propertiesHandler.obtainConsumers();
+        this.producers = propertiesHandler.obtainProducers();
     }
 
     @Override
@@ -43,5 +44,13 @@ public class StreamBinderProperties<C extends ConsumerProcessor, P extends Produ
     @Override
     public Class<? extends BinderSpecificPropertiesProvider> getExtendedPropertiesEntryClass() {
         return BinderSpecificPropertiesProvider.class;
+    }
+
+    public void refreshConsumers(Map<String, C> consumers) {
+        this.consumers.putAll(consumers);
+    }
+
+    public void refreshProducers(Map<String, P> producers) {
+        this.producers.putAll(producers);
     }
 }

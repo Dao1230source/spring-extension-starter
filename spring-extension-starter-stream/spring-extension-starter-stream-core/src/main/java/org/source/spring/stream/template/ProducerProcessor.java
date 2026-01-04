@@ -1,9 +1,10 @@
 package org.source.spring.stream.template;
 
+import org.source.spring.stream.Processor;
 import org.source.spring.stream.Producer;
 import org.springframework.cloud.stream.provisioning.ProvisioningException;
 
-public interface ProducerProcessor {
+public interface ProducerProcessor extends Processor {
 
     /**
      * 根据配置信息创建 producer

@@ -13,25 +13,26 @@ import org.springframework.context.event.ApplicationContextEvent;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.util.StringUtils;
 
 import java.util.function.Consumer;
 
 @Slf4j
 public abstract class AbstractImportRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
     /**
-     * 是否注册springboot容器准备完成后的监听器
+     * 如果名称不为空，则注册springboot 容器准备完成后的监听器
      */
-    private final boolean registerContainerReadyEventListener;
+    private final String containerReadyEventListenerName;
 
     protected ResourceLoader resourceLoader;
     protected Environment environment;
 
-    protected AbstractImportRegistrar(boolean registerContainerReadyEventListener) {
-        this.registerContainerReadyEventListener = registerContainerReadyEventListener;
+    protected AbstractImportRegistrar(String containerReadyEventListenerName) {
+        this.containerReadyEventListenerName = containerReadyEventListenerName;
     }
 
     protected AbstractImportRegistrar() {
-        this.registerContainerReadyEventListener = false;
+        this.containerReadyEventListenerName = "";
     }
 
     @Override
@@ -46,7 +47,7 @@ public abstract class AbstractImportRegistrar implements ImportBeanDefinitionReg
 
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-        if (this.registerContainerReadyEventListener) {
+        if (StringUtils.hasText(this.containerReadyEventListenerName)) {
             this.registerContainerReadyEventListener(importingClassMetadata, registry);
         }
         this.registerBeanDefinitionsExtend(importingClassMetadata, registry);
@@ -70,9 +71,10 @@ public abstract class AbstractImportRegistrar implements ImportBeanDefinitionReg
         containerReadyBeanDefinition.setScope(BeanDefinition.SCOPE_PROTOTYPE);
         // 框架内部的基础设施组件
         containerReadyBeanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-        Consumer<ApplicationContextEvent> consumer = event -> this.registerBeanDefinitionsAfterContainerReady(importingClassMetadata, registry, event.getApplicationContext());
+        Consumer<ApplicationContextEvent> consumer = event ->
+                this.registerBeanDefinitionsAfterContainerReady(importingClassMetadata, registry, event.getApplicationContext());
         containerReadyBeanDefinition.setInstanceSupplier(() -> new ContainerReadyEventListener(consumer));
-        registry.registerBeanDefinition("containerReadyEventListener", containerReadyBeanDefinition);
+        registry.registerBeanDefinition(this.containerReadyEventListenerName + "_containerReadyEventListener", containerReadyBeanDefinition);
     }
 
     /**

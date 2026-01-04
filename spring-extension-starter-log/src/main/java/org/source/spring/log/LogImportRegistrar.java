@@ -16,7 +16,7 @@ import org.springframework.core.type.AnnotationMetadata;
 @Slf4j
 public class LogImportRegistrar extends AbstractImportRegistrar {
     public LogImportRegistrar() {
-        super(true);
+        super("log");
     }
 
     @Override

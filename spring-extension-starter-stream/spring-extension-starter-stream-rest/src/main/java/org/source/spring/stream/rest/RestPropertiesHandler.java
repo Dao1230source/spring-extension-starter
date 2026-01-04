@@ -4,6 +4,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import org.source.spring.stream.properties.ConsumerProperty;
+import org.source.spring.stream.properties.ProducerProperty;
+import org.source.spring.stream.properties.SystemProperty;
 import org.source.spring.stream.template.AbstractPropertiesHandler;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -38,16 +41,16 @@ public class RestPropertiesHandler extends AbstractPropertiesHandler<RestConsume
         private boolean isEnable = true;
     }
 
-    @Override
-    protected RestProducerProcessor obtainProducer(String systemName, RestSystem systemProperty,
-                                                   String producerName, RestProducer producerProperty) {
-        return new RestProducerProcessor(producerName);
-    }
-
     @Data
     public static class RestConsumer implements ConsumerProperty {
         private boolean isEnable = true;
         private String path;
+    }
+
+    @Override
+    protected RestProducerProcessor obtainProducer(String systemName, RestSystem systemProperty,
+                                                   String producerName, RestProducer producerProperty) {
+        return new RestProducerProcessor(producerName);
     }
 
     @Override

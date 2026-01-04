@@ -38,9 +38,9 @@ public class AdviceJacksonConverterFactory extends Converter.Factory {
     }
 
     @Override
-    public Converter<ResponseBody, ?> responseBodyConverter(@NotNull Type type,
+    public Converter<ResponseBody, ?> responseBodyConverter(Type type,
                                                             Annotation @NotNull [] annotations,
-                                                            @NotNull Retrofit retrofit) {
+                                                            Retrofit retrofit) {
         JavaType javaType = mapper.getTypeFactory().constructType(type);
         boolean autoUnpack = isAutoUnpackResponse(type);
         if (autoUnpack) {
@@ -63,10 +63,10 @@ public class AdviceJacksonConverterFactory extends Converter.Factory {
     }
 
     @Override
-    public Converter<?, RequestBody> requestBodyConverter(@NotNull Type type,
-                                                          Annotation @NotNull [] parameterAnnotations,
-                                                          Annotation @NotNull [] methodAnnotations,
-                                                          @NotNull Retrofit retrofit) {
+    public Converter<?, RequestBody> requestBodyConverter(Type type,
+                                                          Annotation[] parameterAnnotations,
+                                                          Annotation[] methodAnnotations,
+                                                          Retrofit retrofit) {
         JavaType javaType = mapper.getTypeFactory().constructType(type);
         boolean packRequest = isAutoPackRequest(type);
         if (packRequest) {
