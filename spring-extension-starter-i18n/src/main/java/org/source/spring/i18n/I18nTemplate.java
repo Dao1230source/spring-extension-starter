@@ -6,11 +6,11 @@ import org.source.spring.cache.configure.CacheInRedis;
 import org.source.spring.cache.configure.ConfigureCache;
 import org.source.spring.cache.configure.ReturnTypeEnum;
 import org.source.spring.cache.strategy.PartialCacheStrategyEnum;
-import org.source.spring.i18n.facade.data.Dict;
+import org.source.spring.i18n.facade.data.DictData;
 import org.source.spring.i18n.facade.param.Dict2Param;
 import org.source.spring.i18n.facade.param.Dict3Param;
 import org.source.spring.i18n.facade.param.Dict4Param;
-import org.source.spring.i18n.processor.Processor;
+import org.source.spring.i18n.processor.I18nProcessor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.lang.Nullable;
@@ -21,16 +21,16 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class I18nTemplate<E extends Dict> {
+public class I18nTemplate {
 
     public static final String LOCALE_GROUP_KEY = "LOCALE_GROUP_KEY";
     public static final String LOCALE_GROUP = "LOCALE_GROUP";
     public static final String ALL_LOCALES = "ALL_LOCALES";
 
-    private final Processor<E> processor;
+    private final I18nProcessor i18nProcessor;
 
-    public I18nTemplate(Processor<E> processor) {
-        this.processor = processor;
+    public I18nTemplate(I18nProcessor i18nProcessor) {
+        this.i18nProcessor = i18nProcessor;
     }
 
     /**
@@ -42,8 +42,8 @@ public class I18nTemplate<E extends Dict> {
     @ConfigureCache(cacheNames = LOCALE_GROUP_KEY, key = "T(org.source.spring.i18n.facade.param.Dict3Param).uniqueKey3(#param)",
             cacheInRedis = @CacheInRedis(enable = false),
             cacheInJvm = @CacheInJvm(enable = true))
-    public @Nullable E findByKey(Dict3Param param) {
-        return processor.findByKey(param).orElse(null);
+    public @Nullable DictData findByKey(Dict3Param param) {
+        return i18nProcessor.findByKey(param).orElse(null);
     }
 
     @ConfigureCache(cacheNames = LOCALE_GROUP, returnType = ReturnTypeEnum.RAW,
@@ -51,19 +51,19 @@ public class I18nTemplate<E extends Dict> {
             key = "T(org.source.spring.i18n.facade.param.Dict3Param).uniqueKeys3(#params)",
             cacheInRedis = @CacheInRedis(enable = false),
             cacheInJvm = @CacheInJvm(enable = true))
-    public List<E> findByKeys(Collection<Dict3Param> params) {
+    public List<DictData> findByKeys(Collection<Dict3Param> params) {
         if (CollectionUtils.isEmpty(params)) {
             return List.of();
         }
-        return processor.findByKeys(params);
+        return i18nProcessor.findByKeys(params);
     }
 
     @ConfigureCache(cacheNames = LOCALE_GROUP, returnType = ReturnTypeEnum.RAW,
             key = "T(org.source.spring.i18n.facade.param.Dict2Param).uniqueKey2(#param)",
             cacheInRedis = @CacheInRedis(enable = false),
             cacheInJvm = @CacheInJvm(enable = true))
-    public List<E> findByGroup(Dict2Param param) {
-        return processor.findByGroup(param);
+    public List<DictData> findByGroup(Dict2Param param) {
+        return i18nProcessor.findByGroup(param);
     }
 
     @ConfigureCache(cacheNames = LOCALE_GROUP, returnType = ReturnTypeEnum.RAW,
@@ -71,18 +71,18 @@ public class I18nTemplate<E extends Dict> {
             key = "T(org.source.spring.i18n.facade.param.Dict2Param).uniqueKeys2(#params)",
             cacheInRedis = @CacheInRedis(enable = false),
             cacheInJvm = @CacheInJvm(enable = true))
-    public Map<Dict2Param, List<E>> findByGroups(Collection<Dict2Param> params) {
+    public Map<Dict2Param, List<DictData>> findByGroups(Collection<Dict2Param> params) {
         if (CollectionUtils.isEmpty(params)) {
             return Map.of();
         }
-        return processor.findByGroups(params);
+        return i18nProcessor.findByGroups(params);
     }
 
     @ConfigureCache(cacheNames = ALL_LOCALES, key = "#root.methodName", returnType = ReturnTypeEnum.RAW,
             cacheInRedis = @CacheInRedis(enable = false),
             cacheInJvm = @CacheInJvm(enable = true))
     public List<String> findAllLocales() {
-        return processor.findAllScopes();
+        return i18nProcessor.findAllScopes();
     }
 
     @Caching(evict = {
@@ -90,7 +90,7 @@ public class I18nTemplate<E extends Dict> {
             @CacheEvict(cacheNames = LOCALE_GROUP, key = "T(org.source.spring.i18n.facade.param.Dict2Param).uniqueKey2(#param)")
     })
     public int save(Dict4Param param) {
-        return processor.save(param);
+        return i18nProcessor.save(param);
     }
 
     @Caching(evict = {
@@ -101,7 +101,7 @@ public class I18nTemplate<E extends Dict> {
         if (CollectionUtils.isEmpty(params)) {
             return 0;
         }
-        return processor.saveBatch(params);
+        return i18nProcessor.saveBatch(params);
     }
 
     @Caching(evict = {
@@ -109,7 +109,7 @@ public class I18nTemplate<E extends Dict> {
             @CacheEvict(cacheNames = LOCALE_GROUP, key = "T(org.source.spring.i18n.facade.param.Dict2Param).uniqueKey2(#param)")
     })
     public int removeByKey(Dict3Param param) {
-        return processor.removeByKey(param);
+        return i18nProcessor.removeByKey(param);
     }
 
     @Caching(evict = {
@@ -120,7 +120,7 @@ public class I18nTemplate<E extends Dict> {
         if (CollectionUtils.isEmpty(params)) {
             return 0;
         }
-        return processor.removeByKeys(params);
+        return i18nProcessor.removeByKeys(params);
     }
 
 
@@ -129,7 +129,7 @@ public class I18nTemplate<E extends Dict> {
             @CacheEvict(cacheNames = LOCALE_GROUP, key = "T(org.source.spring.i18n.facade.param.Dict2Param).uniqueKey2(#param)")
     })
     public int removeByGroup(Dict2Param param) {
-        return processor.removeByGroup(param);
+        return i18nProcessor.removeByGroup(param);
     }
 
     @Caching(evict = {
@@ -140,6 +140,6 @@ public class I18nTemplate<E extends Dict> {
         if (CollectionUtils.isEmpty(params)) {
             return 0;
         }
-        return processor.removeByGroups(params);
+        return i18nProcessor.removeByGroups(params);
     }
 }

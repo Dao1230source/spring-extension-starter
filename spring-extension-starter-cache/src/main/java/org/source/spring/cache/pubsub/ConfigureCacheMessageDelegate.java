@@ -4,11 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
 import org.source.spring.redis.pubsub.MessageDelegate;
 import org.source.utility.utils.Jsons;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 public class ConfigureCacheMessageDelegate implements MessageDelegate {
@@ -32,10 +32,10 @@ public class ConfigureCacheMessageDelegate implements MessageDelegate {
         if (log.isDebugEnabled()) {
             log.debug("ConfigureCache evict jvm via pubsub message:{}", message);
         }
-        ConfigureCacheMessage cacheMessage = Jsons.obj(message, ConfigureCacheMessage.class);
-        if (Objects.isNull(cacheMessage)) {
+        if (!StringUtils.hasText(message)) {
             return;
         }
+        ConfigureCacheMessage cacheMessage = Jsons.obj(message, ConfigureCacheMessage.class);
         String cacheName = cacheMessage.getCacheName();
         ConfigureCacheProperties cacheProperties = this.configureCacheExpendMap.get(cacheName);
         String key = cacheMessage.getMessage();

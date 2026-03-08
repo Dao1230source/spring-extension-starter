@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.source.spring.i18n.I18nWrapper;
-import org.source.spring.i18n.facade.data.Dict;
+import org.source.spring.i18n.facade.data.DictData;
 import org.source.utility.constant.Constants;
 
 import java.util.Collection;
@@ -21,7 +21,7 @@ public class Dict2Param extends Dict1Param {
     @NotEmpty(message = "分组(group)不能为空")
     protected String group;
 
-    public Dict2Param(Dict dict) {
+    public <E extends DictData> Dict2Param(E dict) {
         this.scope = dict.getScope();
         this.group = dict.getGroup();
     }

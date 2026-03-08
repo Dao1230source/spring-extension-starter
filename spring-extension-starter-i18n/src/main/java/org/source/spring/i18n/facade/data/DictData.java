@@ -10,13 +10,13 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class Dict implements Serializable {
+public class DictData implements Serializable {
     private String scope;
     private String group;
     private String key;
     private String value;
 
-    public <E extends Dict> Dict(E e) {
+    public <E extends DictData> DictData(E e) {
         this.key = e.getKey();
         this.value = e.getValue();
         this.scope = e.getScope();
@@ -31,9 +31,9 @@ public class Dict implements Serializable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Dict dict = (Dict) o;
-        return Objects.equals(scope, dict.scope) && Objects.equals(group, dict.group)
-                && Objects.equals(key, dict.key) && Objects.equals(value, dict.value);
+        DictData dictData = (DictData) o;
+        return Objects.equals(scope, dictData.scope) && Objects.equals(group, dictData.group)
+                && Objects.equals(key, dictData.key) && Objects.equals(value, dictData.value);
     }
 
     @Override

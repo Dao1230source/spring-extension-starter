@@ -14,7 +14,6 @@ import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -62,7 +61,7 @@ public class ConfigureCacheProperties {
             }
             long redisTtl = configureCache.cacheInRedis().ttl();
             if (redisTtl == CacheConstant.FROM_CONFIG) {
-                redisTtl = Objects.requireNonNullElse(configureTtlProperties.getRedisTtl(), CacheConstant.TTL_DEFAULT);
+                redisTtl = configureTtlProperties.getRedisTtl();
             }
             ConfigureCachePropertiesBuilder builder = ConfigureCacheProperties.builder();
             builder.cacheName(n).key(configureCache.key())
@@ -81,7 +80,7 @@ public class ConfigureCacheProperties {
                 }
                 long ttl = jvm.ttl();
                 if (ttl == CacheConstant.FROM_CONFIG) {
-                    ttl = Objects.requireNonNullElse(configureTtlProperties.getJvmTtl(), CacheConstant.TTL_DEFAULT);
+                    ttl = configureTtlProperties.getJvmTtl();
                 }
                 if (ttl > 0) {
                     caffeineBuilder.expireAfterAccess(ttl, TimeUnit.SECONDS);

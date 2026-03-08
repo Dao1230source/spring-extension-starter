@@ -133,7 +133,7 @@ public class ConfigureCacheUtil {
                 return "key的变量必须是方法的入参";
             }
         }
-        return null;
+        return Constants.EMPTY;
     }
 
     /**

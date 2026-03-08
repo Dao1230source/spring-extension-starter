@@ -1,7 +1,7 @@
 package org.source.spring.i18n;
 
 import lombok.extern.slf4j.Slf4j;
-import org.source.spring.i18n.facade.data.Dict;
+import org.source.spring.i18n.facade.data.DictData;
 import org.source.spring.i18n.facade.param.Dict2Param;
 import org.source.spring.i18n.facade.param.Dict3Param;
 import org.source.spring.i18n.facade.param.Dict4Param;
@@ -16,26 +16,26 @@ import java.util.stream.Collectors;
 @Slf4j
 public class I18nWrapper {
 
-    private static I18nTemplate<?> staticTemplate;
+    private static I18nTemplate staticTemplate;
 
-    public static synchronized void setI18nTemplate(I18nTemplate<?> template) {
+    public static synchronized void setI18nTemplate(I18nTemplate template) {
         I18nWrapper.staticTemplate = template;
     }
 
-    public static <E extends Dict> @Nullable E findByKey(Dict3Param param) {
+    public static <E extends DictData> @Nullable E findByKey(Dict3Param param) {
         return (E) staticTemplate.findByKey(param);
     }
 
-    public static <E extends Dict> List<E> findByKeys(Collection<Dict3Param> params) {
+    public static <E extends DictData> List<E> findByKeys(Collection<Dict3Param> params) {
         return (List<E>) staticTemplate.findByKeys(params);
     }
 
-    public static <E extends Dict> List<E> findByGroup(Dict2Param param) {
+    public static <E extends DictData> List<E> findByGroup(Dict2Param param) {
         return (List<E>) staticTemplate.findByGroup(param);
     }
 
-    public static <E extends Dict> Map<Dict2Param, List<E>> findByGroups(Collection<Dict2Param> params) {
-        Map<Dict2Param, ? extends List<? extends Dict>> groups = staticTemplate.findByGroups(params);
+    public static <E extends DictData> Map<Dict2Param, List<E>> findByGroups(Collection<Dict2Param> params) {
+        Map<Dict2Param, ? extends List<? extends DictData>> groups = staticTemplate.findByGroups(params);
         Map<Dict2Param, List<E>> map = HashMap.newHashMap(groups.size());
         groups.forEach((k, v) -> map.put(k, (List<E>) v));
         return map;
@@ -46,14 +46,14 @@ public class I18nWrapper {
     }
 
     public static int save(Dict4Param param) {
-        Dict byKey = staticTemplate.findByKey(param);
+        DictData byKey = staticTemplate.findByKey(param);
         if (Objects.isNull(byKey)) {
             return staticTemplate.save(param);
         }
         return 0;
     }
 
-    public static int saveBatch(Collection<Dict4Param> params) {
+    public static int save(Collection<Dict4Param> params) {
         Set<Dict2Param> groups = params.stream().map(d -> (Dict2Param) d).collect(Collectors.toSet());
         Set<Dict4Param> existsDict = staticTemplate.findByGroups(groups).values().stream()
                 .flatMap(Collection::stream).map(Dict4Param::new).collect(Collectors.toSet());
@@ -78,7 +78,7 @@ public class I18nWrapper {
         return staticTemplate.removeByGroups(params);
     }
 
-    public static <E extends Dict> String find(Locale locale, String group, String key) {
+    public static <E extends DictData> String find(Locale locale, String group, String key) {
         E e = findByKey(new Dict3Param(locale.toLanguageTag(), group, key));
         String defaultLanguageTag = Locale.getDefault().toLanguageTag();
         if (!locale.equals(Locale.getDefault())) {

@@ -20,7 +20,6 @@ import org.springframework.data.redis.cache.ConfigureRedisCacheWriter;
 import org.springframework.data.redis.cache.RedisCache;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import java.util.*;
@@ -33,10 +32,10 @@ public class ConfigureRedisCache extends RedisCache {
     private final ConfigureRedisCacheWriter cacheWriter;
     private final Map<String, ConfigureCacheProperties> configureCacheExpendMap;
 
-    protected ConfigureRedisCache(@NonNull String name,
-                                  @NonNull ConfigureRedisCacheWriter cacheWriter,
-                                  @NonNull RedisCacheConfiguration cacheConfig,
-                                  @NonNull Map<String, ConfigureCacheProperties> configureCacheExpendMap) {
+    protected ConfigureRedisCache(String name,
+                                  ConfigureRedisCacheWriter cacheWriter,
+                                  RedisCacheConfiguration cacheConfig,
+                                  Map<String, ConfigureCacheProperties> configureCacheExpendMap) {
         super(name, cacheWriter, cacheConfig);
         this.cacheWriter = cacheWriter;
         // Immutable
@@ -44,7 +43,7 @@ public class ConfigureRedisCache extends RedisCache {
     }
 
     @Override
-    public ValueWrapper get(@NonNull Object key) {
+    public @Nullable ValueWrapper get(Object key) {
         ConfigureCacheProperties cacheProperties = configureCacheExpendMap.get(super.getName());
         if (Objects.isNull(cacheProperties)) {
             return null;
@@ -59,12 +58,12 @@ public class ConfigureRedisCache extends RedisCache {
             value = this.getCache(key, cacheProperties);
         }
         if (log.isDebugEnabled()) {
-            log.debug("ConfigureCache cache value:{}", Jsons.str(value));
+            log.debug("ConfigureCache cache value:{}", Objects.isNull(value) ? null : Jsons.str(value));
         }
         return super.toValueWrapper(value);
     }
 
-    protected Object mGetCache(Collection<?> keys, ConfigureCacheProperties cacheProperties) {
+    protected @Nullable Object mGetCache(Collection<?> keys, ConfigureCacheProperties cacheProperties) {
         Map<Object, Object> kvMap;
         if (cacheProperties.isCacheInJvm()) {
             if (log.isDebugEnabled()) {
@@ -88,7 +87,7 @@ public class ConfigureRedisCache extends RedisCache {
      * @apiNote {@link ConfigureCache#key()}没有值时，key都是方法的第一个参数。
      * 如果key有值，无法保证准确的获取到key的引用变量，以及值不会被改变，{@link ConfigureCacheInterceptor} 就没法正确处理，所以排除这种情况
      */
-    protected Object resolvePartialCache(Collection<?> keys, Map<Object, Object> kvMap, ConfigureCacheProperties cacheProperties) {
+    protected @Nullable Object resolvePartialCache(Collection<?> keys, Map<Object, Object> kvMap, ConfigureCacheProperties cacheProperties) {
         Object result = valuesConverter(kvMap, cacheProperties.getReturnType());
         if (Objects.isNull(result) || keys.size() == kvMap.size()) {
             return result;
@@ -136,14 +135,14 @@ public class ConfigureRedisCache extends RedisCache {
         return Streams.map(valueByteList, this::deserializeCacheValueNullable).toList();
     }
 
-    protected Object deserializeCacheValueNullable(byte[] value) {
+    protected @Nullable Object deserializeCacheValueNullable(@Nullable byte[] value) {
         if (Objects.isNull(value)) {
             return null;
         }
         return super.deserializeCacheValue(value);
     }
 
-    public Object getCache(Object key, ConfigureCacheProperties cacheProperties) {
+    public @Nullable Object getCache(Object key, ConfigureCacheProperties cacheProperties) {
         Object value;
         if (cacheProperties.isCacheInJvm()) {
             if (log.isDebugEnabled()) {
@@ -156,7 +155,7 @@ public class ConfigureRedisCache extends RedisCache {
         return value;
     }
 
-    public Object getFromRedis(Object key) {
+    public @Nullable Object getFromRedis(Object key) {
         if (log.isDebugEnabled()) {
             log.debug("ConfigureCache get from redis, key:{}", Jsons.str(key));
         }
@@ -164,7 +163,7 @@ public class ConfigureRedisCache extends RedisCache {
         return this.deserializeCacheValueNullable(value);
     }
 
-    protected Object valuesConverter(Map<?, ?> kvMap, ReturnTypeEnum returnType) {
+    protected @Nullable Object valuesConverter(@Nullable Map<?, ?> kvMap, ReturnTypeEnum returnType) {
         if (Objects.isNull(kvMap) || kvMap.isEmpty()) {
             return null;
         }
@@ -186,8 +185,8 @@ public class ConfigureRedisCache extends RedisCache {
 
 
     @Override
-    public void put(@NonNull Object key, Object value) {
-        if (Objects.isNull(value) && !super.isAllowNullValues()) {
+    public void put(Object key, @Nullable Object value) {
+        if (Objects.isNull(value) || !super.isAllowNullValues()) {
             return;
         }
         this.putCache(key, value);
@@ -247,13 +246,13 @@ public class ConfigureRedisCache extends RedisCache {
         }, v -> v);
     }
 
-    public void put(String cacheName, @NonNull Object key, @Nullable Object value) {
+    public void put(String cacheName, Object key, @Nullable Object value) {
         Object cacheValue = value;
         if (Objects.isNull(cacheValue)) {
             if (isAllowNullValues()) {
                 cacheValue = NullValue.INSTANCE;
             } else {
-                throw BaseExceptionEnum.NOT_NULL.except("cache:{}的值不允许为null", cacheName);
+                throw BaseExceptionEnum.NOT_NULL.newException("cache:{}的值不允许为null", cacheName);
             }
         }
         cacheWriter.put(cacheName, this.createAndConvertCacheKey2(key), serializeCacheValue(cacheValue), super.getCacheConfiguration().getTtl());
@@ -270,7 +269,7 @@ public class ConfigureRedisCache extends RedisCache {
     }
 
     @Override
-    public void evict(@NonNull Object key) {
+    public void evict(Object key) {
         ConfigureCacheProperties cacheProperties = this.configureCacheExpendMap.get(super.getName());
         String cacheName = this.getName();
         if (log.isDebugEnabled()) {

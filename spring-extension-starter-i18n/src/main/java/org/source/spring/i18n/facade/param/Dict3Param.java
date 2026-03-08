@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.source.spring.i18n.facade.data.Dict;
+import org.source.spring.i18n.facade.data.DictData;
 import org.source.utility.constant.Constants;
 
 import java.util.Collection;
@@ -26,10 +26,10 @@ public class Dict3Param extends Dict2Param {
         this.key = key;
     }
 
-    public Dict3Param(Dict dict) {
-        this.scope = dict.getScope();
-        this.group = dict.getGroup();
-        this.key = dict.getKey();
+    public Dict3Param(DictData dictData) {
+        this.scope = dictData.getScope();
+        this.group = dictData.getGroup();
+        this.key = dictData.getKey();
     }
 
     public static String uniqueKey3(Dict3Param param) {

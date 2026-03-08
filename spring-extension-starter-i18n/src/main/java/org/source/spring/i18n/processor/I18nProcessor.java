@@ -1,6 +1,6 @@
 package org.source.spring.i18n.processor;
 
-import org.source.spring.i18n.facade.data.Dict;
+import org.source.spring.i18n.facade.data.DictData;
 import org.source.spring.i18n.facade.param.Dict2Param;
 import org.source.spring.i18n.facade.param.Dict3Param;
 import org.source.spring.i18n.facade.param.Dict4Param;
@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public interface Processor<E extends Dict> {
+public interface I18nProcessor {
 
     /**
      * 查找 by key
@@ -19,7 +19,7 @@ public interface Processor<E extends Dict> {
      * @param param Dict3Param
      * @return value
      */
-    Optional<E> findByKey(Dict3Param param);
+    Optional<DictData> findByKey(Dict3Param param);
 
     /**
      * 查找 by key
@@ -27,7 +27,7 @@ public interface Processor<E extends Dict> {
      * @param params {@literal Collection<Dict3Param>}
      * @return value
      */
-    default List<E> findByKeys(Collection<Dict3Param> params) {
+    default List<DictData> findByKeys(Collection<Dict3Param> params) {
         return params.stream().map(this::findByKey).filter(Optional::isPresent).map(Optional::get).toList();
     }
 
@@ -37,7 +37,7 @@ public interface Processor<E extends Dict> {
      * @param param Dict2Param
      * @return key-value
      */
-    List<E> findByGroup(Dict2Param param);
+    List<DictData> findByGroup(Dict2Param param);
 
     /**
      * 查找 by group
@@ -45,7 +45,7 @@ public interface Processor<E extends Dict> {
      * @param params {@literal Collection<Dict2Param>}
      * @return {@literal Map<Dict2Param, List<E>>}
      */
-    default Map<Dict2Param, List<E>> findByGroups(Collection<Dict2Param> params) {
+    default Map<Dict2Param, List<DictData>> findByGroups(Collection<Dict2Param> params) {
         return params.stream().map(this::findByGroup)
                 .flatMap(Collection::stream)
                 .collect(Collectors.groupingBy(Dict2Param::new));
