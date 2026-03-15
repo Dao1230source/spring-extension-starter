@@ -1,10 +1,10 @@
 package org.source.spring.i18n.facade.param;
 
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 
 @NoArgsConstructor
 @AllArgsConstructor

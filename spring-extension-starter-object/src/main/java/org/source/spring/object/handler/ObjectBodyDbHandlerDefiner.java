@@ -1,6 +1,5 @@
 package org.source.spring.object.handler;
 
-import jakarta.validation.constraints.NotEmpty;
 import org.source.spring.object.AbstractValue;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 
@@ -14,7 +13,7 @@ public interface ObjectBodyDbHandlerDefiner<B extends ObjectBodyEntityDefiner, V
      */
     B newObjectBodyEntity();
 
-    List<B> findObjectBodies(@NotEmpty Collection<String> objectIds);
+    List<B> findObjectBodies(Collection<String> objectIds);
 
     /**
      * 通常 object body 的唯一键是 objectId，但实际业务新增时中可能会使用其他唯一键来查询是否已存在数据
@@ -22,7 +21,7 @@ public interface ObjectBodyDbHandlerDefiner<B extends ObjectBodyEntityDefiner, V
      * @param ks ks
      * @return list
      */
-    List<B> findObjectBodiesByKeys(@NotEmpty Collection<K> ks);
+    List<B> findObjectBodiesByKeys(Collection<K> ks);
 
     K objectBodyToKey(B b);
 
@@ -30,8 +29,8 @@ public interface ObjectBodyDbHandlerDefiner<B extends ObjectBodyEntityDefiner, V
 
     K valueToParentKey(V v);
 
-    void saveObjectBodies(@NotEmpty Collection<B> objectBodies);
+    void saveObjectBodies(Collection<B> objectBodies);
 
-    void removeObjectBodies(@NotEmpty Collection<String> objectIds);
+    void removeObjectBodies(Collection<String> objectIds);
 
 }

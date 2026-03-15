@@ -1,7 +1,6 @@
 package org.source.spring.doc.object;
 
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
 import org.source.spring.doc.DocDataContainer;
 import org.source.spring.doc.data.*;
 import org.source.spring.doc.object.entity.DocEntityDefiner;
@@ -66,7 +65,6 @@ public abstract class AbstractDocProcessor
         return docCustomTree(super.handleValueDataTree());
     }
 
-    @NotNull
     private EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> docCustomTree(
             EnhanceTree<String, ObjectElement<DocData>, ObjectNode<DocData>> tree) {
         tree.setAfterAddHandler((n, parent) ->
@@ -78,7 +76,7 @@ public abstract class AbstractDocProcessor
     public boolean nodeEquals(ObjectNode<DocData> n, ObjectNode<DocData> old) {
         ObjectElement<DocData> eleNew = n.getElement();
         ObjectElement<DocData> eleOld = old.getElement();
-        return eleNew.getValue().equals(eleOld.getValue())
+        return Objects.equals(eleNew.getValue(), eleOld.getValue())
                 && eleNew.getType().equals(eleOld.getType())
                 && eleNew.getRelationType().equals(eleOld.getRelationType());
     }

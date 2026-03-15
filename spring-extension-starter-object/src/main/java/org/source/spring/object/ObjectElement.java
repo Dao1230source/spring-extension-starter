@@ -2,9 +2,9 @@ package org.source.spring.object;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
-import org.jetbrains.annotations.NotNull;
 import org.source.utility.tree.define.Element;
 import org.source.utility.tree.define.EnhanceElement;
+import org.springframework.lang.Nullable;
 
 import java.time.LocalDateTime;
 
@@ -69,7 +69,7 @@ public class ObjectElement<V extends AbstractValue> extends EnhanceElement<Strin
 
     @JsonIgnore
     @Override
-    public @NonNull String getId() {
+    public String getId() {
         return objectId;
     }
 
@@ -80,7 +80,7 @@ public class ObjectElement<V extends AbstractValue> extends EnhanceElement<Strin
     }
 
     @Override
-    public int compareTo(@NotNull EnhanceElement<String> o) {
+    public int compareTo(@Nullable EnhanceElement<String> o) {
         return Element.comparator(this, (ObjectElement<V>) o, ObjectElement::getId);
     }
 }

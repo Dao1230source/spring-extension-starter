@@ -1,4 +1,4 @@
-package org.source.spring.common.valid;
+package org.source.spring.io.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
@@ -86,7 +86,7 @@ public @interface EnumExists {
                     }
                 }
             } catch (Exception e) {
-                throw BaseExceptionEnum.ENUM_EXCEPTION.except(e);
+                throw BaseExceptionEnum.ENUM_EXCEPTION.newException(e);
             }
             return false;
         }

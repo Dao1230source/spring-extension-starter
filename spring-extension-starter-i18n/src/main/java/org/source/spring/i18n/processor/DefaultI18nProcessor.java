@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class DefaultI18nProcessor implements I18nProcessor {
-    private static final Tree<String, DictElement, DefaultNode<String, DictElement>> DEFAULT_TREE = Tree.of(new DefaultNode<>());
+    private static final Tree<String, DictElement, DefaultNode<String, DictElement>> DEFAULT_TREE = Tree.of(new DefaultNode<String, DictElement>());
 
     @Override
     public Optional<DictData> findByKey(Dict3Param param) {

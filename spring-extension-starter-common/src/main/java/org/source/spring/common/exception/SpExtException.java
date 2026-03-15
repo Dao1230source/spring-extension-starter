@@ -5,8 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.source.utility.exceptions.BaseException;
-import org.source.utility.exceptions.EnumProcessor;
+import org.source.utility.exception.BaseException;
+import org.source.utility.exception.EnumProcessor;
 import org.source.utility.utils.Strings;
 import org.springframework.util.StringUtils;
 

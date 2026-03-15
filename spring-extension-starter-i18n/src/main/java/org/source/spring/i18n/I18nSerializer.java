@@ -3,10 +3,10 @@ package org.source.spring.i18n;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import org.jetbrains.annotations.Nullable;
 import org.source.spring.i18n.annotation.I18n;
 import org.source.spring.i18n.enums.I18nRefTypeEnum;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.lang.Nullable;
 
 import java.io.IOException;
 import java.lang.reflect.Field;

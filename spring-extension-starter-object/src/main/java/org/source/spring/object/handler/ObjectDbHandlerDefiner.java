@@ -1,6 +1,5 @@
 package org.source.spring.object.handler;
 
-import jakarta.validation.constraints.NotEmpty;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 
 import java.util.Collection;
@@ -12,9 +11,9 @@ public interface ObjectDbHandlerDefiner<O extends ObjectEntityDefiner> {
      */
     O newObjectEntity();
 
-    List<O> findObjects(@NotEmpty Collection<String> objectIds);
+    List<O> findObjects(Collection<String> objectIds);
 
-    void saveObjects(@NotEmpty Collection<O> objects);
+    void saveObjects(Collection<O> objects);
 
     /**
      * 逻辑删除
@@ -22,12 +21,12 @@ public interface ObjectDbHandlerDefiner<O extends ObjectEntityDefiner> {
      *
      * @param objectIds objectIds
      */
-    void deleteObjects(@NotEmpty Collection<String> objectIds);
+    void deleteObjects(Collection<String> objectIds);
 
     /**
      * 物理删除
      *
      * @param objectIds objectIds
      */
-    void removeObjects(@NotEmpty Collection<String> objectIds);
+    void removeObjects(Collection<String> objectIds);
 }

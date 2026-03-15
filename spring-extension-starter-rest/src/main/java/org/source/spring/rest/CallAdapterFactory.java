@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.ResponseBody;
 import org.jetbrains.annotations.Nullable;
 import org.source.utility.enums.BaseExceptionEnum;
-import org.source.utility.exceptions.BaseException;
 import retrofit2.Call;
 import retrofit2.CallAdapter;
 import retrofit2.Response;
@@ -41,7 +40,7 @@ public class CallAdapterFactory extends CallAdapter.Factory {
                 return doCall(call);
             } catch (Exception e) {
                 log.error("execute retrofit exception", e);
-                throw BaseException.except(e, () -> BaseExceptionEnum.REQUEST_EXECUTE_EXCEPTION.except(e));
+                throw BaseExceptionEnum.REQUEST_EXECUTE_EXCEPTION.newException(e);
             }
         }
 
@@ -54,7 +53,7 @@ public class CallAdapterFactory extends CallAdapter.Factory {
                 return Objects.requireNonNullElse(response.body(), null);
             } else {
                 try (ResponseBody errorBody = response.errorBody()) {
-                    throw BaseExceptionEnum.REQUEST_DO_CALL_EXCEPTION.except(Objects.nonNull(errorBody) ? errorBody.string() : null);
+                    throw BaseExceptionEnum.REQUEST_DO_CALL_EXCEPTION.newException(Objects.nonNull(errorBody) ? errorBody.string() : null);
                 }
             }
         }

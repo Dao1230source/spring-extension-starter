@@ -1,6 +1,5 @@
 package org.source.spring.object.handler;
 
-import jakarta.validation.constraints.NotEmpty;
 import org.source.spring.object.entity.RelationEntityDefiner;
 
 import java.util.Collection;
@@ -12,14 +11,14 @@ public interface RelationDbHandlerDefiner<R extends RelationEntityDefiner> {
      */
     R newRelationEntity();
 
-    List<R> findRelationsByObjectIds(@NotEmpty Collection<String> objectIds);
+    List<R> findRelationsByObjectIds(Collection<String> objectIds);
 
-    List<R> findRelationsByParentObjectIds(@NotEmpty Collection<String> parentObjectIds);
+    List<R> findRelationsByParentObjectIds(Collection<String> parentObjectIds);
 
-    List<R> findRelationsByBelongIds(@NotEmpty Collection<String> belongIds);
+    List<R> findRelationsByBelongIds(Collection<String> belongIds);
 
-    void saveRelations(@NotEmpty Collection<R> relations);
+    void saveRelations(Collection<R> relations);
 
-    void removeRelations(@NotEmpty Collection<String> objectIds);
+    void removeRelations(Collection<String> objectIds);
 
 }

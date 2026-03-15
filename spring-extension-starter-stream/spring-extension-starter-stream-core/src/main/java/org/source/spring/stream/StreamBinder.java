@@ -1,6 +1,7 @@
 package org.source.spring.stream;
 
 import lombok.extern.slf4j.Slf4j;
+import org.source.spring.common.exception.SpExtExceptionEnum;
 import org.source.spring.stream.template.ConsumerProcessor;
 import org.source.spring.stream.template.ProducerProcessor;
 import org.springframework.cloud.stream.binder.*;
@@ -46,7 +47,7 @@ public class StreamBinder<C extends ConsumerProcessor, P extends ProducerProcess
     @Override
     public P getExtendedProducerProperties(String channelName) {
         P extendedProducerProperties = extendedBinderProperties.getExtendedProducerProperties(channelName);
-        StreamExceptionEnum.STREAM_PRODUCER_PROCESSOR_NOT_FOUND.nonNull(extendedProducerProperties, channelName);
+        SpExtExceptionEnum.STREAM_PRODUCER_PROCESSOR_NOT_FOUND.nonNull(extendedProducerProperties, channelName);
         return extendedProducerProperties;
     }
 

@@ -39,7 +39,7 @@ public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V e
     default ObjectTypeDefiner getObjectType(V v) {
         ObjectTypeDefiner type = this.class2ObjectTypeMap().get(v.getClass());
         if (Objects.isNull(type)) {
-            throw SpExtExceptionEnum.OBJECT_VALUE_CLASS_NOT_DEFINED.except("class:{}", v.getClass());
+            throw SpExtExceptionEnum.OBJECT_VALUE_CLASS_NOT_DEFINED.newException("class:{}", v.getClass());
         }
         return type;
     }
@@ -50,7 +50,7 @@ public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V e
     default ObjectTypeDefiner getObjectType(Integer type) {
         ObjectTypeDefiner objectType = this.type2ObjectTypeMap().get(type);
         if (Objects.isNull(objectType)) {
-            throw SpExtExceptionEnum.OBJECT_TYPE_NOT_DEFINED.except("type:{}", type);
+            throw SpExtExceptionEnum.OBJECT_TYPE_NOT_DEFINED.newException("type:{}", type);
         }
         return objectType;
     }

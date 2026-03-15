@@ -14,6 +14,14 @@
             <groupId>io.github.dao1230source</groupId>
             <artifactId>spring-extension-starter-cache</artifactId>
         </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+        </dependency>
     </dependencies>
 
     <name>spring-extension-starter-i18n</name>

@@ -9,8 +9,8 @@ import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import org.jetbrains.annotations.NotNull;
-import org.source.spring.common.io.Request;
-import org.source.spring.common.io.Response;
+import org.source.spring.io.Input;
+import org.source.spring.io.Output;
 import org.source.utility.utils.Jsons;
 import retrofit2.Converter;
 import retrofit2.Retrofit;
@@ -45,7 +45,7 @@ public class AdviceJacksonConverterFactory extends Converter.Factory {
         boolean autoUnpack = isAutoUnpackResponse(type);
         if (autoUnpack) {
             log.debug("auto unpack data from org.source.web.io.Response:{}", type.getTypeName());
-            javaType = mapper.getTypeFactory().constructParametricType(Response.class, javaType);
+            javaType = mapper.getTypeFactory().constructParametricType(Output.class, javaType);
         }
         ObjectReader reader = mapper.readerFor(javaType);
         return (Converter<ResponseBody, Object>) value -> {
@@ -54,7 +54,7 @@ public class AdviceJacksonConverterFactory extends Converter.Factory {
                 if (log.isDebugEnabled()) {
                     log.debug("response body:{}", Jsons.str(responseBody));
                 }
-                if (autoUnpack && responseBody instanceof Response<?> response) {
+                if (autoUnpack && responseBody instanceof Output<?> response) {
                     return response.getData();
                 }
                 return responseBody;
@@ -70,14 +70,14 @@ public class AdviceJacksonConverterFactory extends Converter.Factory {
         JavaType javaType = mapper.getTypeFactory().constructType(type);
         boolean packRequest = isAutoPackRequest(type);
         if (packRequest) {
-            log.debug("name:{} auto pack data to org.source.web.io.Request:{}", this.name, type.getTypeName());
-            javaType = mapper.getTypeFactory().constructParametricType(Request.class, javaType);
+            log.debug("name:{} auto pack data to Input:{}", this.name, type.getTypeName());
+            javaType = mapper.getTypeFactory().constructParametricType(Input.class, javaType);
         }
         ObjectWriter writer = mapper.writerFor(javaType);
         return (Converter<Object, RequestBody>) value -> {
             Object param = value;
             if (packRequest) {
-                param = Request.of(param);
+                param = Input.of(param);
             }
             if (log.isDebugEnabled()) {
                 log.debug("request body:{}", Jsons.str(param));
@@ -89,15 +89,15 @@ public class AdviceJacksonConverterFactory extends Converter.Factory {
 
     private boolean isAutoUnpackResponse(Type type) {
         if (type instanceof ParameterizedType parameterizedType) {
-            return autoUnpackResponse && !parameterizedType.getRawType().getTypeName().equals(Response.class.getName());
+            return autoUnpackResponse && !parameterizedType.getRawType().getTypeName().equals(Output.class.getName());
         }
-        return autoUnpackResponse && !type.getTypeName().equals(Response.class.getName());
+        return autoUnpackResponse && !type.getTypeName().equals(Output.class.getName());
     }
 
     private boolean isAutoPackRequest(Type type) {
         if (type instanceof ParameterizedType parameterizedType) {
-            return autoPackRequest && !parameterizedType.getRawType().getTypeName().equals(Request.class.getName());
+            return autoPackRequest && !parameterizedType.getRawType().getTypeName().equals(Input.class.getName());
         }
-        return autoPackRequest && !type.getTypeName().equals(Request.class.getName());
+        return autoPackRequest && !type.getTypeName().equals(Input.class.getName());
     }
 }

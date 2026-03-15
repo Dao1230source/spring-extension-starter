@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.source.spring.common.io.Response;
+import org.source.spring.io.Output;
 import org.source.spring.stream.template.AbstractListener;
 import org.source.utility.utils.Jsons;
 import org.springframework.http.ResponseEntity;
@@ -18,13 +18,13 @@ import java.util.Objects;
 @Data
 public class RestListener extends AbstractListener<String> {
 
-    public ResponseEntity<Response<Void>> handleRequest(HttpServletRequest request) throws IOException {
+    public ResponseEntity<Output<Void>> handleRequest(HttpServletRequest request) throws IOException {
         // 校验只支持json 格式
         // 从请求体读取 JSON
         JsonNode jsonNode = Jsons.getInstance().readTree(request.getInputStream());
         if (Objects.nonNull(jsonNode)) {
             this.processMessage(Jsons.str(jsonNode));
         }
-        return ResponseEntity.ok().body(Response.success());
+        return ResponseEntity.ok().body(Output.success());
     }
 }

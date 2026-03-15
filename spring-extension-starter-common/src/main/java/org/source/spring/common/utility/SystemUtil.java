@@ -37,7 +37,7 @@ public class SystemUtil implements EnvironmentAware {
                 SystemUtil.ip = "127.0.0.1";
             }
         } catch (UnknownHostException e) {
-            BaseExceptionEnum.GET_IP_PORT_FAIL.except(e);
+            BaseExceptionEnum.GET_IP_PORT_FAIL.throwException(e);
         }
     }
 }

@@ -74,7 +74,7 @@ public class StringMessageConverter extends AbstractMessageConverter {
                 }
             }
         } catch (IOException e) {
-            throw BaseExceptionEnum.JSON_STRING_2_OBJECT_EXCEPTION.except(e);
+            throw BaseExceptionEnum.JSON_STRING_2_OBJECT_EXCEPTION.newException(e);
         }
     }
 

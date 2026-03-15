@@ -2,7 +2,7 @@ package org.source.spring.common.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.source.utility.exceptions.EnumProcessor;
+import org.source.utility.exception.EnumProcessor;
 
 @Getter
 @AllArgsConstructor
@@ -50,6 +50,14 @@ public enum SpExtExceptionEnum implements EnumProcessor<SpExtException> {
      * stream
      */
     STREAM_PRODUCER_PROCESSOR_NOT_FOUND("stream producer processor not found"),
+    STREAM_TARGET_CLASS_MUST_BE_OBJECT("目标对象必须是一个对象类型"),
+
+    /**
+     * spring cache
+     */
+    PARTIAL_CACHE_EXCEPTION("spring-cache处理部分缓存时异常，可能存在分布式缓存不一致问题"),
+    CACHE_MANAGER_TYPE_ERROR("spring cache CacheManager必须是ConfigureRedisCacheManager类型"),
+    CANNOT_SET_STRATEGY_AS_PARTIAL_TRUST("不能将partialCacheStrategy设置为PARTIAL_TRUST"),
     ;
 
     private final String message;

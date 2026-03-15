@@ -31,7 +31,7 @@ public interface LogDataProcessor {
                 return null;
             }).filter(Objects::nonNull).collect(Collectors.joining(Constants.SEMICOLON));
             if (StringUtils.hasText(errorMessage)) {
-                throw BaseExceptionEnum.VALIDATE_ERROR.except("字段必填：{}", errorMessage);
+                throw BaseExceptionEnum.VALIDATE_ERROR.newException("字段必填：{}", errorMessage);
             }
         }
         this.doSave(logDataList);

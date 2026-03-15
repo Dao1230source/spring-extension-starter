@@ -13,7 +13,7 @@ import java.util.Objects;
 public class ObjectNode<V extends AbstractValue> extends EnhanceNode<String, ObjectElement<V>, ObjectNode<V>> {
     private StatusEnum status;
 
-    private List<Integer> relationTypes;
+    private List<Integer> relationTypes = List.of();
 
     @Override
     public ObjectNode<V> emptyNode() {

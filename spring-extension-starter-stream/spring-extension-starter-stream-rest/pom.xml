@@ -15,6 +15,10 @@
             <artifactId>spring-extension-starter-stream-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.dao1230source</groupId>
+            <artifactId>spring-extension-starter-io</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>

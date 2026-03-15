@@ -6,8 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.source.spring.cache.configure.ConfigureCache;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
 import org.source.spring.cache.configure.ReturnTypeEnum;
-import org.source.spring.cache.exception.CacheExceptionEnum;
 import org.source.spring.cache.strategy.PartialCacheStrategyEnum;
+import org.source.spring.common.exception.SpExtExceptionEnum;
 import org.source.spring.common.spel.SpElUtil;
 import org.source.utility.constant.Constants;
 import org.source.utility.enums.BaseExceptionEnum;
@@ -74,7 +74,7 @@ public class ConfigureCacheUtil {
         PartialCacheStrategyEnum partialCache = cacheProperties.getPartialCache();
         if (PartialCacheStrategyEnum.PARTIAL_TRUST.equals(partialCache)) {
             String errorMessage = strategyCanSetBePartialTrust(cacheProperties.getKey(), method);
-            CacheExceptionEnum.CANNOT_SET_STRATEGY_AS_PARTIAL_TRUST.isEmpty(errorMessage,
+            SpExtExceptionEnum.CANNOT_SET_STRATEGY_AS_PARTIAL_TRUST.isEmpty(errorMessage,
                     errorMessage + ", name:{}", cacheProperties.getCacheName());
         }
         Type methodReturnType = method.getGenericReturnType();

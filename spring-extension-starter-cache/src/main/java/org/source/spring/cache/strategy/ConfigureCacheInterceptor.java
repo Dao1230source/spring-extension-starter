@@ -3,7 +3,7 @@ package org.source.spring.cache.strategy;
 import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInvocation;
 import org.jetbrains.annotations.NotNull;
-import org.source.spring.cache.exception.CacheExceptionEnum;
+import org.source.spring.common.exception.SpExtExceptionEnum;
 import org.source.utility.utils.Jsons;
 import org.springframework.cache.interceptor.CacheInterceptor;
 
@@ -47,7 +47,7 @@ public class ConfigureCacheInterceptor extends CacheInterceptor {
                 return result;
             } else if (res instanceof PartialCacheResult) {
                 // 上次缓存获取为null的keys，此时结果还是PartialCacheResult，表明其他地方缓存了数据，可能导致已有数据也不一致，报错。
-                throw CacheExceptionEnum.PARTIAL_CACHE_EXCEPTION.newException();
+                throw SpExtExceptionEnum.PARTIAL_CACHE_EXCEPTION.newException();
             } else if (result instanceof Map map) {
                 map.putAll((Map<?, ?>) res);
             } else if (result instanceof Collection collection) {

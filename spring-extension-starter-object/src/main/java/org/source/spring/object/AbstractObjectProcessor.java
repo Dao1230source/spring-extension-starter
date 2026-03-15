@@ -122,7 +122,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         } catch (Exception e) {
             this.getObjectTree().clear();
             log.error("AbstractObjectProcessor.merge error", e);
-            throw SpExtExceptionEnum.OBJECT_MERGE_ERROR.except(e);
+            SpExtExceptionEnum.OBJECT_MERGE_ERROR.throwException(e);
         }
     }
 
@@ -219,10 +219,10 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
             if (StatusEnum.updateObjectBody(n.getStatus())) {
                 objectBodyList.add(this.data2ObjectBodyEntity(n));
             }
-            if (StatusEnum.updateRelation(n.getStatus()) && !CollectionUtils.isEmpty(n.getParents())) {
-                Iterator<Integer> iterator = Objects.requireNonNullElse(n.getRelationTypes(), List.<Integer>of()).iterator();
-                n.getParents().stream().filter(Node::hasElement).forEach(p ->
-                        relationList.add(this.data2RelationEntity(n, p, iterator.hasNext() ? iterator.next() : null)));
+            if (StatusEnum.updateRelation(n.getStatus()) && !CollectionUtils.isEmpty(n.findParents())) {
+                Iterator<Integer> iterator = n.getRelationTypes().iterator();
+                n.findParents().stream().filter(Node::hasElement).forEach(p ->
+                        relationList.add(this.data2RelationEntity(n, p, iterator.next())));
             }
         });
         return new ObjectNodesToEntitiesTemp<>(objectList, objectBodyList, relationList);

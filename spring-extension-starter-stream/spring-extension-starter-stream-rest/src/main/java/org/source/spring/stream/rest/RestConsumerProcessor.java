@@ -46,7 +46,7 @@ public class RestConsumerProcessor implements ConsumerProcessor {
         try {
             method = RestListener.class.getMethod("handleRequest", HttpServletRequest.class);
         } catch (NoSuchMethodException e) {
-            throw BaseExceptionEnum.RUNTIME_EXCEPTION.except(e);
+            throw BaseExceptionEnum.RUNTIME_EXCEPTION.newException(e);
         }
         // 注册映射
         handlerMapping.registerMapping(mappingInfo, restListener, method);

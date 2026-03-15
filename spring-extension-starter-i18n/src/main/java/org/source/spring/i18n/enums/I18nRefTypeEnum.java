@@ -1,12 +1,12 @@
 package org.source.spring.i18n.enums;
 
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Nullable;
 import org.source.spring.i18n.annotation.I18nRef;
 import org.source.spring.i18n.annotation.I18nServer;
 import org.source.utility.constant.Constants;
 import org.source.utility.enums.BaseExceptionEnum;
 import org.source.utility.utils.Reflects;
+import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
@@ -32,7 +32,7 @@ public enum I18nRefTypeEnum {
             if (obj instanceof Enum<?> aEnum) {
                 return aEnum.name();
             } else {
-                throw BaseExceptionEnum.MUST_BE_ENUM_TYPE.except("type:{},obj class:{} not a Enum", this.name(), obj.getClass());
+                throw BaseExceptionEnum.MUST_BE_ENUM_TYPE.newException("type:{},obj class:{} not a Enum", this.name(), obj.getClass());
             }
         }
     },
@@ -46,7 +46,7 @@ public enum I18nRefTypeEnum {
             if (Objects.nonNull(field)) {
                 return field.getName();
             } else {
-                throw BaseExceptionEnum.FIELD_NAME_INVALID.except("type:{}, field:{}.{} not exists", this.name(), enumClass.getName(), value);
+                throw BaseExceptionEnum.FIELD_NAME_INVALID.newException("type:{}, field:{}.{} not exists", this.name(), enumClass.getName(), value);
             }
         }
 
