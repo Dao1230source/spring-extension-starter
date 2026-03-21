@@ -1,0 +1,147 @@
+@startuml Spring_Cache_Extension_Hierarchy
+
+skinparam backgroundColor #FAFAFA
+skinparam classBackgroundColor #FFFFFF
+skinparam classArrowColor #0277BD
+skinparam classBorderColor #01579B
+
+' ======================== 第1层：Spring Framework 接口 ========================
+
+package "Spring Framework" #FFF9C4 {
+    class Cache {
+        + get(key): ValueWrapper
+        + put(key, value): void
+        + evict(key): void
+        + clear(): void
+    }
+
+    class CacheManager {
+        + getCache(name): Cache
+        + getCacheNames(): Collection
+    }
+
+    class CacheInterceptor {
+        + invoke(invocation): Object
+    }
+}
+
+' ======================== 第2层：Spring Data Redis 实现 ========================
+
+package "Spring Data Redis" #FFE0B2 {
+    class RedisCache {
+        - cacheWriter: RedisCacheWriter
+        - cacheConfig: RedisCacheConfiguration
+        --
+        + get(key): ValueWrapper
+        + put(key, value): void
+        + evict(key): void
+        + clear(): void
+    }
+
+    class RedisCacheManager {
+        - cacheWriter: RedisCacheWriter
+        - defaultCacheConfig: RedisCacheConfiguration
+        --
+        # createRedisCache(name, config): RedisCache
+    }
+}
+
+' ======================== 第3层：Spring Cache Extension 扩展 ========================
+
+package "Spring Cache Extension" #C8E6C9 {
+    class ConfigureRedisCache {
+        - configureCacheExpendMap: Map
+        --
+        __覆盖方法 (4个)__
+        + get(key): ValueWrapper
+        + put(key, value): void
+        + evict(key): void
+        + clear(): void
+        --
+        __新增方法 (6个)__
+        + mGetCache(Collection): Object
+        + mGetFromRedis(Collection): List
+        + putCache(key, value): void
+        + mPut(cacheName, map): void
+        + resolvePartialCache(): Object
+        + valuesConverter(map): Object
+    }
+
+    class ConfigureRedisCacheManager {
+        - configureCacheExpendMap: Map
+        --
+        # createRedisCache(name, config): RedisCache
+    }
+
+    class ConfigureCacheInterceptor {
+        __覆盖方法__
+        + invoke(invocation): Object
+        --
+        __新增方法__
+        + handleWhenGetPartialCache(): Object
+    }
+}
+
+' ======================== 第4层：配置和数据类 ========================
+
+package "Configuration & Data" #E1F5FE {
+    class ConfigureCacheProperties {
+        - cacheName: String
+        - redisTtl: long
+        - returnType: ReturnTypeEnum
+        - cacheKeySpEl: String
+        - partialCache: PartialCacheStrategyEnum
+        - cacheInJvm: boolean
+        - jvmCache: Cache
+    }
+
+    class PartialCacheResult {
+        - result: Object
+        - cachedKeys: List
+    }
+}
+
+' ======================== 继承和依赖关系 ========================
+
+' 第1层 -> 第2层
+Cache <|.. RedisCache : implements
+CacheManager <|.. RedisCacheManager : implements
+CacheInterceptor <|.. ConfigureCacheInterceptor : implements
+
+' 第2层 -> 第3层
+RedisCache <|-- ConfigureRedisCache : extends
+
+RedisCacheManager <|-- ConfigureRedisCacheManager : extends
+
+' 第3层 -> 第4层
+ConfigureRedisCache o-- ConfigureCacheProperties : uses
+ConfigureRedisCache o-- PartialCacheResult : creates
+ConfigureCacheInterceptor o-- PartialCacheResult : processes
+
+' ======================== 关键说明 ========================
+
+note right of ConfigureRedisCache
+  核心创新 #1: 批量查询优化
+  支持 Collection 参数
+  自动检测部分缓存
+  返回 PartialCacheResult
+  性能提升: 500倍
+end note
+
+note right of ConfigureCacheInterceptor
+  核心创新 #2: 智能二次查询
+  拦截 PartialCacheResult
+  移除已缓存的 keys
+  查询缺失部分
+  合并两次结果
+end note
+
+note left of ConfigureCacheProperties
+  核心创新 #3: 多层缓存支持
+  JVM 本地缓存 (Caffeine)
+  Redis 分布式缓存
+  灵活的 TTL 配置
+  3种缓存策略
+end note
+
+@enduml

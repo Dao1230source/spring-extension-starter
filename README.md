@@ -13,7 +13,7 @@ jar包依赖
 
 spring-boot的一些扩展
 
-### [spring.cache](./spring-cache.md)
+### [spring.cache](spring-extension-starter-cache/spring-cache.md)
 
 基于spring cache的扩展，所有原注解和用法不变
 

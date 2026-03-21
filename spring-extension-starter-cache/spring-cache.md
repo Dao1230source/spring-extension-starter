@@ -9,6 +9,7 @@
 - **智能缓存同步**：基于Redis Pub/Sub的分布式缓存失效通知机制
 - **灵活的部分缓存处理**：当部分数据缺失时的多种处理策略
 - **参数化类型支持**：支持Generic类型的缓存存储和反序列化
+- [架构UML图](Spring_Extension_Cache_Architecture.png)
 
 **支持的Spring Cache原生注解**：`@Cacheable`、`@Caching`、`@CacheEvict`、`@CachePut`等都可以正常使用
 
