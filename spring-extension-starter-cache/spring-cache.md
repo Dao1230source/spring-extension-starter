@@ -522,9 +522,25 @@ public Data getRealtime(String id) { }
 
 - **完整示例代码**：[Demo Project](https://github.com/Dao1230source/demo.git)
 - **源代码包**：`org.source.spring.cache`
-- **核心类**：
-  - `@ConfigureCache` - 主注解
-  - `ConfigureCacheInterceptor` - 拦截器实现
-  - `ConfigureRedisCacheManager` - Redis缓存管理
-  - `PartialCacheStrategyEnum` - 部分缓存策略枚举
-  - `PartialCacheResult` - 部分缓存结果包装类
+
+- **核心类（实现要点）**：
+  - `@ConfigureCache` - 主注解，继承自 `@Cacheable`，支持批量缓存和部分缓存策略
+  - `@EnableExtendedCache` - 启用扩展缓存（会扫描 basePackages，并在 Redis 自动配置之后导入相关配置）
+  - `ConfigureCacheInterceptor` - 拦截器实现，处理 `PartialCacheResult` 并在 PARTIAL_TRUST 模式下对缺失 key 进行二次查询合并
+  - `ConfigureRedisCache` - 自定义 RedisCache，支持 mGet/mPut、批量缓存处理、JVM+Redis 二级缓存协调、NullValue 处理
+  - `ConfigureRedisCacheManager` - 负责创建 `ConfigureRedisCache` 的 CacheManager（事务感知）
+  - `ConfigureRedisCacheWriter` - 低级读写实现，提供 mGet/mPut/mRemove 与 Pub/Sub 发布能力
+  - `ConfigureCacheConfig` - 将注解配置转为运行时 `ConfigureCacheProperties` 并注册缓存相关 Bean
+  - `ConfigureInterceptorConfig` - 注册自定义拦截器与缓存解析器
+  - `ConfigureCacheProperties` - 每个 cache 的运行时属性（TTL、是否启用 JVM 缓存、value 类型等）
+  - `ConfigureTtlProperties` - 全局 TTL 配置（用于默认值来源）
+  - `ConfigureCacheUtil` - 若干辅助方法（SpEL 解析、类型判断等）
+  - `PartialCacheStrategyEnum` - 部分缓存策略枚举（TRUST/DISTRUST/PARTIAL_TRUST）
+  - `PartialCacheResult` - PARTIAL_TRUST 时返回的包装，包含已缓存的 key 列表
+
+实现要点：
+- 对于批量缓存（方法返回 Collection/Map）需要设置 `cacheKeySpEl`，用于从单条数据中提取缓存 key。
+- 当 `@ConfigureCache.key()` 为空时，框架会使用方法的第一个参数作为 key 的来源；PARTIAL_TRUST 的再查询逻辑依赖于能修改该入参（必须为可变 Collection）。如果显式设置了 `key()`，框架无法可靠修改入参引用，PARTIAL_TRUST 将无法正常工作。
+- 对于 null 值，框架使用 `NullValue` 占位（受 `allowNullValues` 配置影响），并在 JVM/Redis 两侧分别做相应处理。
+
+更多实现细节请参考源码中的 `ConfigureRedisCache`, `ConfigureCacheInterceptor`, `ConfigureRedisCacheWriter` 和 `ConfigureCacheConfig` 等类。
