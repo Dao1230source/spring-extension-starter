@@ -1,6 +1,9 @@
 package org.source.spring.common;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
@@ -18,7 +21,7 @@ import org.springframework.util.StringUtils;
 import java.util.function.Consumer;
 
 @Slf4j
-public abstract class AbstractImportRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
+public abstract class AbstractImportRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware, BeanFactoryAware {
     /**
      * 如果名称不为空，则注册springboot 容器准备完成后的监听器
      */
@@ -26,6 +29,7 @@ public abstract class AbstractImportRegistrar implements ImportBeanDefinitionReg
 
     protected ResourceLoader resourceLoader;
     protected Environment environment;
+    protected BeanFactory beanFactory;
 
     protected AbstractImportRegistrar(String containerReadyEventListenerName) {
         this.containerReadyEventListenerName = containerReadyEventListenerName;
@@ -43,6 +47,11 @@ public abstract class AbstractImportRegistrar implements ImportBeanDefinitionReg
     @Override
     public void setEnvironment(Environment environment) {
         this.environment = environment;
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
     }
 
     @Override

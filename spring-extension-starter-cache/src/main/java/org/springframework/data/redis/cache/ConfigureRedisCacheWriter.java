@@ -1,9 +1,9 @@
 package org.springframework.data.redis.cache;
 
-import org.jetbrains.annotations.NotNull;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.lang.NonNull;
 
 import java.time.Duration;
 import java.util.List;
@@ -28,15 +28,15 @@ public class ConfigureRedisCacheWriter extends DefaultRedisCacheWriter {
     }
 
 
-    public ConfigureRedisCacheWriter(@NotNull RedisConnectionFactory connectionFactory, @NotNull Duration sleepTime,
-                                     @NotNull CacheStatisticsCollector cacheStatisticsCollector, @NotNull BatchStrategy batchStrategy) {
+    public ConfigureRedisCacheWriter(@NonNull RedisConnectionFactory connectionFactory, @NonNull Duration sleepTime,
+                                     @NonNull CacheStatisticsCollector cacheStatisticsCollector, @NonNull BatchStrategy batchStrategy) {
         super(connectionFactory, sleepTime, cacheStatisticsCollector, batchStrategy);
         this.connectionFactory = connectionFactory;
         this.sleepTime = sleepTime;
         this.statistics = cacheStatisticsCollector;
     }
 
-    public byte[] get(@NotNull String name, @NotNull Duration ttl, byte @NotNull [] key) {
+    public byte[] get(@NonNull String name, @NonNull Duration ttl, byte[] key) {
         return executeSuper(name, connection -> {
             byte[] bytes = connection.stringCommands().get(key);
             if (bytes != null) {
@@ -50,7 +50,7 @@ public class ConfigureRedisCacheWriter extends DefaultRedisCacheWriter {
     }
 
 
-    public List<byte[]> mGet(@NotNull String name, @NotNull Duration ttl, byte[] @NotNull ... keys) {
+    public List<byte[]> mGet(@NonNull String name, @NonNull Duration ttl, byte[]... keys) {
         return executeSuper(name, connection -> {
             List<byte[]> bytes = connection.stringCommands().mGet(keys);
             if (null != bytes) {
@@ -69,7 +69,7 @@ public class ConfigureRedisCacheWriter extends DefaultRedisCacheWriter {
         });
     }
 
-    public void mPut(@NotNull String name, @NotNull Map<byte[], byte[]> tuple, @NotNull Duration ttl) {
+    public void mPut(@NonNull String name, @NonNull Map<byte[], byte[]> tuple, @NonNull Duration ttl) {
         this.executeSuper(name, connection -> {
             Boolean successful = connection.stringCommands().mSet(tuple);
             if (Boolean.TRUE.equals(successful) && ttl.isPositive()) {
@@ -82,7 +82,7 @@ public class ConfigureRedisCacheWriter extends DefaultRedisCacheWriter {
         });
     }
 
-    public void mRemove(@NotNull String name, byte @NotNull []... keys) {
+    public void mRemove(@NonNull String name, byte[]... keys) {
         executeSuper(name, connection -> connection.keyCommands().del(keys));
     }
 

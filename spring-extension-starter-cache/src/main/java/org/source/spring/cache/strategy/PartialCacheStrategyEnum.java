@@ -14,7 +14,8 @@ public enum PartialCacheStrategyEnum {
      * <pre>
      * 使用该策略需要遵循以下条件：
      *  1、方法有且只有一个参数
-     *  2、入参是Collection类型，且是可变的，不能通过以下方法创建{@code
+     *  2、入参是Collection类型，且是可变的，支持执行 remove 方法
+     *  不能通过且不限于以下方法创建{@code
      *  List.of()
      *  List.copyOf()
      *  Set.of()

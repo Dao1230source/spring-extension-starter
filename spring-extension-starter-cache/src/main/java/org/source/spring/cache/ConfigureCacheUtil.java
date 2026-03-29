@@ -3,7 +3,6 @@ package org.source.spring.cache;
 import com.fasterxml.jackson.databind.JavaType;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.source.spring.cache.configure.ConfigureCache;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
 import org.source.spring.cache.configure.ReturnTypeEnum;
 import org.source.spring.cache.strategy.PartialCacheStrategyEnum;
@@ -39,25 +38,6 @@ public class ConfigureCacheUtil {
         // 优先注解配置，后配置的覆盖
         return Streams.of(allCacheConfigs)
                 .collect(Collectors.toMap(ConfigureCacheProperties::getCacheName, ConfigureCacheUtil::getCacheConfigByExtend, (v1, v2) -> v2));
-    }
-
-    /**
-     * 优先class上的注解，再找方法上的注解
-     *
-     * @param beanClass bean class
-     * @return List<CacheConfig>
-     */
-    public static List<ConfigureCacheProperties> getCacheConfigFromBean(Class<?> beanClass, ConfigureTtlProperties configureTtlProperties) {
-        return Streams.of(beanClass.getDeclaredMethods())
-                .filter(m -> m.isAnnotationPresent(ConfigureCache.class))
-                .map(m -> {
-                    List<ConfigureCacheProperties> configureCacheProperties =
-                            ConfigureCacheProperties.convert(m.getAnnotation(ConfigureCache.class), configureTtlProperties);
-                    configureCacheProperties.forEach(c -> assignValueClassesAndReturnType(m, c));
-                    return configureCacheProperties;
-                })
-                .flatMap(Collection::stream)
-                .toList();
     }
 
     protected static void assignValueClassesAndReturnType(Method method, ConfigureCacheProperties cacheProperties) {
@@ -123,6 +103,7 @@ public class ConfigureCacheUtil {
         if (!Collection.class.isAssignableFrom(type)) {
             return "方法入参必须是Collection类型";
         }
+
         if (StringUtils.hasText(key)) {
             if (key.lastIndexOf(Constants.HASH) != 0) {
                 return "key必须是spring expression，并且只有一个变量";

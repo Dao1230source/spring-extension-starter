@@ -1,8 +1,7 @@
-package org.source.spring.cache;
+package org.source.spring.cache.configure;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.source.spring.cache.configure.ConfigureCacheProperties;
 
 import java.util.List;
 

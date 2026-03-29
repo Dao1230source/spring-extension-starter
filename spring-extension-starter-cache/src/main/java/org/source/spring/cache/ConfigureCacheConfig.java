@@ -2,6 +2,7 @@ package org.source.spring.cache;
 
 import lombok.extern.slf4j.Slf4j;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
+import org.source.spring.cache.configure.ConfigureCachePropertiesCached;
 import org.source.spring.cache.pubsub.ConfigureCacheMessageDelegate;
 import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
@@ -19,8 +20,15 @@ import java.util.Map;
 
 @Slf4j
 @AutoConfiguration
-public class RedisConfig {
+public class ConfigureCacheConfig {
 
+    /**
+     * 注册自定义的 redisCacheManager
+     *
+     * @param redisConnectionFactory         redisConnectionFactory
+     * @param configureCachePropertiesCached 通过{@link EnableExtendedCache}注解扫描到的配置数据
+     * @return redisCacheManager
+     */
     @Primary
     @Bean
     public RedisCacheManager redisCacheManager(RedisConnectionFactory redisConnectionFactory,

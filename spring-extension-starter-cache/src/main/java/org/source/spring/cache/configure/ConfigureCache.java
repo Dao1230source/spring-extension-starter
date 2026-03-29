@@ -65,9 +65,9 @@ public @interface ConfigureCache {
 
     /**
      * @return PartialCacheStrategyEnum
-     * @apiNote 警告：设置{@link  PartialCacheStrategyEnum#PARTIAL_TRUST}时，因为是两次请求的结果合并，所以有分布式事物风险
+     * @apiNote 警告：设置{@link PartialCacheStrategyEnum#PARTIAL_TRUST}时，因为是两次请求的结果合并，所以有分布式事物风险
      */
-    PartialCacheStrategyEnum partialCacheStrategy() default PartialCacheStrategyEnum.DISTRUST;
+    PartialCacheStrategyEnum partialCacheStrategy() default PartialCacheStrategyEnum.PARTIAL_TRUST;
 
     CacheInRedis cacheInRedis() default @CacheInRedis;
 

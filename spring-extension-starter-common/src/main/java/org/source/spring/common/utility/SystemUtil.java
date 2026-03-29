@@ -2,13 +2,13 @@ package org.source.spring.common.utility;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 import org.source.utility.enums.BaseExceptionEnum;
 import org.springframework.boot.web.context.WebServerInitializedEvent;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
+import org.springframework.lang.NonNull;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -23,7 +23,7 @@ public class SystemUtil implements EnvironmentAware {
     private static String applicationName;
 
     @Override
-    public synchronized void setEnvironment(@NotNull Environment environment) {
+    public synchronized void setEnvironment(@NonNull Environment environment) {
         SystemUtil.applicationName = environment.getProperty("spring.application.name");
     }
 

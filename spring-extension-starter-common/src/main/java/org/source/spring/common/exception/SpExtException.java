@@ -3,11 +3,11 @@ package org.source.spring.common.exception;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.source.utility.exception.BaseException;
 import org.source.utility.exception.EnumProcessor;
 import org.source.utility.utils.Strings;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
@@ -25,10 +25,10 @@ public class SpExtException extends BaseException {
     @Nullable
     private transient Object data;
 
-    public SpExtException(@NotNull EnumProcessor<?> content,
+    public SpExtException(@NonNull EnumProcessor<?> content,
                           @Nullable Throwable cause,
                           @Nullable String extraMessage,
-                          @Nullable Object... objects) {
+                          Object... objects) {
         super(content, cause, extraMessage, objects);
         this.code = content.getCode();
         this.message = content.getMessage();

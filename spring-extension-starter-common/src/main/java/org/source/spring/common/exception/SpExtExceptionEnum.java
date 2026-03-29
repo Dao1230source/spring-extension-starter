@@ -58,6 +58,7 @@ public enum SpExtExceptionEnum implements EnumProcessor<SpExtException> {
     PARTIAL_CACHE_EXCEPTION("spring-cache处理部分缓存时异常，可能存在分布式缓存不一致问题"),
     CACHE_MANAGER_TYPE_ERROR("spring cache CacheManager必须是ConfigureRedisCacheManager类型"),
     CANNOT_SET_STRATEGY_AS_PARTIAL_TRUST("不能将partialCacheStrategy设置为PARTIAL_TRUST"),
+    METHOD_FIRST_ARG_UNMODIFIABLE_COLLECTION("方法第一个入参是一个不可变集合时不支持PARTIAL_TRUST"),
     ;
 
     private final String message;

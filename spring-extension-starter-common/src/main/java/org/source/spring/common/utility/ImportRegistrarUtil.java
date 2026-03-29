@@ -38,26 +38,38 @@ public class ImportRegistrarUtil {
 
     public void registerBeanDefinition(BeanDefinitionRegistry registry, Class<?> clz, Supplier<?> instance) {
         String beanName = Strings.removePrefixAndLowerFirst(clz.getSimpleName(), Constants.EMPTY);
-        registerBeanDefinition(registry, clz, beanName, instance);
+        registerBeanDefinition(registry, clz, beanName, false, instance);
     }
 
-    public void registerBeanDefinition(BeanDefinitionRegistry registry, Class<?> clz, String beanName, Supplier<?> instance) {
-        GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
-        beanDefinition.setBeanClass(clz);
-        beanDefinition.setScope(BeanDefinition.SCOPE_SINGLETON);
-        beanDefinition.setRole(BeanDefinition.ROLE_SUPPORT);
-        beanDefinition.setInstanceSupplier(instance);
-        log.debug("registerBeanDefinition single:{}", beanName);
+    public void registerBeanDefinitionPrimary(BeanDefinitionRegistry registry, Class<?> clz, Supplier<?> instance) {
+        String beanName = Strings.removePrefixAndLowerFirst(clz.getSimpleName(), Constants.EMPTY);
+        registerBeanDefinition(registry, clz, beanName, true, instance);
+    }
+
+    public void registerBeanDefinition(BeanDefinitionRegistry registry, Class<?> clz, String beanName, Supplier<?> instanceSupplier) {
+        registerBeanDefinition(registry, clz, beanName, true, instanceSupplier);
+    }
+
+    public void registerBeanDefinition(BeanDefinitionRegistry registry, Class<?> clz, String beanName, boolean primary,
+                                       Supplier<?> instanceSupplier) {
+        BeanDefinition beanDefinition = createBeanDefinition(clz, instanceSupplier, BeanDefinition.SCOPE_SINGLETON, BeanDefinition.ROLE_SUPPORT, primary);
+        log.debug("registerBeanDefinition singleton:{}", beanName);
         registry.registerBeanDefinition(beanName, beanDefinition);
     }
 
-    public void registerBeanDefinitionPrototype(BeanDefinitionRegistry registry, Class<?> clz, String beanName, Supplier<?> instance) {
-        GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
-        beanDefinition.setBeanClass(clz);
-        beanDefinition.setScope(BeanDefinition.SCOPE_PROTOTYPE);
-        beanDefinition.setRole(BeanDefinition.ROLE_SUPPORT);
-        beanDefinition.setInstanceSupplier(instance);
+    public void registerBeanDefinitionPrototype(BeanDefinitionRegistry registry, Class<?> clz, String beanName, Supplier<?> instanceSupplier) {
+        BeanDefinition beanDefinition = createBeanDefinition(clz, instanceSupplier, BeanDefinition.SCOPE_PROTOTYPE, BeanDefinition.ROLE_SUPPORT, false);
         log.debug("registerBeanDefinition prototype:{}", beanName);
         registry.registerBeanDefinition(beanName, beanDefinition);
+    }
+
+    public BeanDefinition createBeanDefinition(Class<?> clz, Supplier<?> instanceSupplier, String scope, int role, boolean primary) {
+        GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
+        beanDefinition.setBeanClass(clz);
+        beanDefinition.setScope(scope);
+        beanDefinition.setRole(role);
+        beanDefinition.setInstanceSupplier(instanceSupplier);
+        beanDefinition.setPrimary(primary);
+        return beanDefinition;
     }
 }

@@ -55,8 +55,8 @@ public class ConfigureCacheProperties {
         String[] cacheNames = configureCache.cacheNames();
         return Streams.of(cacheNames).map(n -> {
             CacheInRedis redis = configureCache.cacheInRedis();
-            JavaType javaType = Jsons.getJavaType(Object.class);
-            if (redis.enable()) {
+            JavaType javaType = null;
+            if (redis.enable() && redis.valueClasses().length > 0) {
                 javaType = Jsons.getJavaType(redis.valueClasses());
             }
             long redisTtl = configureCache.cacheInRedis().ttl();

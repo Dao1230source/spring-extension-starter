@@ -186,7 +186,10 @@ public class ConfigureRedisCache extends RedisCache {
 
     @Override
     public void put(Object key, @Nullable Object value) {
-        if (Objects.isNull(value) || !super.isAllowNullValues()) {
+        if (Objects.isNull(value)) {
+            if (super.isAllowNullValues()) {
+                this.putCacheNullValue(key);
+            }
             return;
         }
         this.putCache(key, value);
@@ -219,6 +222,31 @@ public class ConfigureRedisCache extends RedisCache {
                 }
             } else {
                 this.put(cacheName, key, value);
+            }
+        }
+    }
+
+    protected void putCacheNullValue(Object key) {
+        ConfigureCacheProperties cacheProperties = configureCacheExpendMap.get(super.getName());
+        if (cacheProperties.isCacheInJvm()) {
+            log.debug("ConfigureCache put jvm, value is null");
+            if (key instanceof Collection<?> cs) {
+                Map<Object, Object> map = new HashMap<>(cs.size());
+                cs.forEach(c -> map.put(c, null));
+                cacheProperties.getJvmCache().putAll(map);
+            } else {
+                cacheProperties.getJvmCache().put(key, null);
+            }
+        }
+        if (cacheProperties.isCacheInRedis()) {
+            log.debug("ConfigureCache put redis, value is null");
+            String cacheName = this.getName();
+            if (key instanceof Collection<?> cs) {
+                Map<Object, Object> map = new HashMap<>(cs.size());
+                cs.forEach(c -> map.put(c, NullValue.INSTANCE));
+                this.mPut(cacheName, map);
+            } else {
+                this.put(cacheName, key, NullValue.INSTANCE);
             }
         }
     }

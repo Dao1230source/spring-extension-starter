@@ -11,7 +11,7 @@ import org.springframework.cache.interceptor.BeanFactoryCacheOperationSourceAdvi
 import org.springframework.cache.interceptor.CacheInterceptor;
 import org.springframework.cache.interceptor.CacheOperationSource;
 
-@AutoConfigureAfter({ProxyCachingConfiguration.class})
+@AutoConfigureAfter({ProxyCachingConfiguration.class, ConfigureCacheConfig.class})
 @AutoConfiguration
 public class ConfigureInterceptorConfig implements BeanFactoryAware {
 
