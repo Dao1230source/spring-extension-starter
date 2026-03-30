@@ -59,6 +59,7 @@ public enum SpExtExceptionEnum implements EnumProcessor<SpExtException> {
     CACHE_MANAGER_TYPE_ERROR("spring cache CacheManager必须是ConfigureRedisCacheManager类型"),
     CANNOT_SET_STRATEGY_AS_PARTIAL_TRUST("不能将partialCacheStrategy设置为PARTIAL_TRUST"),
     METHOD_FIRST_ARG_UNMODIFIABLE_COLLECTION("方法第一个入参是一个不可变集合时不支持PARTIAL_TRUST"),
+    REDIS_SHARD_SIZE_KEY_MUST_INT_OR_LONG("redis shard size key must integer or long"),
     ;
 
     private final String message;

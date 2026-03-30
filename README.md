@@ -94,6 +94,7 @@ implementation 'io.github.dao1230source:spring-extension-starter-redis:0.0.12'
 - ✅ **二级缓存架构**：JVM 本地缓存 + Redis 远程缓存
 - ✅ **分布式缓存同步**：Redis Pub/Sub 失效通知
 - ✅ **部分缓存策略**：TRUST/DISTRUST/PARTIAL_TRUST
+- ✅ **Redis 分片缓存**：FIXED_SHARD/FIXED_SIZE 策略，支持海量数据
 
 ```java
 
@@ -110,6 +111,20 @@ public class Application {
         cacheInRedis = @CacheInRedis(valueClasses = {User.class})
 )
 public List<User> getUsersByIds(Collection<String> ids) {
+}
+
+// Redis 分片缓存示例
+@ConfigureCache(
+        cacheNames = "products",
+        key = "#ids",
+        cacheKeySpEl = "#R.id",
+        cacheInRedis = @CacheInRedis(
+                shardStrategy = ShardStrategyEnum.FIXED_SHARD,
+                shardValue = 16,
+                valueClasses = {Product.class}
+        )
+)
+public List<Product> getProductsByIds(Collection<String> ids) {
 }
 ```
 

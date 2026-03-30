@@ -14,6 +14,7 @@
 - **二级缓存架构（Two-Level Cache / L1+L2 Cache）**：支持 JVM 本地缓存 + Redis 远程缓存的多级缓存策略
 - **智能缓存同步（Distributed Cache Sync）**：基于 Redis Pub/Sub 的分布式缓存失效通知机制
 - **灵活的部分缓存处理（Partial Cache Strategy）**：当部分数据缺失时的多种处理策略（TRUST/DISTRUST/PARTIAL_TRUST）
+- **Redis 分片缓存（Redis Sharded Cache）**：使用 HSET 分片存储海量数据，避免 Redis key 过多影响性能
 - **参数化类型支持（Generic Type Support）**：支持 Generic 类型的缓存存储和反序列化
 - [架构UML图](Spring_Extension_Cache_Architecture.png)
 
@@ -30,6 +31,7 @@
 | 分布式环境缓存同步 | JVM缓存 + Redis Pub/Sub | 多实例部署场景 |
 | 临时数据缓存 | 仅JVM缓存 | 无需持久化的临时数据 |
 | 冷数据长期存储 | 仅Redis缓存 | 更新频率低的数据 |
+| 海量数据缓存 | Redis 分片缓存（FIXED_SHARD/FIXED_SIZE） | 百万级数据，避免 key 过多 |
 
 ---
 
@@ -177,9 +179,63 @@ public class AnnotationExample {
 
         // 缓存值的Java类型（用于反序列化）
         Class<?>[] valueClasses() default {};
+
+        // 分片策略，默认不分片
+        ShardStrategyEnum shardStrategy() default ShardStrategyEnum.NONE;
+
+        // 分片参数（含义随策略不同而不同）
+        int shardValue() default 16;
     }
 }
 ```
+
+#### shardStrategy() 分片策略说明
+
+当业务 key 数量很大时（百万级），使用 HSET 分片存储可以避免 Redis key 过多影响性能。
+
+| 策略 | 说明 | shardValue 含义 | 分片索引计算 |
+|------|------|-----------------|--------------|
+| `NONE` | 不分片（默认） | - | - |
+| `FIXED_SHARD` | 按 hashCode 分片 | 分片总数量 | `shardIndex = hashCode(key) % shardValue` |
+| `FIXED_SIZE` | 按数值范围分片 | 每个分片的数据量 | `shardIndex = (key / shardValue) + 1` |
+
+**FIXED_SHARD 示例**（适用于随机分布的 key）：
+```java
+public class Example {
+    // 分8个HSET存储，每个HSET存储约N/8条数据
+    @ConfigureCache(
+            cacheNames = "products",
+            key = "#ids",
+            cacheKeySpEl = "#R.id",
+            cacheInRedis = @CacheInRedis(
+                    shardStrategy = ShardStrategyEnum.FIXED_SHARD,
+                    shardValue = 8,
+                    valueClasses = {Product.class}
+            )
+    )
+    public List<Product> getProductsByIds(Collection<String> ids) {}
+}
+```
+
+**FIXED_SIZE 示例**（适用于有序自增主键）：
+```java
+public class Example {
+    // 按ID范围分片：ID 1-49999 存入 shard:1，ID 50000-99999 存入 shard:2
+    @ConfigureCache(
+            cacheNames = "orders",
+            key = "#orderIds",
+            cacheKeySpEl = "#R.id",
+            cacheInRedis = @CacheInRedis(
+                    shardStrategy = ShardStrategyEnum.FIXED_SIZE,
+                    shardValue = 50000,
+                    valueClasses = {Order.class}
+            )
+    )
+    public List<Order> getOrdersByIds(Collection<Long> orderIds) {}
+}
+```
+
+**注意**：FIXED_SIZE 策略要求 key 必须是 Integer 或 Long 类型。
 
 #### valueClasses() 说明
 
@@ -424,6 +480,136 @@ public class Example {
 }
 ```
 
+### 场景9：Redis 分片缓存 - FIXED_SHARD 策略
+
+当缓存数据量很大时（百万级），使用分片存储避免 Redis key 过多：
+
+```java
+public class Example {
+
+    /**
+     * 商品缓存 - 使用 FIXED_SHARD 策略
+     * - shardValue = 16：分16个HSET存储
+     * - Redis key格式：products:shard:0 ~ products:shard:15
+     * - 每个 key 按 hashCode 分配到对应分片
+     */
+    @ConfigureCache(
+            cacheNames = "products",
+            key = "#ids",
+            cacheKeySpEl = "#R.id",
+            partialCacheStrategy = PartialCacheStrategyEnum.PARTIAL_TRUST,
+            cacheInRedis = @CacheInRedis(
+                    shardStrategy = ShardStrategyEnum.FIXED_SHARD,
+                    shardValue = 16,
+                    valueClasses = {Product.class}
+            )
+    )
+    public List<Product> getProductsByIds(Collection<String> ids) {
+        return productRepository.findByIds(ids);
+}
+}
+```
+
+**FIXED_SHARD Redis 结构**：
+```
+Key: products:shard:0 (HSET)
+  field: "product_1" → serialized(Product)
+  field: "product_8" → serialized(Product)
+Key: products:shard:1 (HSET)
+  field: "product_2" → serialized(Product)
+...
+Key: products:shard:15 (HSET)
+```
+
+### 场景10：Redis 分片缓存 - FIXED_SIZE 策略
+
+适用于有序自增主键场景（如数据库 ID）：
+
+```java
+public class Example {
+
+    /**
+     * 订单缓存 - 使用 FIXED_SIZE 策略
+     * - shardValue = 100000：每10万条数据一个分片
+     * - 分片计算：shardIndex = (orderId / 100000) + 1
+     * - ID 1-99999 → shard:1，ID 100000-199999 → shard:2
+     */
+    @ConfigureCache(
+            cacheNames = "orders",
+            key = "#orderIds",
+            cacheKeySpEl = "#R.id",
+            partialCacheStrategy = PartialCacheStrategyEnum.PARTIAL_TRUST,
+            cacheInRedis = @CacheInRedis(
+                    shardStrategy = ShardStrategyEnum.FIXED_SIZE,
+                    shardValue = 100000,
+                    valueClasses = {Order.class}
+            )
+    )
+    public List<Order> getOrdersByIds(Collection<Long> orderIds) {
+        // 注意：orderIds 必须是 Long 类型
+        return orderRepository.findByIds(orderIds);
+}
+}
+```
+
+**FIXED_SIZE Redis 结构**：
+```
+Key: orders:shard:1 (HSET)
+  field: "1" → serialized(Order)
+  ...
+  field: "99999" → serialized(Order)
+Key: orders:shard:2 (HSET)
+  field: "100000" → serialized(Order)
+  ...
+  field: "199999" → serialized(Order)
+```
+
+**分片策略选择指南**：
+
+| 场景 | 推荐策略 | 原因 |
+|------|----------|------|
+| 随机字符串 key（如 UUID） | FIXED_SHARD | hashCode 分布均匀 |
+| 有序自增主键（如数据库 ID） | FIXED_SIZE | 按范围分片，查询效率高 |
+| 混合类型 key | FIXED_SHARD | 兼容性好 |
+| 需要范围查询 | FIXED_SIZE | 同一范围的数据在同一分片 |
+
+### 场景11：二级缓存 + 分片存储
+
+同时使用 JVM 缓存和 Redis 分片存储：
+
+```java
+public class Example {
+
+    /**
+     * 热点商品 - 二级缓存 + 分片
+     * - JVM 缓存：5分钟过期，最多10000条
+     * - Redis 分片：8个HSET，1小时过期
+     */
+    @ConfigureCache(
+            cacheNames = "hotProducts",
+            key = "#ids",
+            cacheKeySpEl = "#R.id",
+            partialCacheStrategy = PartialCacheStrategyEnum.PARTIAL_TRUST,
+            cacheInRedis = @CacheInRedis(
+                    ttl = 3600,
+                    shardStrategy = ShardStrategyEnum.FIXED_SHARD,
+                    shardValue = 8,
+                    valueClasses = {Product.class}
+            ),
+            cacheInJvm = @CacheInJvm(enable = true, ttl = 300, jvmMaxSize = 10000)
+    )
+    public List<Product> getHotProducts(Collection<String> ids) {
+        return productRepository.findByIds(ids);
+}
+}
+```
+
+**查询流程**：
+1. 先查询 JVM 本地缓存
+2. JVM 未命中 → 查询 Redis 分片 HSET
+3. Redis 未命中 → 执行业务方法
+4. 结果同时存入 JVM 和 Redis 分片
+
 ---
 
 ## 分布式场景 - 缓存失效同步
@@ -641,16 +827,17 @@ public class Example {
     - `@ConfigureCache` - 主注解，继承自 `@Cacheable`，支持批量缓存和部分缓存策略
     - `@EnableExtendedCache` - 启用扩展缓存（会扫描 basePackages，并在 Redis 自动配置之后导入相关配置）
     - `ConfigureCacheInterceptor` - 拦截器实现，处理 `PartialCacheResult` 并在 PARTIAL_TRUST 模式下对缺失 key 进行二次查询合并
-    - `ConfigureRedisCache` - 自定义 RedisCache，支持 mGet/mPut、批量缓存处理、JVM+Redis 二级缓存协调、NullValue 处理
+    - `ConfigureRedisCache` - 自定义 RedisCache，支持 mGet/mPut、批量缓存处理、JVM+Redis 二级缓存协调、NullValue 处理、分片存储
     - `ConfigureRedisCacheManager` - 负责创建 `ConfigureRedisCache` 的 CacheManager（事务感知）
-    - `ConfigureRedisCacheWriter` - 低级读写实现，提供 mGet/mPut/mRemove 与 Pub/Sub 发布能力
+    - `ConfigureRedisCacheWriter` - 低级读写实现，提供 mGet/mPut/mRemove 与 Pub/Sub 发布能力、HSET 分片读写
     - `ConfigureCacheConfig` - 将注解配置转为运行时 `ConfigureCacheProperties` 并注册缓存相关 Bean
     - `ConfigureInterceptorConfig` - 注册自定义拦截器与缓存解析器
-    - `ConfigureCacheProperties` - 每个 cache 的运行时属性（TTL、是否启用 JVM 缓存、value 类型等）
+    - `ConfigureCacheProperties` - 每个 cache 的运行时属性（TTL、是否启用 JVM 缓存、value 类型、分片策略等）
     - `ConfigureTtlProperties` - 全局 TTL 配置（用于默认值来源）
     - `ConfigureCacheUtil` - 若干辅助方法（SpEL 解析、类型判断等）
     - `PartialCacheStrategyEnum` - 部分缓存策略枚举（TRUST/DISTRUST/PARTIAL_TRUST）
     - `PartialCacheResult` - PARTIAL_TRUST 时返回的包装，包含已缓存的 key 列表
+    - `ShardStrategyEnum` - 分片策略枚举（NONE/FIXED_SHARD/FIXED_SIZE）
 
 实现要点：
 
@@ -672,6 +859,7 @@ public class Example {
 | 二级缓存（L1+L2） | ✅ 内置支持 | ❌ 需手动实现 | 仅L1 | 仅L2 |
 | 部分缓存策略 | ✅ 3种策略 | ❌ 不支持 | ❌ 不支持 | ❌ 不支持 |
 | 分布式缓存同步 | ✅ 自动Pub/Sub | ❌ 需手动实现 | ❌ 不支持 | ❌ 不支持 |
+| Redis 分片缓存 | ✅ 2种策略 | ❌ 不支持 | ❌ 不支持 | ❌ 不支持 |
 | 泛型类型支持 | ✅ 完整支持 | ⚠️ 有限支持 | ⚠️ 有限支持 | ⚠️ 有限支持 |
 | Spring注解兼容 | ✅ 完全兼容 | ✅ 原生支持 | ✅ 支持 | ✅ 支持 |
 
@@ -802,4 +990,4 @@ public class Example {
 
 ## 标签（Tags）
 
-`spring-cache` `redis-cache` `jvm-cache` `two-level-cache` `batch-cache` `multi-get` `distributed-cache` `spring-boot` `spring-boot-starter` `cache-extension` `partial-cache` `缓存增强` `批量缓存` `二级缓存` `分布式缓存` `Spring缓存扩展`
+`spring-cache` `redis-cache` `jvm-cache` `two-level-cache` `batch-cache` `multi-get` `distributed-cache` `sharded-cache` `redis-hset` `spring-boot` `spring-boot-starter` `cache-extension` `partial-cache` `缓存增强` `批量缓存` `二级缓存` `分布式缓存` `分片缓存` `Spring缓存扩展`

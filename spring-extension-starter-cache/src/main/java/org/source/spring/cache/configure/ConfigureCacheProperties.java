@@ -49,6 +49,15 @@ public class ConfigureCacheProperties {
     private Class<?> jvmKeyClass;
     private Cache<Object, Object> jvmCache;
 
+    /**
+     * 分片策略
+     */
+    private ShardStrategyEnum shardStrategy;
+    /**
+     * 分片数量
+     */
+    private int shardValue;
+
 
     public static List<ConfigureCacheProperties> convert(ConfigureCache configureCache,
                                                          ConfigureTtlProperties configureTtlProperties) {
@@ -71,6 +80,8 @@ public class ConfigureCacheProperties {
                     .cacheInRedis(redis.enable())
                     .partialCache(configureCache.partialCacheStrategy())
                     .valueType(javaType)
+                    .shardStrategy(redis.shardStrategy())
+                    .shardValue(redis.shardValue())
                     .build();
             CacheInJvm jvm = configureCache.cacheInJvm();
             if (jvm.enable()) {

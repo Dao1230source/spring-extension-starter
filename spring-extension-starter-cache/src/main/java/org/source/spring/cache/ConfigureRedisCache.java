@@ -7,6 +7,7 @@ import org.redisson.spring.cache.NullValue;
 import org.source.spring.cache.configure.ConfigureCache;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
 import org.source.spring.cache.configure.ReturnTypeEnum;
+import org.source.spring.cache.configure.ShardStrategyEnum;
 import org.source.spring.cache.pubsub.ConfigureCacheMessage;
 import org.source.spring.cache.pubsub.PublishTopic;
 import org.source.spring.cache.strategy.ConfigureCacheInterceptor;
@@ -126,13 +127,93 @@ public class ConfigureRedisCache extends RedisCache {
         return kv;
     }
 
+    /**
+     * 批量从 Redis 读取缓存数据
+     * <p>
+     * 根据分片策略决定使用普通读取还是分片读取：
+     * <ul>
+     *   <li>NONE 策略：使用 MGET 批量读取普通 key-value 数据</li>
+     *   <li>FIXED_SHARD/FIXED_SIZE 策略：使用 HMGET 从多个 Hash 分片读取数据</li>
+     * </ul>
+     *
+     * @param keys 要读取的缓存 key 集合
+     * @return 值列表，与 keys 顺序对应，key 不存在时对应位置为 null
+     */
     protected List<Object> mGetFromRedis(Collection<?> keys) {
         if (CollectionUtils.isEmpty(keys)) {
             return List.of();
         }
+        ConfigureCacheProperties cacheProperties = configureCacheExpendMap.get(this.getName());
+        ShardStrategyEnum shardStrategy = cacheProperties.getShardStrategy();
+
+        if (shardStrategy == ShardStrategyEnum.NONE) {
+            return this.mGetFromNormalRedis(keys);
+        } else {
+            return this.mGetFromShardedRedis(keys, cacheProperties);
+        }
+    }
+
+    /**
+     * 从普通 Redis key-value 结构批量读取数据（不分片）
+     * <p>
+     * 使用 Redis MGET 命令一次性获取多个 key 的值，适用于数据量较小或不需要分片的场景。
+     * 每个 key 都是独立的 Redis String 类型 key。
+     *
+     * @param keys 要读取的缓存 key 集合
+     * @return 值列表，与 keys 顺序对应，key 不存在时对应位置为 null
+     */
+    protected List<Object> mGetFromNormalRedis(Collection<?> keys) {
         byte[][] keyBytes = Streams.map(keys, this::createAndConvertCacheKey2).toArray(byte[][]::new);
         List<byte[]> valueByteList = cacheWriter.mGet(this.getName(), super.getCacheConfiguration().getTtl(), keyBytes);
         return Streams.map(valueByteList, this::deserializeCacheValueNullable).toList();
+    }
+
+
+    /**
+     * 从 HSET 分片结构批量读取数据
+     * <p>
+     * 根据 key 计算分片索引，将 keys 按分片分组后批量读取。
+     * 分片结构为多个 Hash key：{@code cacheName:shard:0}, {@code cacheName:shard:1}, ...
+     * 每个 Hash 的 field 为原始 key 的字符串形式，value 为序列化的缓存值。
+     *
+     * <h3>分片策略说明</h3>
+     * <ul>
+     *   <li>FIXED_SHARD：按 hashCode 分片，{@code shardIndex = hashCode % shardValue}
+     *       <p>适用于 key 分布均匀的场景，shardValue 为分片数量</p>
+     *   </li>
+     *   <li>FIXED_SIZE：按数值范围分片，{@code shardIndex = key / shardValue}
+     *       <p>适用于有序自增主键场景，key 必须是 Integer/Long 类型</p>
+     *       <p>例如：shardValue=100000，则 ID 0-99999 存入 shard:1，ID 100000-199999 存入 shard:2</p>
+     *   </li>
+     * </ul>
+     *
+     * <h3>读取流程</h3>
+     * <pre>
+     * 1. 按 shardIndex 分组 keys → Map&lt;shardCacheName, List&lt;fieldKey&gt;&gt;
+     * 2. 调用 cacheWriter.hGetShard 批量读取各分片
+     * 3. 返回值列表（与原始 keys 顺序一致）
+     * </pre>
+     *
+     * @param keys            要读取的缓存 key 集合
+     * @param cacheProperties 缓存配置，包含 shardStrategy 和 shardValue
+     * @return 值列表，与 keys 顺序对应，key 不存在时对应位置为 null
+     */
+    protected List<Object> mGetFromShardedRedis(Collection<?> keys, ConfigureCacheProperties cacheProperties) {
+        ShardStrategyEnum shardStrategy = cacheProperties.getShardStrategy();
+        String cacheName = this.getName();
+        // shardKeys 结构：Map<shardCacheName, List<fieldKey>>
+        // shardCacheName = cacheName:shard:idx（Redis Hash key）
+        // fieldKey = 原始 key 的字符串序列化（Hash field）
+        Map<byte[], List<byte[]>> shardKeys = new LinkedHashMap<>();
+        keys.forEach(k -> {
+            int idx = shardStrategy.shardIndex(k, cacheProperties.getShardValue());
+            byte[] shardCacheName = this.createShardCacheName(cacheName, idx);
+            shardKeys.putIfAbsent(shardCacheName, new ArrayList<>(keys.size()));
+            List<byte[]> ks = shardKeys.get(shardCacheName);
+            ks.add(this.serializeCacheKey(this.convertKey(k)));
+        });
+        List<byte[]> values = cacheWriter.hGetShard(cacheName, super.getCacheConfiguration().getTtl(), shardKeys);
+        return Streams.map(values, this::deserializeCacheValueNullable).toList();
     }
 
     protected @Nullable Object deserializeCacheValueNullable(@Nullable byte[] value) {
@@ -286,7 +367,38 @@ public class ConfigureRedisCache extends RedisCache {
         cacheWriter.put(cacheName, this.createAndConvertCacheKey2(key), serializeCacheValue(cacheValue), super.getCacheConfiguration().getTtl());
     }
 
+    /**
+     * 批量写入缓存到 Redis
+     * <p>
+     * 根据分片策略决定使用普通写入还是分片写入：
+     * <ul>
+     *   <li>NONE 策略：使用 MSET 批量写入普通 key-value 数据</li>
+     *   <li>FIXED_SHARD/FIXED_SIZE 策略：使用 HMSET 写入多个 Hash 分片</li>
+     * </ul>
+     *
+     * @param cacheName 缓存名称
+     * @param map       key-value 映射，key 为缓存键，value 为缓存值
+     */
     protected void mPut(String cacheName, Map<?, ?> map) {
+        ConfigureCacheProperties cacheProperties = configureCacheExpendMap.get(super.getName());
+        ShardStrategyEnum shardStrategy = cacheProperties.getShardStrategy();
+        if (ShardStrategyEnum.NONE.equals(shardStrategy)) {
+            this.mPutNoShards(cacheName, map);
+        } else {
+            this.mPutShards(cacheName, map, shardStrategy, cacheProperties);
+        }
+    }
+
+    /**
+     * 批量写入缓存到普通 Redis key-value 结构（不分片）
+     * <p>
+     * 使用 Redis MSET 命令一次性写入多个 key-value，适用于数据量较小或不需要分片的场景。
+     * 每个 key 都是独立的 Redis String 类型 key。
+     *
+     * @param cacheName 缓存名称
+     * @param map       key-value 映射，key 为缓存键，value 为缓存值
+     */
+    protected void mPutNoShards(String cacheName, Map<?, ?> map) {
         Map<byte[], byte[]> tuple = HashMap.newHashMap(map.size());
         map.forEach((k, v) -> {
             if (Objects.nonNull(v) || isAllowNullValues()) {
@@ -294,6 +406,61 @@ public class ConfigureRedisCache extends RedisCache {
             }
         });
         cacheWriter.mPut(cacheName, tuple, super.getCacheConfiguration().getTtl());
+    }
+
+    /**
+     * 批量写入缓存到 HSET 分片结构
+     * <p>
+     * 根据 key 计算分片索引，将数据按分片分组后批量写入。
+     * 分片结构为多个 Hash key：{@code cacheName:shard:0}, {@code cacheName:shard:1}, ...
+     * 每个 Hash 的 field 为原始 key 的字符串形式，value 为序列化的缓存值。
+     *
+     * <h3>分片策略说明</h3>
+     * <ul>
+     *   <li>FIXED_SHARD：按 hashCode 分片，{@code shardIndex = hashCode % shardCount}
+     *       <p>适用于 key 分布均匀的场景，如随机字符串 key</p>
+     *   </li>
+     *   <li>FIXED_SIZE：按数值范围分片，{@code shardIndex = key / shardValue}
+     *       <p>适用于有序自增主键场景，如数据库自增 ID，每 shardValue 条数据为一个分片</p>
+     *       <p>例如：shardValue=100000，则 ID 0-99999 存入 shard:0，ID 100000-199999 存入 shard:1</p>
+     *   </li>
+     * </ul>
+     *
+     * <h3>数据结构</h3>
+     * <pre>
+     * Redis Key: cacheName:shard:0
+     * Hash Fields:
+     *   "key1" → serializedValue1
+     *   "key2" → serializedValue2
+     *
+     * Redis Key: cacheName:shard:1
+     * Hash Fields:
+     *   "key100000" → serializedValue100000
+     * </pre>
+     *
+     * @param cacheName       缓存名称
+     * @param map             key-value 映射
+     * @param shardStrategy   分片策略
+     * @param cacheProperties 缓存配置，包含 shardValue（FIXED_SHARD 为分片数量，FIXED_SIZE 为分片区间大小）
+     */
+    protected void mPutShards(String cacheName, Map<?, ?> map, ShardStrategyEnum shardStrategy,
+                              ConfigureCacheProperties cacheProperties) {
+        // shardMap 结构：Map<shardCacheName, Map<fieldKey, value>>
+        // shardCacheName = cacheName:shard:idx
+        // fieldKey = 原始 key 的字符串序列化
+        // value = 缓存值的序列化
+        Map<byte[], Map<byte[], byte[]>> shardMap = HashMap.newHashMap(32);
+        map.forEach((k, v) -> {
+            if (Objects.isNull(v) && !isAllowNullValues()) {
+                return;
+            }
+            int idx = shardStrategy.shardIndex(k, cacheProperties.getShardValue());
+            byte[] shardCacheName = this.createShardCacheName(cacheName, idx);
+            shardMap.putIfAbsent(shardCacheName, HashMap.newHashMap(map.size()));
+            Map<byte[], byte[]> shardData = shardMap.get(shardCacheName);
+            shardData.put(this.serializeCacheKey(this.convertKey(k)), super.serializeCacheValue(v));
+        });
+        cacheWriter.hPutShards(cacheName, shardMap, super.getCacheConfiguration().getTtl());
     }
 
     @Override
@@ -345,5 +512,9 @@ public class ConfigureRedisCache extends RedisCache {
 
     protected byte[] createAndConvertCacheKey2(Object key) {
         return serializeCacheKey(createCacheKey(key));
+    }
+
+    protected byte[] createShardCacheName(String cacheName, int idx) {
+        return this.createAndConvertCacheKey2(cacheName + ":shard:" + idx);
     }
 }
