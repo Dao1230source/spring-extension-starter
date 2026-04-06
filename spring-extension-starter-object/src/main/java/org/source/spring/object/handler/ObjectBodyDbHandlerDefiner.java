@@ -1,12 +1,11 @@
 package org.source.spring.object.handler;
 
-import org.source.spring.object.AbstractValue;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 
 import java.util.Collection;
 import java.util.List;
 
-public interface ObjectBodyDbHandlerDefiner<B extends ObjectBodyEntityDefiner, V extends AbstractValue, K> {
+public interface ObjectBodyDbHandlerDefiner<B extends ObjectBodyEntityDefiner, V extends ObjectBodyValueHandlerDefiner, K> {
 
     /**
      * object body

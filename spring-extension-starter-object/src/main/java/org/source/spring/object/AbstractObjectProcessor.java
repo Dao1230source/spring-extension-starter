@@ -8,10 +8,7 @@ import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
 import org.source.spring.object.enums.ObjectTypeDefiner;
-import org.source.spring.object.handler.ObjectBodyDbHandlerDefiner;
-import org.source.spring.object.handler.ObjectDbHandlerDefiner;
-import org.source.spring.object.handler.ObjectTypeHandlerDefiner;
-import org.source.spring.object.handler.RelationDbHandlerDefiner;
+import org.source.spring.object.handler.*;
 import org.source.spring.object.mapper.ObjectElementMapper;
 import org.source.spring.trace.TraceContext;
 import org.source.spring.uid.Uids;
@@ -34,7 +31,7 @@ import java.util.stream.Stream;
 @Getter
 @Slf4j
 public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R extends RelationEntityDefiner,
-        B extends ObjectBodyEntityDefiner, V extends AbstractValue, T extends ObjectTypeDefiner, K> {
+        B extends ObjectBodyEntityDefiner, V extends ObjectBodyValueHandlerDefiner, T extends ObjectTypeDefiner, K> {
 
     protected final TransmittableThreadLocal<EnhanceTree<String, ObjectElement<V>, ObjectNode<V>>> objectTreeThreadLocal
             = TransmittableThreadLocal.withInitial(() -> EnhanceTree.of(new ObjectNode<>()));
@@ -70,7 +67,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .addOperates(ObjectEntityDefiner::getType, this.objectTypeHandler.allTypeObjectConsumers());
     }
 
-    public ObjectNode<AbstractValue> findByObjectIds(Collection<String> objectIds) {
+    public ObjectNode<ObjectBodyValueHandlerDefiner> findByObjectIds(Collection<String> objectIds) {
         return this.find(objectIds);
     }
 
@@ -312,7 +309,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
     @NoArgsConstructor
     @AllArgsConstructor
     @Data
-    public static class FindEntityAndToObjectElementTemp<O, B, R, V extends AbstractValue> {
+    public static class FindEntityAndToObjectElementTemp<O, B, R, V extends ObjectBodyValueHandlerDefiner> {
         private V value;
 
         private String objectId;
@@ -424,7 +421,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         }
         return Streams.map(rs, r -> {
             @SuppressWarnings("unchecked")
-            ObjectElement<V> copy = (ObjectElement<V>) ObjectElementMapper.INSTANCE.copy((ObjectElement<AbstractValue>) objectElement);
+            ObjectElement<V> copy = (ObjectElement<V>) ObjectElementMapper.INSTANCE.copy((ObjectElement<ObjectBodyValueHandlerDefiner>) objectElement);
             return this.flatRelation(copy, r);
         }).toList();
     }
@@ -472,8 +469,8 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
         private List<R> relations;
     }
 
-    protected ObjectNode<AbstractValue> find(Collection<String> objectIds) {
-        Collection<ObjectElement<AbstractValue>> fullData = Assign.build(objectIds)
+    protected ObjectNode<ObjectBodyValueHandlerDefiner> find(Collection<String> objectIds) {
+        Collection<ObjectElement<ObjectBodyValueHandlerDefiner>> fullData = Assign.build(objectIds)
                 // objectId 转为 ObjectTemp
                 .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
                 .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
@@ -488,12 +485,12 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                 .addAction(ObjectTemp::getObjectId)
                 .addAssemble(ObjectTemp::setRelations)
                 .backAcquire().backAssign().invoke()
-                // ObjectTemp 转为 ObjectElement<AbstractValue>
+                // ObjectTemp 转为 ObjectElement<ObjectBodyValueDefiner>
                 .casts(es -> Streams.map(es, k -> {
                     if (Objects.isNull(k.getObject())) {
-                        return List.<ObjectElement<AbstractValue>>of();
+                        return List.<ObjectElement<ObjectBodyValueHandlerDefiner>>of();
                     }
-                    ObjectElement<AbstractValue> data = new ObjectElement<>();
+                    ObjectElement<ObjectBodyValueHandlerDefiner> data = new ObjectElement<>();
                     O object = k.getObject();
                     data.setSpaceId(object.getSpaceId());
                     data.setType(object.getType());
@@ -502,7 +499,7 @@ public abstract class AbstractObjectProcessor<O extends ObjectEntityDefiner, R e
                         return List.of(data);
                     }
                     return Streams.map(k.getRelations(), r -> {
-                        ObjectElement<AbstractValue> copy = ObjectElementMapper.INSTANCE.copy(data);
+                        ObjectElement<ObjectBodyValueHandlerDefiner> copy = ObjectElementMapper.INSTANCE.copy(data);
                         copy.setObjectId(r.getObjectId());
                         copy.setParentObjectId(r.getParentObjectId());
                         copy.setRelationType(r.getType());

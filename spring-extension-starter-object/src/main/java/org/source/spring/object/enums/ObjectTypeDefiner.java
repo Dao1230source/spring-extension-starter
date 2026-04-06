@@ -1,10 +1,10 @@
 package org.source.spring.object.enums;
 
 import org.source.spring.object.AbstractObjectProcessor;
-import org.source.spring.object.AbstractValue;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
 import org.source.spring.object.entity.RelationEntityDefiner;
+import org.source.spring.object.handler.ObjectBodyValueHandlerDefiner;
 
 public interface ObjectTypeDefiner {
 
@@ -21,13 +21,13 @@ public interface ObjectTypeDefiner {
     /**
      * object value class
      */
-    <V extends AbstractValue> Class<V> getValueClass();
+    <V extends ObjectBodyValueHandlerDefiner> Class<V> getValueClass();
 
     /**
      * object processor
      */
     <O extends ObjectEntityDefiner, R extends RelationEntityDefiner, B extends ObjectBodyEntityDefiner,
-            V extends AbstractValue, T extends ObjectTypeDefiner, K>
+            V extends ObjectBodyValueHandlerDefiner, T extends ObjectTypeDefiner, K>
     Class<? extends AbstractObjectProcessor<O, R, B, V, T, K>> getObjectProcessor();
 
 }

@@ -2,6 +2,7 @@ package org.source.spring.object;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import org.source.spring.object.handler.ObjectBodyValueHandlerDefiner;
 import org.source.utility.tree.define.Element;
 import org.source.utility.tree.define.EnhanceElement;
 import org.springframework.lang.Nullable;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ObjectElement<V extends AbstractValue> extends EnhanceElement<String> {
+public class ObjectElement<V extends ObjectBodyValueHandlerDefiner> extends EnhanceElement<String> {
 
     /**
      * 名称

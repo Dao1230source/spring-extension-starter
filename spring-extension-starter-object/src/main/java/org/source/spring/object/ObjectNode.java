@@ -2,6 +2,7 @@ package org.source.spring.object;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.source.spring.object.handler.ObjectBodyValueHandlerDefiner;
 import org.source.utility.tree.EnhanceNode;
 import org.source.utility.utils.Jsons;
 
@@ -10,7 +11,7 @@ import java.util.Objects;
 
 @Setter
 @Getter
-public class ObjectNode<V extends AbstractValue> extends EnhanceNode<String, ObjectElement<V>, ObjectNode<V>> {
+public class ObjectNode<V extends ObjectBodyValueHandlerDefiner> extends EnhanceNode<String, ObjectElement<V>, ObjectNode<V>> {
     private StatusEnum status;
 
     private List<Integer> relationTypes = List.of();

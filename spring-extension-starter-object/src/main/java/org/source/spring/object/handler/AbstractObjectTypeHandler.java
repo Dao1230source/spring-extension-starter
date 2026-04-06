@@ -3,7 +3,6 @@ package org.source.spring.object.handler;
 import lombok.AllArgsConstructor;
 import org.source.spring.common.utility.SpringUtil;
 import org.source.spring.object.AbstractObjectProcessor;
-import org.source.spring.object.AbstractValue;
 import org.source.spring.object.ObjectElement;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
@@ -21,17 +20,17 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
-public abstract class AbstractObjectTypeHandler<B extends ObjectBodyEntityDefiner, V extends AbstractValue, T extends ObjectTypeDefiner>
+public abstract class AbstractObjectTypeHandler<B extends ObjectBodyEntityDefiner, V extends ObjectBodyValueHandlerDefiner, T extends ObjectTypeDefiner>
         implements ObjectTypeHandlerDefiner<B, V, T> {
     protected static final Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
-            ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> ALL_TYPE_PROCESSORS = new ConcurrentHashMap<>();
-    protected static final Map<Integer, Function<Collection<ObjectElement<AbstractValue>>, Assign<ObjectElement<AbstractValue>>>> ALL_TYPE_ASSIGNERS = new ConcurrentHashMap<>();
+            ObjectBodyEntityDefiner, ObjectBodyValueHandlerDefiner, ObjectTypeDefiner, Object>> ALL_TYPE_PROCESSORS = new ConcurrentHashMap<>();
+    protected static final Map<Integer, Function<Collection<ObjectElement<ObjectBodyValueHandlerDefiner>>, Assign<ObjectElement<ObjectBodyValueHandlerDefiner>>>> ALL_TYPE_ASSIGNERS = new ConcurrentHashMap<>();
     protected static final Map<Integer, Consumer<Collection<ObjectEntityDefiner>>> ALL_TYPE_OBJECT_CONSUMERS = new ConcurrentHashMap<>();
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
-            ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> allTypeProcessors() {
+            ObjectBodyEntityDefiner, ObjectBodyValueHandlerDefiner, ObjectTypeDefiner, Object>> allTypeProcessors() {
         if (ALL_TYPE_PROCESSORS.isEmpty()) {
             Map<String, AbstractObjectProcessor> beansOfType = SpringUtil.getBeansOfType(AbstractObjectProcessor.class);
             beansOfType.forEach((k, processor) -> ALL_TYPE_PROCESSORS.putAll(processor.getObjectTypeHandler().objectType2ProcessorMap()));
@@ -40,7 +39,7 @@ public abstract class AbstractObjectTypeHandler<B extends ObjectBodyEntityDefine
     }
 
     @Override
-    public Map<Integer, Function<Collection<ObjectElement<AbstractValue>>, Assign<ObjectElement<AbstractValue>>>> allTypeAssigners() {
+    public Map<Integer, Function<Collection<ObjectElement<ObjectBodyValueHandlerDefiner>>, Assign<ObjectElement<ObjectBodyValueHandlerDefiner>>>> allTypeAssigners() {
         if (ALL_TYPE_ASSIGNERS.isEmpty()) {
             this.allTypeProcessors().forEach((k, p) ->
                     ALL_TYPE_ASSIGNERS.put(k, es -> assignByType(es, p)));
@@ -48,8 +47,8 @@ public abstract class AbstractObjectTypeHandler<B extends ObjectBodyEntityDefine
         return ALL_TYPE_ASSIGNERS;
     }
 
-    public Assign<ObjectElement<AbstractValue>> assignByType(Collection<ObjectElement<AbstractValue>> es,
-                                                             AbstractObjectProcessor<?, ?, ?, ?, ?, ?> processor) {
+    public Assign<ObjectElement<ObjectBodyValueHandlerDefiner>> assignByType(Collection<ObjectElement<ObjectBodyValueHandlerDefiner>> es,
+                                                                             AbstractObjectProcessor<?, ?, ?, ?, ?, ?> processor) {
         return Assign.build(es)
                 .addAcquire(processor.getObjectBodyDbHandler()::findObjectBodies, ObjectBodyEntityDefiner::getObjectId)
                 .throwException()

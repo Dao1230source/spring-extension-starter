@@ -2,7 +2,6 @@ package org.source.spring.object.handler;
 
 import org.source.spring.common.exception.SpExtExceptionEnum;
 import org.source.spring.object.AbstractObjectProcessor;
-import org.source.spring.object.AbstractValue;
 import org.source.spring.object.ObjectElement;
 import org.source.spring.object.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.entity.ObjectEntityDefiner;
@@ -17,19 +16,19 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V extends AbstractValue, T extends ObjectTypeDefiner> {
+public interface ObjectTypeHandlerDefiner<B extends ObjectBodyEntityDefiner, V extends ObjectBodyValueHandlerDefiner, T extends ObjectTypeDefiner> {
 
     Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
-            ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> objectType2ProcessorMap();
+            ObjectBodyEntityDefiner, ObjectBodyValueHandlerDefiner, ObjectTypeDefiner, Object>> objectType2ProcessorMap();
 
     Map<Integer, T> type2ObjectTypeMap();
 
     Map<Class<? extends V>, T> class2ObjectTypeMap();
 
     Map<Integer, AbstractObjectProcessor<ObjectEntityDefiner, RelationEntityDefiner,
-            ObjectBodyEntityDefiner, AbstractValue, ObjectTypeDefiner, Object>> allTypeProcessors();
+            ObjectBodyEntityDefiner, ObjectBodyValueHandlerDefiner, ObjectTypeDefiner, Object>> allTypeProcessors();
 
-    Map<Integer, Function<Collection<ObjectElement<AbstractValue>>, Assign<ObjectElement<AbstractValue>>>> allTypeAssigners();
+    Map<Integer, Function<Collection<ObjectElement<ObjectBodyValueHandlerDefiner>>, Assign<ObjectElement<ObjectBodyValueHandlerDefiner>>>> allTypeAssigners();
 
     Map<Integer, Consumer<Collection<ObjectEntityDefiner>>> allTypeObjectConsumers();
 
