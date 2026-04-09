@@ -95,6 +95,7 @@ implementation 'io.github.dao1230source:spring-extension-starter-redis:0.0.12'
 - ✅ **分布式缓存同步**：Redis Pub/Sub 失效通知
 - ✅ **部分缓存策略**：TRUST/DISTRUST/PARTIAL_TRUST
 - ✅ **Redis 分片缓存**：FIXED_SHARD/FIXED_SIZE 策略，支持海量数据
+- ✅ **参数化类型支持**：支持 Generic 类型的缓存存储和反序列化
 
 ```java
 

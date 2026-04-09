@@ -1,6 +1,7 @@
 # Spring Extension Cache - Spring Cache 增强扩展
 
-> **关键词（Keywords）**: Spring Cache, Redis Cache, JVM Cache, Two-Level Cache, Batch Cache, Multi-Get Cache, Partial Cache, Distributed Cache, Spring Boot Cache Extension, 缓存增强, 批量缓存, 二级缓存, 分布式缓存
+> **关键词（Keywords）**: Spring Cache, Redis Cache, JVM Cache, Two-Level Cache, Batch Cache, Multi-Get Cache, Partial
+> Cache, Distributed Cache, Spring Boot Cache Extension, 缓存增强, 批量缓存, 二级缓存, 分布式缓存
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.dao1230source/spring-extension-starter-cache.svg)](https://central.sonatype.com/artifact/io.github.dao1230source/spring-extension-starter-cache)
 [![Java](https://img.shields.io/badge/Java-21+-green.svg)](https://openjdk.org/)
@@ -15,7 +16,10 @@
 - **智能缓存同步（Distributed Cache Sync）**：基于 Redis Pub/Sub 的分布式缓存失效通知机制
 - **灵活的部分缓存处理（Partial Cache Strategy）**：当部分数据缺失时的多种处理策略（TRUST/DISTRUST/PARTIAL_TRUST）
 - **Redis 分片缓存（Redis Sharded Cache）**：使用 HSET 分片存储海量数据，避免 Redis key 过多影响性能
-- **参数化类型支持（Generic Type Support）**：支持 Generic 类型的缓存存储和反序列化
+- **参数化类型支持（Generic Type Support）**：支持 Generic 类型的缓存存储和反序列化，包括：
+    - 单key返回 {@literal List<V>}、{@literal Map<K,V>}
+    - 批量key返回 {@literal Map<K, List<V>>}、{@literal Map<K, Map<KK, V>>}
+    - 不支持 {@literal List<List<V>>}
 - [架构UML图](Spring_Extension_Cache_Architecture.png)
 
 **支持的 Spring Cache 原生注解**：`@Cacheable`、`@Caching`、`@CacheEvict`、`@CachePut` 等都可以正常使用
@@ -24,14 +28,14 @@
 
 ## 适用场景
 
-| 场景 | 推荐配置 | 说明 |
-|------|----------|------|
-| 热点数据高频查询 | 二级缓存（JVM+Redis） | 如商品详情、用户信息 |
-| 批量数据查询 | 批量缓存 + PARTIAL_TRUST | 如订单列表、用户列表 |
-| 分布式环境缓存同步 | JVM缓存 + Redis Pub/Sub | 多实例部署场景 |
-| 临时数据缓存 | 仅JVM缓存 | 无需持久化的临时数据 |
-| 冷数据长期存储 | 仅Redis缓存 | 更新频率低的数据 |
-| 海量数据缓存 | Redis 分片缓存（FIXED_SHARD/FIXED_SIZE） | 百万级数据，避免 key 过多 |
+| 场景        | 推荐配置                               | 说明              |
+|-----------|------------------------------------|-----------------|
+| 热点数据高频查询  | 二级缓存（JVM+Redis）                    | 如商品详情、用户信息      |
+| 批量数据查询    | 批量缓存 + PARTIAL_TRUST               | 如订单列表、用户列表      |
+| 分布式环境缓存同步 | JVM缓存 + Redis Pub/Sub              | 多实例部署场景         |
+| 临时数据缓存    | 仅JVM缓存                             | 无需持久化的临时数据      |
+| 冷数据长期存储   | 仅Redis缓存                           | 更新频率低的数据        |
+| 海量数据缓存    | Redis 分片缓存（FIXED_SHARD/FIXED_SIZE） | 百万级数据，避免 key 过多 |
 
 ---
 
@@ -42,6 +46,7 @@
 **Maven:**
 
 ```xml
+
 <dependency>
     <groupId>io.github.dao1230source</groupId>
     <artifactId>spring-extension-starter-cache</artifactId>
@@ -56,6 +61,7 @@ implementation 'io.github.dao1230source:spring-extension-starter-cache:0.0.12'
 ```
 
 **前置依赖:**
+
 - Spring Boot 3.x
 - Spring Data Redis（如使用 Redis 缓存）
 - JDK 21+
@@ -65,6 +71,7 @@ implementation 'io.github.dao1230source:spring-extension-starter-cache:0.0.12'
 在Application类上添加注解：
 
 ```java
+
 @SpringBootApplication
 @EnableExtendedCache
 public class YourApplication {
@@ -93,7 +100,7 @@ public class Example {
     @ConfigureCache(cacheNames = "users", key = "#id")
     public User getUserById(String id) {
         return userService.fetchFromDb(id);
-}
+    }
 }
 ```
 
@@ -139,7 +146,7 @@ public class Example {
             cacheKeySpEl = "#R.id"  // 从Student对象中提取id作为缓存key
     )
     public List<Student> getStudentsByIds(List<String> ids) {
-}
+    }
 
     // 返回Set<User>，key为user.email
     @ConfigureCache(
@@ -148,7 +155,7 @@ public class Example {
             cacheKeySpEl = "#R.email"
     )
     public Set<User> getUsersByEmails(Collection<String> emails) {
-}
+    }
 }
 ```
 
@@ -193,13 +200,14 @@ public class AnnotationExample {
 
 当业务 key 数量很大时（百万级），使用 HSET 分片存储可以避免 Redis key 过多影响性能。
 
-| 策略 | 说明 | shardValue 含义 | 分片索引计算 |
-|------|------|-----------------|--------------|
-| `NONE` | 不分片（默认） | - | - |
-| `FIXED_SHARD` | 按 hashCode 分片 | 分片总数量 | `shardIndex = hashCode(key) % shardValue` |
-| `FIXED_SIZE` | 按数值范围分片 | 每个分片的数据量 | `shardIndex = (key / shardValue) + 1` |
+| 策略            | 说明            | shardValue 含义 | 分片索引计算                                    |
+|---------------|---------------|---------------|-------------------------------------------|
+| `NONE`        | 不分片（默认）       | -             | -                                         |
+| `FIXED_SHARD` | 按 hashCode 分片 | 分片总数量         | `shardIndex = hashCode(key) % shardValue` |
+| `FIXED_SIZE`  | 按数值范围分片       | 每个分片的数据量      | `shardIndex = (key / shardValue) + 1`     |
 
 **FIXED_SHARD 示例**（适用于随机分布的 key）：
+
 ```java
 public class Example {
     // 分8个HSET存储，每个HSET存储约N/8条数据
@@ -213,11 +221,13 @@ public class Example {
                     valueClasses = {Product.class}
             )
     )
-    public List<Product> getProductsByIds(Collection<String> ids) {}
+    public List<Product> getProductsByIds(Collection<String> ids) {
+    }
 }
 ```
 
 **FIXED_SIZE 示例**（适用于有序自增主键）：
+
 ```java
 public class Example {
     // 按ID范围分片：ID 1-49999 存入 shard:1，ID 50000-99999 存入 shard:2
@@ -231,7 +241,8 @@ public class Example {
                     valueClasses = {Order.class}
             )
     )
-    public List<Order> getOrdersByIds(Collection<Long> orderIds) {}
+    public List<Order> getOrdersByIds(Collection<Long> orderIds) {
+    }
 }
 ```
 
@@ -256,7 +267,7 @@ public class Example {
             cacheInRedis = @CacheInRedis(valueClasses = {Student.class})
     )
     public Map<String, Student> getStudentMap(List<String> ids) {
-}
+    }
 }
 ```
 
@@ -301,7 +312,7 @@ public class Example {
             cacheInJvm = @CacheInJvm(enable = true, jvmMaxSize = 10000)
     )
     public List<Student> getStudents(List<String> ids) {
-}
+    }
 }
 ```
 
@@ -317,7 +328,7 @@ public class Example {
     @ConfigureCache(cacheNames = "user", key = "#id")
     public User getUserById(String id) {
         return userService.findById(id);
-}
+    }
 }
 ```
 
@@ -344,7 +355,7 @@ public class Example {
         // 3. 缓存新获取的数据
         // 4. 合并返回完整结果
         return studentService.findByIds(ids);
-}
+    }
 }
 ```
 
@@ -363,7 +374,7 @@ public class Example {
     public Map<String, Student> getStudentMapByIds(Collection<String> ids) {
         // Map的key会自动作为缓存key
         return studentService.findMapByIds(ids);
-}
+    }
 }
 ```
 
@@ -382,7 +393,7 @@ public class Example {
     )
     public User getHotUser(String id) {
         return userService.findById(id);
-}
+    }
 }
 ```
 
@@ -407,7 +418,7 @@ public class Example {
             partialCacheStrategy = PartialCacheStrategyEnum.TRUST
     )
     public List<Student> getStudents(List<String> ids) {
-}
+    }
 }
 ```
 
@@ -428,7 +439,7 @@ public class Example {
             partialCacheStrategy = PartialCacheStrategyEnum.DISTRUST
     )
     public List<Student> getStudents(Collection<String> ids) {
-}
+    }
 }
 ```
 
@@ -449,7 +460,7 @@ public class Example {
             partialCacheStrategy = PartialCacheStrategyEnum.PARTIAL_TRUST
     )
     public List<Student> getStudents(Collection<String> ids) {
-}
+    }
 }
 ```
 
@@ -476,11 +487,121 @@ public class Example {
             cacheInJvm = @CacheInJvm(enable = true)
     )
     public List<StudentView> getStudentsByClass(String className) {
-}
+    }
 }
 ```
 
-### 场景9：Redis 分片缓存 - FIXED_SHARD 策略
+### 场景9：特殊返回类型支持
+
+框架支持多种复杂的返回类型，通过 `returnType` 和 `valueClasses` 配置实现。
+
+#### 9.1 单key返回List（returnType=RAW）
+
+```java
+public class Example {
+
+    /**
+     * 单个key返回List - 整个List作为value缓存
+     * - returnType = RAW：整个List序列化为一个value
+     * - valueClasses = {List.class, ProductOut.class}
+     */
+    @ConfigureCache(
+            cacheNames = "categoryProducts",
+            key = "#categoryId",
+            returnType = ReturnTypeEnum.RAW,
+            cacheInRedis = @CacheInRedis(valueClasses = {List.class, ProductOut.class})
+    )
+    public List<ProductOut> getProductsByCategory(String categoryId) {
+        // 返回该分类下的所有产品
+    }
+}
+```
+
+#### 9.2 单key返回Map（returnType=RAW）
+
+```java
+public class Example {
+
+    /**
+     * 单个key返回Map - 整个Map作为value缓存
+     * - returnType = RAW：整个Map序列化为一个value
+     * - valueClasses = {Map.class, String.class, String.class}
+     */
+    @ConfigureCache(
+            cacheNames = "productAttributes",
+            key = "#productId",
+            returnType = ReturnTypeEnum.RAW,
+            cacheInRedis = @CacheInRedis(valueClasses = {Map.class, String.class, String.class})
+    )
+    public Map<String, String> getProductAttributes(String productId) {
+        // 返回产品属性Map
+    }
+}
+```
+
+#### 9.3 批量key返回Map<K, List<V>>（returnType=MAP）
+
+```java
+public class Example {
+
+    /**
+     * 批量key返回Map<K, List<V>> - 每个产品独立存储
+     * - returnType = MAP：每个产品独立存储
+     * - valueClasses = {List.class, ProductOut.class}
+     */
+    @ConfigureCache(
+            cacheNames = "categoryProductsMap",
+            key = "#categoryIds",
+            cacheKeySpEl = "#R.id",
+            returnType = ReturnTypeEnum.MAP,
+            cacheInRedis = @CacheInRedis(valueClasses = {List.class, ProductOut.class})
+    )
+    public Map<String, List<ProductOut>> getProductsByCategories(Collection<String> categoryIds) {
+        // 返回分类ID到产品列表的映射
+    }
+}
+```
+
+#### 9.4 批量key返回Map<K, Map<KK, V>>（returnType=MAP）
+
+```java
+public class Example {
+
+    /**
+     * 批量key返回Map<K, Map<KK, V>> - 每个产品属性独立存储
+     * - returnType = MAP：每个产品属性独立存储
+     * - valueClasses = {Map.class, String.class, String.class}
+     */
+    @ConfigureCache(
+            cacheNames = "productAttributesMap",
+            key = "#productIds",
+            cacheKeySpEl = "#R.id",
+            returnType = ReturnTypeEnum.MAP,
+            cacheInRedis = @CacheInRedis(valueClasses = {Map.class, String.class, String.class})
+    )
+    public Map<String, Map<String, String>> getProductAttributesMap(Collection<String> productIds) {
+        // 返回产品ID到属性Map的映射
+    }
+}
+```
+
+#### 特殊返回类型支持情况
+
+| 入参            | 返回类型               | returnType | valueClasses                   | 支持情况  |
+|---------------|--------------------|------------|--------------------------------|-------|
+|               | 单个对象               | AUTO       | {V.class}                      | ✅ 支持  |
+| K             | List<V>            | RAW        | {List.class, V.class}          | ✅ 支持  |
+| K             | Map<K,V>           | RAW        | {Map.class, K.class, V.class}  | ✅ 支持  |
+| Collection<K> | Map<K, List<V>>    | MAP        | {List.class, V.class}          | ✅ 支持  |
+| Collection<K> | Map<K, Map<KK, V>> | MAP        | {Map.class, KK.class, V.class} | ✅ 支持  |
+| Collection<K> | List<List<V>>      | -          | -                              | ❌ 不支持 |
+
+**不支持的场景说明**：
+
+- `{@literal List<List<V>>}`：内层List元素没有明确的key字段用于生成缓存key，序列化复杂，难以正确反序列化
+- 替代方案：使用 `{@literal Map<K, List<V>>}` 替代
+
+### 场景11：Redis 分片缓存 - FIXED_SHARD 策略
 
 当缓存数据量很大时（百万级），使用分片存储避免 Redis key 过多：
 
@@ -506,11 +627,12 @@ public class Example {
     )
     public List<Product> getProductsByIds(Collection<String> ids) {
         return productRepository.findByIds(ids);
-}
+    }
 }
 ```
 
 **FIXED_SHARD Redis 结构**：
+
 ```
 Key: products:shard:0 (HSET)
   field: "product_1" → serialized(Product)
@@ -521,7 +643,7 @@ Key: products:shard:1 (HSET)
 Key: products:shard:15 (HSET)
 ```
 
-### 场景10：Redis 分片缓存 - FIXED_SIZE 策略
+### 场景12：Redis 分片缓存 - FIXED_SIZE 策略
 
 适用于有序自增主键场景（如数据库 ID）：
 
@@ -548,11 +670,12 @@ public class Example {
     public List<Order> getOrdersByIds(Collection<Long> orderIds) {
         // 注意：orderIds 必须是 Long 类型
         return orderRepository.findByIds(orderIds);
-}
+    }
 }
 ```
 
 **FIXED_SIZE Redis 结构**：
+
 ```
 Key: orders:shard:1 (HSET)
   field: "1" → serialized(Order)
@@ -566,14 +689,14 @@ Key: orders:shard:2 (HSET)
 
 **分片策略选择指南**：
 
-| 场景 | 推荐策略 | 原因 |
-|------|----------|------|
+| 场景                | 推荐策略        | 原因            |
+|-------------------|-------------|---------------|
 | 随机字符串 key（如 UUID） | FIXED_SHARD | hashCode 分布均匀 |
-| 有序自增主键（如数据库 ID） | FIXED_SIZE | 按范围分片，查询效率高 |
-| 混合类型 key | FIXED_SHARD | 兼容性好 |
-| 需要范围查询 | FIXED_SIZE | 同一范围的数据在同一分片 |
+| 有序自增主键（如数据库 ID）   | FIXED_SIZE  | 按范围分片，查询效率高   |
+| 混合类型 key          | FIXED_SHARD | 兼容性好          |
+| 需要范围查询            | FIXED_SIZE  | 同一范围的数据在同一分片  |
 
-### 场景11：二级缓存 + 分片存储
+### 场景13：二级缓存 + 分片存储
 
 同时使用 JVM 缓存和 Redis 分片存储：
 
@@ -600,11 +723,12 @@ public class Example {
     )
     public List<Product> getHotProducts(Collection<String> ids) {
         return productRepository.findByIds(ids);
-}
+    }
 }
 ```
 
 **查询流程**：
+
 1. 先查询 JVM 本地缓存
 2. JVM 未命中 → 查询 Redis 分片 HSET
 3. Redis 未命中 → 执行业务方法
@@ -625,7 +749,7 @@ public class Example {
     public void updateStudent(String id, StudentForm form) {
         studentService.update(id, form);
         // 框架自动发布Pub/Sub消息到所有实例
-}
+    }
 }
 ```
 
@@ -692,7 +816,7 @@ public class Example {
             cacheInRedis = @CacheInRedis(ttl = 3600)
     )
     public Item getHotItem(String id) {
-}
+    }
 
     // 冷数据 → 仅Redis
     @ConfigureCache(
@@ -701,7 +825,7 @@ public class Example {
             cacheInRedis = @CacheInRedis(ttl = 86400)
     )
     public Item getColdItem(String id) {
-}
+    }
 
     // 临时数据 → 仅JVM
     @ConfigureCache(
@@ -711,7 +835,7 @@ public class Example {
             cacheInRedis = @CacheInRedis(enable = false)
     )
     public TempData getTempData(String id) {
-}
+    }
 }
 ```
 
@@ -722,7 +846,7 @@ public class Example {
     // ❌ 不好：过大的批量，容易导致单次查询缓存太多
     @ConfigureCache(cacheNames = "users", key = "#ids", cacheKeySpEl = "#R.id")
     public List<User> getUsersByIds(Collection<String> ids) {
-}
+    }
 
     // ✅ 好：在Service层限制批量大小
     public List<User> getUsersByIds(Collection<String> ids) {
@@ -730,17 +854,17 @@ public class Example {
             // 分批处理
             return ids.stream()
                     .collect(Collectors.groupingBy(id -> {
-                }, Collectors.toList()))
+                    }, Collectors.toList()))
                     .values().stream()
                     .flatMap(batch -> getUsersBatch(batch).stream())
                     .collect(Collectors.toList());
-    }
+        }
         return getUsersBatch(ids);
-}
+    }
 
     @ConfigureCache(cacheNames = "users", key = "#ids", cacheKeySpEl = "#R.id")
     private List<User> getUsersBatch(Collection<String> ids) {
-}
+    }
 }
 ```
 
@@ -754,7 +878,7 @@ public class Example {
             partialCacheStrategy = PartialCacheStrategyEnum.DISTRUST
     )
     public List<Order> getOrders(Collection<String> orderIds) {
-}
+    }
 
     // PARTIAL_TRUST：性能最优，但有分布式事务风险
     @ConfigureCache(
@@ -762,7 +886,7 @@ public class Example {
             partialCacheStrategy = PartialCacheStrategyEnum.PARTIAL_TRUST
     )
     public List<Product> getProducts(Collection<String> productIds) {
-}
+    }
 
     // TRUST：适合允许短期不一致的场景（推荐使用少）
     @ConfigureCache(
@@ -770,7 +894,7 @@ public class Example {
             partialCacheStrategy = PartialCacheStrategyEnum.TRUST
     )
     public List<Stat> getStats(Collection<String> statIds) {
-}
+    }
 }
 ```
 
@@ -781,7 +905,7 @@ public class Example {
     // ❌ 不好：未指定，可能反序列化失败
     @ConfigureCache(cacheNames = "students", key = "#ids", cacheKeySpEl = "#R.id")
     public List<StudentView> getStudents(List<String> ids) {
-}
+    }
 
     // ✅ 好：明确指定元素类型
     @ConfigureCache(
@@ -791,7 +915,7 @@ public class Example {
             cacheInRedis = @CacheInRedis(valueClasses = {StudentView.class})
     )
     public List<StudentView> getStudents(List<String> ids) {
-}
+    }
 }
 ```
 
@@ -812,7 +936,7 @@ public class Example {
             cacheInJvm = @CacheInJvm(ttl = 10)
     )
     public Data getRealtime(String id) {
-}
+    }
 }
 ```
 
@@ -853,15 +977,15 @@ public class Example {
 
 ## 与其他缓存框架对比
 
-| 特性 | 本框架 | Spring Cache 原生 | Caffeine | Redis Cache |
-|------|--------|------------------|----------|-------------|
-| 批量缓存（Multi-Get） | ✅ 支持 | ❌ 不支持 | ❌ 不支持 | ❌ 不支持 |
-| 二级缓存（L1+L2） | ✅ 内置支持 | ❌ 需手动实现 | 仅L1 | 仅L2 |
-| 部分缓存策略 | ✅ 3种策略 | ❌ 不支持 | ❌ 不支持 | ❌ 不支持 |
-| 分布式缓存同步 | ✅ 自动Pub/Sub | ❌ 需手动实现 | ❌ 不支持 | ❌ 不支持 |
-| Redis 分片缓存 | ✅ 2种策略 | ❌ 不支持 | ❌ 不支持 | ❌ 不支持 |
-| 泛型类型支持 | ✅ 完整支持 | ⚠️ 有限支持 | ⚠️ 有限支持 | ⚠️ 有限支持 |
-| Spring注解兼容 | ✅ 完全兼容 | ✅ 原生支持 | ✅ 支持 | ✅ 支持 |
+| 特性              | 本框架         | Spring Cache 原生 | Caffeine | Redis Cache |
+|-----------------|-------------|-----------------|----------|-------------|
+| 批量缓存（Multi-Get） | ✅ 支持        | ❌ 不支持           | ❌ 不支持    | ❌ 不支持       |
+| 二级缓存（L1+L2）     | ✅ 内置支持      | ❌ 需手动实现         | 仅L1      | 仅L2         |
+| 部分缓存策略          | ✅ 3种策略      | ❌ 不支持           | ❌ 不支持    | ❌ 不支持       |
+| 分布式缓存同步         | ✅ 自动Pub/Sub | ❌ 需手动实现         | ❌ 不支持    | ❌ 不支持       |
+| Redis 分片缓存      | ✅ 2种策略      | ❌ 不支持           | ❌ 不支持    | ❌ 不支持       |
+| 泛型类型支持          | ✅ 完整支持      | ⚠️ 有限支持         | ⚠️ 有限支持  | ⚠️ 有限支持     |
+| Spring注解兼容      | ✅ 完全兼容      | ✅ 原生支持          | ✅ 支持     | ✅ 支持        |
 
 ---
 
@@ -871,27 +995,27 @@ public class Example {
 
 **A**: 取决于 `partialCacheStrategy` 配置：
 
-| 策略 | 入参要求 | 说明 |
-|------|----------|------|
+| 策略                  | 入参要求                 | 说明                                                |
+|---------------------|----------------------|---------------------------------------------------|
 | `PARTIAL_TRUST`（默认） | **必须是可变 Collection** | 如 `ArrayList`，不能用 `List.of()` 或 `Arrays.asList()` |
-| `DISTRUST` | 无限制 | 任何类型都可以 |
-| `TRUST` | 无限制 | 任何类型都可以 |
+| `DISTRUST`          | 无限制                  | 任何类型都可以                                           |
+| `TRUST`             | 无限制                  | 任何类型都可以                                           |
 
 ```java
 public class Example {
     public void partialCacheStrategy() {
-      // ✅ 正确：PARTIAL_TRUST 使用可变集合
-      List<String> ids = new ArrayList<>();
-      ids.add("1");
-      ids.add("2");
-      service.getStudents(ids);
+        // ✅ 正确：PARTIAL_TRUST 使用可变集合
+        List<String> ids = new ArrayList<>();
+        ids.add("1");
+        ids.add("2");
+        service.getStudents(ids);
 
-      // ❌ 错误：PARTIAL_TRUST 使用不可变集合会抛异常
-      service.getStudents(List.of("1", "2"));  // UnsupportedOperationException
+        // ❌ 错误：PARTIAL_TRUST 使用不可变集合会抛异常
+        service.getStudents(List.of("1", "2"));  // UnsupportedOperationException
 
-      // ✅ 正确：DISTRUST 可以使用任意集合
-      service.getStudents(List.of("1", "2"));
-}
+        // ✅ 正确：DISTRUST 可以使用任意集合
+        service.getStudents(List.of("1", "2"));
+    }
 
 }
 ```
@@ -905,7 +1029,7 @@ public class Example {
     @ConfigureCache(cacheNames = "users", key = "#id")
     public User getUserById(String id) {
         return userRepository.findById(id).orElse(null);  // null 也会被缓存
-}
+    }
 }
 ```
 
@@ -920,7 +1044,7 @@ public class Example {
     public Order getOrder(String id) {
         // 缓存操作在事务上下文中执行
         return orderRepository.findById(id);
-}
+    }
 }
 ```
 
@@ -941,11 +1065,13 @@ public class Example {
 public class Example {
     // 使用对象属性作为 key
     @ConfigureCache(cacheNames = "users", cacheKeySpEl = "#R.email")
-    public List<User> getUsersByEmails(Collection<String> emails) {}
+    public List<User> getUsersByEmails(Collection<String> emails) {
+    }
 
     // 使用嵌套属性作为 key
     @ConfigureCache(cacheNames = "orders", cacheKeySpEl = "#R.orderNo")
-    public List<Order> getOrders(Collection<String> orderIds) {}
+    public List<Order> getOrders(Collection<String> orderIds) {
+    }
 }
 ```
 
@@ -956,11 +1082,12 @@ public class Example {
 ```java
 public class Example {
     @ConfigureCache(
-        cacheNames = "tempData",
-        cacheInRedis = @CacheInRedis(enable = false),
-        cacheInJvm = @CacheInJvm(enable = true, ttl = 60)
+            cacheNames = "tempData",
+            cacheInRedis = @CacheInRedis(enable = false),
+            cacheInJvm = @CacheInJvm(enable = true, ttl = 60)
     )
-    public TempData getTempData(String id) {}
+    public TempData getTempData(String id) {
+    }
 }
 ```
 
@@ -974,7 +1101,7 @@ public class Example {
     public void updateUser(String id, User user) {
         userRepository.save(user);
         // 自动通知所有实例删除 JVM 缓存
-}
+    }
 }
 ```
 
@@ -990,4 +1117,6 @@ public class Example {
 
 ## 标签（Tags）
 
-`spring-cache` `redis-cache` `jvm-cache` `two-level-cache` `batch-cache` `multi-get` `distributed-cache` `sharded-cache` `redis-hset` `spring-boot` `spring-boot-starter` `cache-extension` `partial-cache` `缓存增强` `批量缓存` `二级缓存` `分布式缓存` `分片缓存` `Spring缓存扩展`
+`spring-cache` `redis-cache` `jvm-cache` `two-level-cache` `batch-cache` `multi-get` `distributed-cache` `sharded-cache`
+`redis-hset` `spring-boot` `spring-boot-starter` `cache-extension` `partial-cache` `缓存增强` `批量缓存` `二级缓存`
+`分布式缓存` `分片缓存` `Spring缓存扩展`

@@ -132,7 +132,12 @@ public class ConfigureCacheUtil {
      * @return RedisCacheConfiguration
      */
     public static RedisCacheConfiguration getCacheConfigByExtend(ConfigureCacheProperties cacheProperties) {
-        JavaType javaType = Jsons.getJavaType(cacheProperties.getValueType());
+        JavaType javaType = cacheProperties.getValueType();
+        // 只有当 returnType = ReturnTypeEnum.RAW 且 cacheInRedis = @CacheInRedis(enable = false) 未指定 valueClasses 时 valueType才会是null
+        if (Objects.isNull(javaType)) {
+            // 此时redis缓存不启用 valueType 设置不影响
+            javaType = Jsons.getJavaType(Object.class);
+        }
         Jackson2JsonRedisSerializer<Object> valueSerializer = getValueSerializer(javaType);
         return RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(cacheProperties.getRedisTtl()))
