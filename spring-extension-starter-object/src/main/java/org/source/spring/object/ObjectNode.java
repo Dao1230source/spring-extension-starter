@@ -2,19 +2,24 @@ package org.source.spring.object;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.source.spring.object.handler.ObjectBodyValueHandlerDefiner;
+import org.source.spring.object.enums.StatusEnum;
 import org.source.utility.tree.EnhanceNode;
-import org.source.utility.utils.Jsons;
+import org.springframework.lang.Nullable;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Setter
 @Getter
-public class ObjectNode<V extends ObjectBodyValueHandlerDefiner> extends EnhanceNode<String, ObjectElement<V>, ObjectNode<V>> {
-    private StatusEnum status;
+public class ObjectNode<V extends ObjectBodyData> extends EnhanceNode<String, ObjectElement<V>, ObjectNode<V>> {
+    private @Nullable StatusEnum status;
 
-    private List<Integer> relationTypes = List.of();
+    /**
+     * 该节点和父节点的关联关系类型映射
+     * {@literal <id, type>}
+     */
+    private Map<String, Integer> parentIdRelationTypeMap = new ConcurrentHashMap<>();
 
     @Override
     public ObjectNode<V> emptyNode() {
@@ -41,6 +46,6 @@ public class ObjectNode<V extends ObjectBodyValueHandlerDefiner> extends Enhance
     @Override
     public String toString() {
         return "status: " + this.getStatus() +
-                ", element: " + Jsons.str(this.getElement());
+                ", element: " + super.toString();
     }
 }
