@@ -1,6 +1,7 @@
 package org.source.spring.i18n.processor;
 
 import lombok.*;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.i18n.facade.data.DictData;
 import org.source.spring.i18n.facade.param.Dict1Param;
 import org.source.spring.i18n.facade.param.Dict2Param;
@@ -9,7 +10,6 @@ import org.source.spring.i18n.facade.param.Dict4Param;
 import org.source.utility.tree.DefaultNode;
 import org.source.utility.tree.Tree;
 import org.source.utility.tree.define.Element;
-import org.springframework.lang.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;

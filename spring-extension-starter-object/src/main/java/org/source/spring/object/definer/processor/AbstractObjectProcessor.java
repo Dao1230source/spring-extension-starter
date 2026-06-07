@@ -2,15 +2,16 @@ package org.source.spring.object.definer.processor;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.source.spring.common.exception.SpExtExceptionEnum;
-import org.source.spring.object.JsonUtil;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.object.ObjectBodyData;
 import org.source.spring.object.ObjectElement;
 import org.source.spring.object.ObjectNode;
 import org.source.spring.object.definer.entity.ObjectBodyEntityDefiner;
 import org.source.spring.object.definer.entity.ObjectEntityDefiner;
 import org.source.spring.object.definer.entity.RelationEntityDefiner;
+import org.source.spring.object.definer.enums.ObjectExceptionEnum;
 import org.source.spring.object.definer.enums.ObjectTypeDefiner;
 import org.source.spring.object.definer.handler.ObjectBodyDbHandlerDefiner;
 import org.source.spring.object.definer.handler.ObjectDbHandlerDefiner;
@@ -18,8 +19,6 @@ import org.source.spring.object.definer.handler.ObjectTypeHandlerDefiner;
 import org.source.spring.object.definer.handler.RelationDbHandlerDefiner;
 import org.source.spring.object.enums.StatusEnum;
 import org.source.spring.object.mapper.ObjectElementMapper;
-import org.source.spring.trace.TraceContext;
-import org.source.spring.uid.Uids;
 import org.source.utility.assign.Assign;
 import org.source.utility.assign.InterruptStrategyEnum;
 import org.source.utility.tree.EnhanceTree;
@@ -27,10 +26,6 @@ import org.source.utility.tree.define.IdExtend;
 import org.source.utility.tree.define.Node;
 import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
-import org.springframework.aop.framework.AopContext;
-import org.springframework.lang.Nullable;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -46,54 +41,94 @@ import java.util.stream.Stream;
  * @param <B> object body 实例对象
  * @param <D> value 业务数据
  * @param <T> object 类型枚举
- * @param <P> 处理器
  */
 @AllArgsConstructor
 @Getter
 @Slf4j
 public abstract class AbstractObjectProcessor<
-        O extends ObjectEntityDefiner, R extends RelationEntityDefiner, B extends ObjectBodyEntityDefiner, D extends ObjectBodyData,
-        T extends ObjectTypeDefiner<O, R, B, D, T, P>,
-        P extends AbstractObjectProcessor<O, R, B, D, T, P>> {
+        O extends ObjectEntityDefiner, B extends ObjectBodyEntityDefiner, R extends RelationEntityDefiner, D extends ObjectBodyData,
+        T extends ObjectTypeDefiner<D>> implements ObjectProcessor<D> {
+    private final Function<ObjectNode<D>, @Nullable String> objectIdGetter = n -> Node.getProperty(n, e -> this.dataId(e.getData()));
+    private final Function<ObjectNode<D>, @Nullable String> objectParentIdGetter = n -> Node.getProperty(n, e -> this.parentDataId(e.getData()));
 
     protected final EnhanceTree<String, ObjectElement<D>, ObjectNode<D>> objectTree = EnhanceTree.of(new ObjectNode<>());
-    protected final IdExtend<String, ObjectElement<D>, ObjectNode<D>> treeIdExtendData = new IdExtend<>("data",
-            n -> Node.getProperty(n, e -> this.dataId(e.getData())),
-            n -> Node.getProperty(n, e -> this.dataParentId(e.getData())));
+    protected final IdExtend<String, ObjectElement<D>, ObjectNode<D>> treeIdExtendData = new IdExtend<>("data", objectIdGetter, objectParentIdGetter);
 
     private final ObjectDbHandlerDefiner<O> objectDbHandler;
     private final ObjectBodyDbHandlerDefiner<B> objectBodyDbHandler;
     private final RelationDbHandlerDefiner<R> relationDbHandler;
-    private final ObjectTypeHandlerDefiner<O, R, B, D, T, P> objectTypeHandler;
+    private final ObjectTypeHandlerDefiner<D, T> objectTypeHandler;
 
-    @Transactional(rollbackFor = Exception.class)
+    @Override
     public void save(Collection<D> ds) {
         this.merge(ds);
         this.save();
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    @Override
     public void delete(Collection<String> objectIds) {
-        this.objectDbHandler.deleteObjects(objectIds);
+        this.getObjectDbHandler().deleteObjects(objectIds);
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    @Override
     public void remove(Collection<String> objectIds) {
         Assign.build(objectIds)
                 .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
                 .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
                 // 查询 object
-                .addAcquire(this.objectDbHandler::findObjects, O::getObjectId)
+                .addAcquire(this.getObjectDbHandler()::findObjects, O::getObjectId)
                 .throwException()
                 .addAction(ObjectTemp::getObjectId)
                 .addAssemble(ObjectTemp::setObject)
                 .backAcquire().backAssign().invoke()
                 .cast(ObjectTemp::getObject)
-                .addOperates(ObjectEntityDefiner::getType, this.objectTypeHandler.typeObjectOperateMap());
+                .addOperates(ObjectEntityDefiner::getType, this.getObjectTypeHandler().typeObjectRemoveMap(), O::getObjectId);
     }
 
-    public ObjectNode<D> findByObjectIds(Collection<String> objectIds) {
-        return this.find(objectIds);
+    @Override
+    public ObjectNode<D> find(Collection<String> objectIds) {
+        Collection<ObjectElement<D>> fullData = Assign.build(objectIds)
+                // objectId 转为 ObjectTemp
+                .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
+                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
+                // 查询 object
+                .addAcquire(this.getObjectDbHandler()::findObjects, O::getObjectId)
+                .throwException()
+                .addAction(ObjectTemp::getObjectId)
+                .addAssemble(ObjectTemp::setObject)
+                .backAcquire().backAssign()
+                // 查询 relation 并按 belongId 分组
+                .addAcquire(this.belongIdRelationsGroupMapping())
+                .addAction(ObjectTemp::getObjectId)
+                .addAssemble(ObjectTemp::setRelations)
+                .backAcquire().backAssign().invoke()
+                // ObjectTemp 转为 ObjectElement<ObjectBodyValueDefiner>
+                .casts(es -> Streams.map(es, k -> {
+                    if (Objects.isNull(k.getObject())) {
+                        return List.<ObjectElement<D>>of();
+                    }
+                    ObjectElement<D> data = new ObjectElement<>();
+                    O object = k.getObject();
+                    data.setSpaceId(object.getSpaceId());
+                    data.setType(object.getType());
+                    D d = this.getObjectTypeHandler().getEmptyData(object.getType());
+                    d.setObjectId(k.getObjectId());
+                    data.setData(d);
+                    if (Objects.isNull(k.getRelations())) {
+                        return List.of(data);
+                    }
+                    return Streams.map(k.getRelations(), r -> {
+                        @SuppressWarnings("unchecked")
+                        ObjectElement<D> copy = (ObjectElement<D>) ObjectElementMapper.INSTANCE.copy((ObjectElement<ObjectBodyData>) data);
+                        return copy;
+                    }).collect(Collectors.toList());
+                }).flatMap(Collection::stream).toList())
+                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
+                // 查询 objectBody
+                .addBranches(ObjectElement::getType, this.getObjectTypeHandler().typeAssignerMap()).invoke()
+                .toList();
+        // 组成 tree 结构
+        return EnhanceTree.of(new ObjectNode<D>()).add(fullData);
     }
 
     /**
@@ -106,12 +141,16 @@ public abstract class AbstractObjectProcessor<
         return Objects.isNull(d) ? null : d.getObjectId();
     }
 
-    public @Nullable String dataParentId(@Nullable D d) {
+    public @Nullable String parentDataId(@Nullable D d) {
         return Objects.isNull(d) ? null : d.getParentObjectId();
     }
 
     public @Nullable String objectBodyId(@Nullable B b) {
         return Objects.isNull(b) ? null : b.getObjectId();
+    }
+
+    public D convertToData(T objectType, ObjectBodyEntityDefiner objectBodyEntity) {
+        return Jsons.obj(objectBodyEntity.getValue(), objectType.getValueClass());
     }
 
     /**
@@ -125,7 +164,7 @@ public abstract class AbstractObjectProcessor<
                 log.debug("source values:{}", Jsons.str(ds));
             }
             Collection<D> maybeExistsInDb = this.needValidExistsInDb(ds);
-            if (!CollectionUtils.isEmpty(maybeExistsInDb)) {
+            if (CollectionUtils.isNotEmpty(maybeExistsInDb)) {
                 if (log.isDebugEnabled()) {
                     log.debug("maybeExistsInDb:{}", maybeExistsInDb);
                 }
@@ -136,13 +175,13 @@ public abstract class AbstractObjectProcessor<
                 }
                 this.handleDbDataTree().add(dataFromDbList);
             }
-            Collection<ObjectElement<D>> objectElements = Streams.map(ds, this::convertToObjectElement).filter(Objects::nonNull).toList();
+            Collection<ObjectElement<D>> objectElements = Streams.map(ds, this::convertToObjectElement).toList();
             this.handleValueDataTree().add(objectElements);
             this.afterTransfer();
         } catch (Exception e) {
             this.getObjectTree().clear();
             log.error("AbstractObjectProcessor.merge error", e);
-            SpExtExceptionEnum.OBJECT_MERGE_ERROR.throwException(e);
+            ObjectExceptionEnum.OBJECT_MERGE_ERROR.throwException(e);
         }
     }
 
@@ -189,7 +228,7 @@ public abstract class AbstractObjectProcessor<
         tree.setAfterCreateHandler(n -> {
             n.setStatus(StatusEnum.CREATED);
             if (Objects.isNull(n.getId())) {
-                Node.setProperty(n, e -> e.getData().setObjectId(Uids.stringId()));
+                Node.setProperty(n, e -> e.getData().setObjectId(this.objectId()));
             }
         });
         tree.setMergeHandler(this::mergeNode);
@@ -202,7 +241,6 @@ public abstract class AbstractObjectProcessor<
     /**
      * 持久化数据
      */
-    @SuppressWarnings("unchecked")
     public void save() {
         this.beforePersist();
         List<ObjectNode<D>> objectNodes = this.obtainObjectData();
@@ -213,7 +251,7 @@ public abstract class AbstractObjectProcessor<
         List<O> objectList = temp.getObjectList();
         List<B> objectBodyList = temp.getObjectBodyList();
         List<R> relationList = temp.getRelationList();
-        ((AbstractObjectProcessor<O, R, B, D, T, P>) AopContext.currentProxy()).saveObjectData(objectList, objectBodyList, relationList);
+        this.saveObjectData(objectList, objectBodyList, relationList);
         this.afterPersist();
     }
 
@@ -259,9 +297,9 @@ public abstract class AbstractObjectProcessor<
     }
 
     public O valueNodeToObjectEntity(ObjectNode<D> node) {
-        O entity = this.objectDbHandler.newObjectEntity();
+        O entity = this.getObjectDbHandler().newObjectEntity();
         ObjectElement<D> element = node.getElementOrElseThrow();
-        entity.setSpaceId(TraceContext.getSpaceIdOrDefault());
+        entity.setSpaceId(this.spaceId());
         entity.setDeleted(Boolean.FALSE);
         entity.setObjectId(element.getId());
         entity.setType(element.getType());
@@ -277,14 +315,14 @@ public abstract class AbstractObjectProcessor<
     }
 
     public B valueNodeToObjectBodyEntity(ObjectNode<D> node) {
-        B entity = this.objectBodyDbHandler.newObjectBodyEntity();
+        B entity = this.getObjectBodyDbHandler().newObjectBodyEntity();
         ObjectElement<D> element = node.getElementOrElseThrow();
-        entity.setCreateUser(TraceContext.getUserIdOrDefault());
+        entity.setCreateUser(this.userId());
         entity.setCreateTime(LocalDateTime.now());
-        entity.setUpdateUser(TraceContext.getUserIdOrDefault());
+        entity.setUpdateUser(this.userId());
         entity.setUpdateTime(LocalDateTime.now());
         entity.setObjectId(element.getId());
-        entity.setValue(JsonUtil.str(element.getData()));
+        entity.setValue(Jsons.str(element.getData()));
         this.extendObjectBodyEntity(entity, element);
         return entity;
     }
@@ -298,8 +336,8 @@ public abstract class AbstractObjectProcessor<
         Map<String, Integer> parentIdRelationTypeMap = node.getParentIdRelationTypeMap();
         return node.findParents().stream().filter(p -> Objects.nonNull(p.getElement())).map(p -> {
             String parentObjectId = p.getElement().getId();
-            R entity = this.relationDbHandler.newRelationEntity();
-            entity.setCreateUser(TraceContext.getUserIdOrDefault());
+            R entity = this.getRelationDbHandler().newRelationEntity();
+            entity.setCreateUser(this.userId());
             entity.setCreateTime(LocalDateTime.now());
             entity.setType(parentIdRelationTypeMap.getOrDefault(parentObjectId, element.getData().getRelationType()));
             entity.setParentObjectId(parentObjectId);
@@ -387,51 +425,53 @@ public abstract class AbstractObjectProcessor<
     public List<ObjectElement<D>> findFromDbAndConvertToObjectElement(Collection<D> ds) {
         Assign<FindEntityAndToObjectElementTemp<O, B, R, D>> assign = Assign.build(ds)
                 .cast(d -> FindEntityAndToObjectElementTemp.<O, B, R, D>builder().data(d).build())
-                .name("get_object_data")
+                .name("get object body")
                 // 查询 objectBody
-                .addAcquire(this.objectBodyDbHandler::findObjectBodiesByKeys, this::objectBodyId)
-                .name("get_object_body_by_dataId_and_parentDataId")
+                .addAcquire(this.getObjectBodyDbHandler()::findObjectBodyByDataIds, this::objectBodyId)
+                .name("select ObjectBodyEntities by dataIds")
                 .throwException()
-                // ObjectBody key
                 .addAction(t -> this.dataId(t.getData()))
+                .name("for biz dataIds")
                 .addAssemble((e, b) -> {
                     e.setObjectBodyEntity(b);
                     e.setObjectId(b.getObjectId());
                 })
                 .backAcquire()
-                // ObjectBodyEntity parentKey
-                .addAction(k -> this.dataParentId(k.getData()))
+                .addAction(k -> this.parentDataId(k.getData()))
+                .name("for biz parentDataIds")
                 .addAssemble((e, b) -> {
                     e.setParentObjectBodyEntity(b);
                     e.setParentObjectId(b.getObjectId());
                 })
-                .backAcquire().backAssign().invoke()
-                .addAcquire(this.objectDbHandler::findObjects, O::getObjectId)
-                .name("get_object_by_objectId_and_parentObjectId")
+                .backAcquire().backAssign()
+                // 获取 object 数据依赖于先获取到 objectBody 数据
+                .dependBy()
+                .name("get object by objectIds")
+                .addAcquire(this.getObjectDbHandler()::findObjects, O::getObjectId)
                 .addAction(FindEntityAndToObjectElementTemp::getObjectId)
+                .name("for objectIds")
                 .addAssemble((e, o) -> {
                     e.setObjectEntity(o);
-                    T type = this.objectTypeHandler.getObjectType(o.getType());
-                    ObjectElement<D> objectElement = this.convertToObjectElement(type, e.getObjectBodyEntity());
-                    objectElement.getData().setObjectId(o.getObjectId());
-                    objectElement.getData().setParentObjectId(e.getParentObjectId());
-                    e.setObjectElement(objectElement);
+                    T type = this.getObjectTypeHandler().getObjectType(o.getType());
+                    e.setObjectElement(this.convertToObjectElement(type, e.getObjectBodyEntity(), o.getObjectId(), e.getParentObjectId()));
                 })
                 .backAcquire()
                 .addAction(FindEntityAndToObjectElementTemp::getParentObjectId)
+                .name("for parentObjectIds")
                 .addAssemble((e, o) -> {
                     e.setParentObjectEntity(o);
-                    T type = this.objectTypeHandler.getObjectType(o.getType());
+                    T type = this.getObjectTypeHandler().getObjectType(o.getType());
                     e.setParentObjectElement(this.convertToObjectElement(type, e.getParentObjectBodyEntity()));
                 })
                 .backAcquire().backAssign()
+                // 获取 relation 数据依赖于先获取到 object 数据
+                .dependBy()
                 // 根据 objectId 查询 relations ，按objectId 分组，因为一个对象可能有多个父级
-                .addAcquireOutGroup(this.relationDbHandler::findRelationsByObjectIds, R::getObjectId)
-                .name("get_relation_by_objectId")
+                .addAcquireOutGroup(this.getRelationDbHandler()::findRelationsByObjectIds, R::getObjectId)
+                .name("get relation by objectId")
                 .addAction(FindEntityAndToObjectElementTemp::getObjectId)
                 .addAssemble(FindEntityAndToObjectElementTemp::setRelations)
                 .backAcquire().backAssign()
-                .backSuper()
                 // 最终执行
                 .invoke();
         // 展开，转换为 ObjectElement<V>
@@ -452,16 +492,18 @@ public abstract class AbstractObjectProcessor<
                 .flatMap(Collection::stream).filter(Objects::nonNull).filter(objectIds::contains).collect(Collectors.toSet());
         List<ObjectElement<D>> otherElements = Assign.build(otherParentObjectIds)
                 .cast(k -> FindEntityAndToObjectElementTemp.<O, B, R, D>builder().objectId(k).build())
-                .addAcquire(this.objectDbHandler::findObjects, O::getObjectId)
+                .addAcquire(this.getObjectDbHandler()::findObjects, O::getObjectId)
                 .addAction(FindEntityAndToObjectElementTemp::getObjectId)
                 .addAssemble(FindEntityAndToObjectElementTemp::setObjectEntity)
                 .backAcquire().backAssign()
-                .addAcquire(this.objectBodyDbHandler::findObjectBodies, B::getObjectId)
+                .addAcquire(this.getObjectBodyDbHandler()::findObjectBodies, B::getObjectId)
                 .addAction(FindEntityAndToObjectElementTemp::getObjectId)
                 .addAssemble((e, b) -> {
                     e.setObjectBodyEntity(b);
-                    T type = this.objectTypeHandler.getObjectType(e.getObjectEntity().getType());
-                    e.setObjectElement(this.convertToObjectElement(type, e.getObjectBodyEntity()));
+                    if (Objects.nonNull(e.getObjectEntity())) {
+                        T type = this.getObjectTypeHandler().getObjectType(e.getObjectEntity().getType());
+                        e.setObjectElement(this.convertToObjectElement(type, e.getObjectBodyEntity(), b.getObjectId(), e.getParentObjectId()));
+                    }
                 })
                 .backAcquire().backAssign().invoke()
                 .toList().stream().map(FindEntityAndToObjectElementTemp::getObjectElement).toList();
@@ -488,7 +530,7 @@ public abstract class AbstractObjectProcessor<
 
     public ObjectElement<D> convertToObjectElement(D data) {
         ObjectElement<D> objectElement = new ObjectElement<>();
-        objectElement.setType(this.objectTypeHandler.getObjectType(data).getType());
+        objectElement.setType(this.getObjectTypeHandler().getObjectType(data).getType());
         objectElement.setData(data);
         this.extendObjectElement(objectElement, data);
         return objectElement;
@@ -497,27 +539,37 @@ public abstract class AbstractObjectProcessor<
     public void extendObjectElement(ObjectElement<D> objectElement, D data) {
     }
 
-    public ObjectElement<D> convertToObjectElement(T objectType, B entity) {
+    public ObjectElement<D> convertToObjectElement(T objectType, B entity,
+                                                   String objectId, String parentObjectId) {
         ObjectElement<D> objectElement = new ObjectElement<>();
         objectElement.setType(objectType.getType());
-        D data = this.objectTypeHandler.convertToData(objectType, entity);
+        D data = this.convertToData(objectType, entity);
+        if (StringUtils.isNotBlank(objectId)) {
+            data.setObjectId(objectId);
+        }
+        if (StringUtils.isNotBlank(parentObjectId)) {
+            data.setParentObjectId(parentObjectId);
+        }
         objectElement.setData(data);
         return objectElement;
+    }
+
+    public ObjectElement<D> convertToObjectElement(T objectType, B entity) {
+        return convertToObjectElement(objectType, entity, null, null);
     }
 
     /**
      * 数据保存处理
      */
-    @Transactional(rollbackFor = Exception.class)
     public void saveObjectData(Collection<O> objectList, Collection<B> objectBodyList, Collection<R> relationList) {
         if (!CollectionUtils.isEmpty(objectList)) {
-            this.objectDbHandler.saveObjects(objectList);
+            this.getObjectDbHandler().saveObjects(objectList);
         }
         if (!CollectionUtils.isEmpty(objectBodyList)) {
-            this.objectBodyDbHandler.saveObjectBodies(objectBodyList);
+            this.getObjectBodyDbHandler().saveObjectBodies(objectBodyList);
         }
         if (!CollectionUtils.isEmpty(relationList)) {
-            this.relationDbHandler.saveRelations(relationList);
+            this.getRelationDbHandler().saveRelations(relationList);
         }
     }
 
@@ -531,51 +583,9 @@ public abstract class AbstractObjectProcessor<
         private @Nullable List<R> relations;
     }
 
-    protected ObjectNode<D> find(Collection<String> objectIds) {
-        Collection<ObjectElement<D>> fullData = Assign.build(objectIds)
-                // objectId 转为 ObjectTemp
-                .cast(e -> ObjectTemp.<O, R>builder().objectId(e).build())
-                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
-                // 查询 object
-                .addAcquire(this.objectDbHandler::findObjects, O::getObjectId)
-                .throwException()
-                .addAction(ObjectTemp::getObjectId)
-                .addAssemble(ObjectTemp::setObject)
-                .backAcquire().backAssign()
-                // 查询 relation 并按 belongId 分组
-                .addAcquire(this.belongIdRelationsGroupMapping())
-                .addAction(ObjectTemp::getObjectId)
-                .addAssemble(ObjectTemp::setRelations)
-                .backAcquire().backAssign().invoke()
-                // ObjectTemp 转为 ObjectElement<ObjectBodyValueDefiner>
-                .casts(es -> Streams.map(es, k -> {
-                    if (Objects.isNull(k.getObject())) {
-                        return List.<ObjectElement<D>>of();
-                    }
-                    ObjectElement<D> data = new ObjectElement<>();
-                    O object = k.getObject();
-                    data.setSpaceId(object.getSpaceId());
-                    data.setType(object.getType());
-                    if (Objects.isNull(k.getRelations())) {
-                        return List.of(data);
-                    }
-                    return Streams.map(k.getRelations(), r -> {
-                        @SuppressWarnings("unchecked")
-                        ObjectElement<D> copy = (ObjectElement<D>) ObjectElementMapper.INSTANCE.copy((ObjectElement<ObjectBodyData>) data);
-                        return copy;
-                    }).collect(Collectors.toList());
-                }).flatMap(Collection::stream).toList())
-                .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
-                // 查询 objectBody
-                .addBranches(ObjectElement::getType, this.objectTypeHandler.typeAssignerMap()).invoke()
-                .toList();
-        // 组成 tree 结构
-        return EnhanceTree.of(new ObjectNode<D>()).add(fullData);
-    }
-
-    protected Function<Set<String>, Map<String, List<R>>> belongIdRelationsGroupMapping() {
+    protected Function<Collection<String>, Map<String, List<R>>> belongIdRelationsGroupMapping() {
         return ks -> {
-            List<R> relations = this.relationDbHandler.findRelationsByParentObjectIds(ks);
+            List<R> relations = this.getRelationDbHandler().findRelationsByParentObjectIds(ks);
             return Streams.groupBy(relations, R::getParentObjectId);
         };
     }

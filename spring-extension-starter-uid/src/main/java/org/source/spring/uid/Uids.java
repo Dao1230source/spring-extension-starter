@@ -2,7 +2,7 @@ package org.source.spring.uid;
 
 import com.github.yitter.idgen.YitIdHelper;
 import lombok.experimental.UtilityClass;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.StringUtils;
 
 import java.util.Objects;

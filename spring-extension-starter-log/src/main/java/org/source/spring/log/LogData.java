@@ -4,9 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.log.enums.LogBizTypeEnum;
 import org.source.spring.log.enums.LogSystemTypeEnum;
-import org.springframework.lang.Nullable;
 
 import java.time.LocalDateTime;
 import java.util.Objects;

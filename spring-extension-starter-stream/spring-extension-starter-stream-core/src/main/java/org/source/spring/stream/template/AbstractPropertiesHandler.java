@@ -1,9 +1,9 @@
 package org.source.spring.stream.template;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.stream.properties.*;
-import org.source.utility.utils.Maps;
-import org.springframework.lang.Nullable;
+import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -51,12 +51,12 @@ public abstract class AbstractPropertiesHandler<C extends ConsumerProcessor, P e
 
     @Override
     public Map<String, C> obtainConsumers() {
-        if (Maps.isEmpty(this.getSystems())) {
+        if (CollectionUtils.isEmpty(this.getSystems())) {
             return Map.of();
         }
         Map<String, C> consumerMap = HashMap.newHashMap(32);
         this.getSystems().forEach((systemName, system) -> {
-            if (Maps.isEmpty(system.getConsumers())) {
+            if (CollectionUtils.isEmpty(system.getConsumers())) {
                 return;
             }
             system.getConsumers().forEach((consumerName, consumerProperty) -> {
@@ -74,12 +74,12 @@ public abstract class AbstractPropertiesHandler<C extends ConsumerProcessor, P e
 
     @Override
     public Map<String, P> obtainProducers() {
-        if (Maps.isEmpty(this.getSystems())) {
+        if (CollectionUtils.isEmpty(this.getSystems())) {
             return Map.of();
         }
         Map<String, P> producerMap = HashMap.newHashMap(32);
         this.getSystems().forEach((systemName, system) -> {
-            if (Maps.isEmpty(system.getProducers())) {
+            if (CollectionUtils.isEmpty(system.getProducers())) {
                 return;
             }
             system.getProducers().forEach((producerName, producerProperty) -> {

@@ -1,4 +1,4 @@
-@NonNullApi
+@NullMarked
 package org.source.spring.cache;
 
-import org.springframework.lang.NonNullApi;
+import org.jspecify.annotations.NullMarked;

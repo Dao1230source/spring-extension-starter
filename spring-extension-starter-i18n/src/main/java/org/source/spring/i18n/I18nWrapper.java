@@ -1,12 +1,12 @@
 package org.source.spring.i18n;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.i18n.facade.data.DictData;
 import org.source.spring.i18n.facade.param.Dict2Param;
 import org.source.spring.i18n.facade.param.Dict3Param;
 import org.source.spring.i18n.facade.param.Dict4Param;
 import org.source.utility.utils.Jsons;
-import org.springframework.lang.Nullable;
 
 import java.text.MessageFormat;
 import java.util.*;

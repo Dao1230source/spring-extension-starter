@@ -1,4 +1,4 @@
-@NonNullApi
+@NullMarked
 package org.source.spring.doc;
 
-import org.springframework.lang.NonNullApi;
+import org.jspecify.annotations.NullMarked;

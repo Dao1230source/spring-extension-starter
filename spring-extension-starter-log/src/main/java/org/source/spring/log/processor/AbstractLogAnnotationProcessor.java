@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.Getter;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.common.exception.SpExtExceptionEnum;
 import org.source.spring.common.spel.ExtendEvaluationContext;
 import org.source.spring.common.spel.ExtendRootObject;
@@ -18,7 +19,6 @@ import org.source.spring.uid.UidPrefix;
 import org.source.spring.uid.Uids;
 import org.source.utility.utils.Streams;
 import org.springframework.core.Ordered;
-import org.springframework.lang.Nullable;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;

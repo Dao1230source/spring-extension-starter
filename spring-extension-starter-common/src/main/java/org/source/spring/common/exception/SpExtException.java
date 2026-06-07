@@ -3,11 +3,11 @@ package org.source.spring.common.exception;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 import org.source.utility.exception.BaseException;
 import org.source.utility.exception.EnumProcessor;
 import org.source.utility.utils.Strings;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**

@@ -1,12 +1,12 @@
 package org.source.spring.i18n.enums;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.i18n.annotation.I18nRef;
 import org.source.spring.i18n.annotation.I18nServer;
 import org.source.utility.constant.Constants;
 import org.source.utility.enums.BaseExceptionEnum;
-import org.source.utility.utils.Reflects;
-import org.springframework.lang.Nullable;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
@@ -42,7 +42,7 @@ public enum I18nRefTypeEnum {
     FIELD {
         @Override
         public String getNameFromEnum(String value, Class<? extends Enum<?>> enumClass) {
-            Field field = Reflects.getFieldByName(enumClass, value);
+            Field field = ReflectionUtils.findField(enumClass, value);
             if (Objects.nonNull(field)) {
                 return field.getName();
             } else {
@@ -52,7 +52,13 @@ public enum I18nRefTypeEnum {
 
         @Override
         public String getValue(String value, Object obj, @Nullable String source) {
-            return String.valueOf(Reflects.getFieldValue(obj, value));
+            Field field = ReflectionUtils.findField(obj.getClass(), value);
+            if (Objects.nonNull(field)) {
+                return String.valueOf(ReflectionUtils.getField(field, obj));
+            } else {
+                throw BaseExceptionEnum.FIELD_NAME_INVALID.newException("type:{}, field:{}.{} not exists",
+                        this.name(), obj.getClass().getName(), value);
+            }
         }
     },
     /**

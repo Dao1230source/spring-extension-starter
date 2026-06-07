@@ -2,9 +2,9 @@ package org.source.spring.object;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import org.jspecify.annotations.Nullable;
 import org.source.utility.tree.define.Element;
 import org.source.utility.tree.define.EnhanceElement;
-import org.springframework.lang.Nullable;
 
 @EqualsAndHashCode(callSuper = false)
 @Builder
@@ -36,7 +36,7 @@ public class ObjectElement<V extends ObjectBodyData> extends EnhanceElement<Stri
 
     @JsonIgnore
     @Override
-    public String getParentId() {
+    public @Nullable String getParentId() {
         return data.getParentObjectId();
     }
 

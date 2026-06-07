@@ -1,8 +1,8 @@
 package org.source.spring.trace;
 
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
-import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.function.Supplier;
@@ -54,7 +54,7 @@ public class TraceContext {
 
     public static void putIfAbsent(String key, Supplier<String> preferredValue, Supplier<String> defaultValue) {
         String value = preferredValue.get();
-        if (StringUtils.hasText(value)) {
+        if (StringUtils.isNotBlank(value)) {
             put(key, value);
             return;
         }
@@ -63,7 +63,7 @@ public class TraceContext {
 
     public static String compute(String key, Supplier<String> defaultValue) {
         String value = get(key);
-        if (StringUtils.hasText(value)) {
+        if (StringUtils.isNotBlank(value)) {
             return value;
         }
         value = defaultValue.get();

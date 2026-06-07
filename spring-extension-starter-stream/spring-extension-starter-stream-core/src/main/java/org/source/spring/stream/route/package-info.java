@@ -1,7 +1,7 @@
-@NonNullApi
+@NullMarked
 package org.source.spring.stream.route;
 
 /*
  */
 
-import org.springframework.lang.NonNullApi;
+import org.jspecify.annotations.NullMarked;

@@ -1,6 +1,7 @@
 package org.source.spring.stream;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.common.exception.SpExtExceptionEnum;
 import org.source.spring.stream.template.ConsumerProcessor;
 import org.source.spring.stream.template.ProducerProcessor;
@@ -8,7 +9,6 @@ import org.springframework.cloud.stream.binder.*;
 import org.springframework.cloud.stream.provisioning.ConsumerDestination;
 import org.springframework.cloud.stream.provisioning.ProducerDestination;
 import org.springframework.integration.core.MessageProducer;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 

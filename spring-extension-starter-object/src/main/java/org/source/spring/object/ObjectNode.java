@@ -2,9 +2,9 @@ package org.source.spring.object;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.object.enums.StatusEnum;
 import org.source.utility.tree.EnhanceNode;
-import org.springframework.lang.Nullable;
 
 import java.util.Map;
 import java.util.Objects;

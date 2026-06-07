@@ -3,8 +3,8 @@ package org.source.spring.object;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.object.enums.RelationTypeEnum;
-import org.springframework.lang.Nullable;
 
 @Data
 public class ObjectBodyData {

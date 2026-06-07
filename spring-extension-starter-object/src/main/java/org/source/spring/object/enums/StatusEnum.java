@@ -1,6 +1,6 @@
 package org.source.spring.object.enums;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Set;
 

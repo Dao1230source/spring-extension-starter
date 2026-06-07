@@ -21,7 +21,7 @@ public interface ObjectBodyDbHandlerDefiner<B extends ObjectBodyEntityDefiner> {
      * @param ks ks
      * @return list
      */
-    List<B> findObjectBodiesByKeys(Collection<String> ks);
+    List<B> findObjectBodyByDataIds(Collection<String> ks);
 
     void saveObjectBodies(Collection<B> objectBodies);
 

@@ -6,10 +6,7 @@ import org.source.spring.object.definer.entity.ObjectEntityDefiner;
 import org.source.spring.object.definer.entity.RelationEntityDefiner;
 import org.source.spring.object.definer.processor.AbstractObjectProcessor;
 
-public interface ObjectTypeDefiner<
-        O extends ObjectEntityDefiner, R extends RelationEntityDefiner, B extends ObjectBodyEntityDefiner, V extends ObjectBodyData,
-        T extends ObjectTypeDefiner<O, R, B, V, T, P>,
-        P extends AbstractObjectProcessor<O, R, B, V, T, P>> {
+public interface ObjectTypeDefiner<D extends ObjectBodyData> {
 
     /**
      * 类型
@@ -23,12 +20,15 @@ public interface ObjectTypeDefiner<
 
     /**
      * object value class
+     * 必须要有无参构造器
      */
-    Class<V> getValueClass();
+    Class<? extends D> getValueClass();
 
     /**
      * object processor
      */
+    <O extends ObjectEntityDefiner, B extends ObjectBodyEntityDefiner, R extends RelationEntityDefiner,
+            T extends ObjectTypeDefiner<D>, P extends AbstractObjectProcessor<O, B, R, D, T>>
     Class<P> getObjectProcessor();
 
 }

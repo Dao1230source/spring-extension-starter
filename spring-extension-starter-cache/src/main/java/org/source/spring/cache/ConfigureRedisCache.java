@@ -3,6 +3,7 @@ package org.source.spring.cache;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.Nullable;
 import org.redisson.spring.cache.NullValue;
 import org.source.spring.cache.configure.ConfigureCache;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
@@ -21,7 +22,6 @@ import org.springframework.data.redis.cache.ConfigureRedisCacheWriter;
 import org.springframework.data.redis.cache.RedisCache;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.lang.Nullable;
 
 import java.util.*;
 
@@ -216,7 +216,7 @@ public class ConfigureRedisCache extends RedisCache {
         return Streams.map(values, this::deserializeCacheValueNullable).toList();
     }
 
-    protected @Nullable Object deserializeCacheValueNullable(@Nullable byte[] value) {
+    protected @Nullable Object deserializeCacheValueNullable(byte @Nullable [] value) {
         if (Objects.isNull(value)) {
             return null;
         }

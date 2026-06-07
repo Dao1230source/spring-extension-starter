@@ -1,12 +1,12 @@
 package org.source.spring.cache;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.cache.configure.ConfigureCacheProperties;
 import org.springframework.data.redis.cache.ConfigureRedisCacheWriter;
 import org.springframework.data.redis.cache.RedisCache;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
-import org.springframework.lang.Nullable;
 
 import java.util.Map;
 

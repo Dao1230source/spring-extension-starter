@@ -1,6 +1,6 @@
 package org.source.spring.stream.properties;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 

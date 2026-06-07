@@ -1,6 +1,7 @@
 package org.source.spring.i18n;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.cache.configure.CacheInJvm;
 import org.source.spring.cache.configure.CacheInRedis;
 import org.source.spring.cache.configure.ConfigureCache;
@@ -13,7 +14,6 @@ import org.source.spring.i18n.facade.param.Dict4Param;
 import org.source.spring.i18n.processor.I18nProcessor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;

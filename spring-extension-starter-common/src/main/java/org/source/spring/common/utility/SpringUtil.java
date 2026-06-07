@@ -3,10 +3,10 @@ package org.source.spring.common.utility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.lang.NonNull;
 
@@ -16,7 +16,7 @@ import java.util.Map;
  * @author zengfugen
  */
 @Slf4j
-@Configuration
+@AutoConfiguration
 public class SpringUtil implements ApplicationContextAware {
 
     private static ApplicationContext context;

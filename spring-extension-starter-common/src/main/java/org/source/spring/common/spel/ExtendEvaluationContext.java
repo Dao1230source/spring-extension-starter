@@ -3,9 +3,9 @@ package org.source.spring.common.spel;
 import lombok.Getter;
 import lombok.Setter;
 import org.aopalliance.intercept.MethodInvocation;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.expression.MethodBasedEvaluationContext;
 import org.springframework.core.ParameterNameDiscoverer;
-import org.springframework.lang.Nullable;
 
 import java.util.Collection;
 import java.util.Objects;

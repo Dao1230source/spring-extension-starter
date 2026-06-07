@@ -2,8 +2,8 @@ package org.source.spring.common.spel;
 
 import lombok.Data;
 import org.aopalliance.intercept.MethodInvocation;
+import org.jspecify.annotations.Nullable;
 import org.source.utility.constant.Constants;
-import org.springframework.lang.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.Objects;

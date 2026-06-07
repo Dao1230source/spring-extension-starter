@@ -3,7 +3,7 @@ package org.source.spring.log;
 import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.source.spring.log.processor.AbstractLogAnnotationProcessor;
 
 import java.lang.annotation.Annotation;

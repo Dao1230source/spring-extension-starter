@@ -1,36 +1,37 @@
 package org.source.spring.object.definer.handler;
 
-import org.source.spring.common.exception.SpExtExceptionEnum;
-import org.source.spring.object.JsonUtil;
 import org.source.spring.object.ObjectBodyData;
 import org.source.spring.object.ObjectElement;
-import org.source.spring.object.definer.entity.ObjectBodyEntityDefiner;
-import org.source.spring.object.definer.entity.ObjectEntityDefiner;
-import org.source.spring.object.definer.entity.RelationEntityDefiner;
+import org.source.spring.object.definer.enums.ObjectExceptionEnum;
 import org.source.spring.object.definer.enums.ObjectTypeDefiner;
 import org.source.spring.object.definer.processor.AbstractObjectProcessor;
 import org.source.utility.assign.Assign;
+import org.source.utility.enums.BaseExceptionEnum;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public interface ObjectTypeHandlerDefiner<O extends ObjectEntityDefiner, R extends RelationEntityDefiner,
-        B extends ObjectBodyEntityDefiner, D extends ObjectBodyData,
-        T extends ObjectTypeDefiner<O, R, B, D, T, P>,
-        P extends AbstractObjectProcessor<O, R, B, D, T, P>> {
+public interface ObjectTypeHandlerDefiner<D extends ObjectBodyData, T extends ObjectTypeDefiner<D>> {
 
     Map<Integer, T> typeMap();
 
-    Map<Class<D>, T> classTypeMap();
+    Map<Class<? extends D>, T> classTypeMap();
 
-    Map<Integer, P> typeProcessorMap();
+    <P extends AbstractObjectProcessor<?, ?, ?, D, T>> Map<Integer, P> typeProcessorMap();
 
     Map<Integer, Function<Collection<ObjectElement<D>>, Assign<ObjectElement<D>>>> typeAssignerMap();
 
-    Map<Integer, Consumer<Collection<O>>> typeObjectOperateMap();
+    Map<Integer, Consumer<Collection<String>>> typeObjectRemoveMap();
+
+    /**
+     * @return 无参构造器
+     */
+    Map<Integer, Constructor<? extends D>> typeNoArgConstructorMap();
 
     /**
      * obtain type for object value
@@ -38,7 +39,7 @@ public interface ObjectTypeHandlerDefiner<O extends ObjectEntityDefiner, R exten
     default T getObjectType(D d) {
         T type = this.classTypeMap().get(d.getClass());
         if (Objects.isNull(type)) {
-            throw SpExtExceptionEnum.OBJECT_VALUE_CLASS_NOT_DEFINED.newException("class:{}", d.getClass());
+            throw ObjectExceptionEnum.OBJECT_VALUE_CLASS_NOT_DEFINED.newException("class:{}", d.getClass());
         }
         return type;
     }
@@ -49,13 +50,18 @@ public interface ObjectTypeHandlerDefiner<O extends ObjectEntityDefiner, R exten
     default T getObjectType(Integer type) {
         T objectType = this.typeMap().get(type);
         if (Objects.isNull(objectType)) {
-            throw SpExtExceptionEnum.OBJECT_TYPE_NOT_DEFINED.newException("type:{}", type);
+            throw ObjectExceptionEnum.OBJECT_TYPE_NOT_DEFINED.newException("type:{}", type);
         }
         return objectType;
     }
 
-    default D convertToData(T objectType, B objectBodyEntity) {
-        return JsonUtil.obj(objectBodyEntity.getValue(), objectType.getValueClass());
+    default D getEmptyData(Integer type) {
+        Constructor<? extends D> dConstructor = this.typeNoArgConstructorMap().get(type);
+        try {
+            return dConstructor.newInstance();
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw BaseExceptionEnum.NO_ARGS_CONSTRUCTOR_NEW_INSTANCE_ERROR.newException("type:{}", type);
+        }
     }
 
 }
