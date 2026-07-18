@@ -13,7 +13,7 @@ Maven: io.github.dao1230source:spring-extension-starter-*
 
 [![Java](https://img.shields.io/badge/Java-21+-green.svg)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-green.svg)](https://spring.io/projects/spring-boot)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
@@ -360,4 +360,6 @@ Documentation, Stream, Pub/Sub, JSON Serialization, Distributed System, Microser
 
 ## 📄 许可证
 
-MIT License
+Apache License 2.0
+
+See [LICENSE](LICENSE) for details.

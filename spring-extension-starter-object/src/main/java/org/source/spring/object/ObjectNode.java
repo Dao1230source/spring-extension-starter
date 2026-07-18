@@ -6,28 +6,20 @@ import org.jspecify.annotations.Nullable;
 import org.source.spring.object.enums.StatusEnum;
 import org.source.utility.tree.EnhanceNode;
 
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Setter
 @Getter
-public class ObjectNode<V extends ObjectBodyData> extends EnhanceNode<String, ObjectElement<V>, ObjectNode<V>> {
+public class ObjectNode<D extends ObjectBodyData> extends EnhanceNode<String, ObjectElement<D>, ObjectNode<D>> {
     private @Nullable StatusEnum status;
 
-    /**
-     * 该节点和父节点的关联关系类型映射
-     * {@literal <id, type>}
-     */
-    private Map<String, Integer> parentIdRelationTypeMap = new ConcurrentHashMap<>();
-
     @Override
-    public ObjectNode<V> emptyNode() {
+    public ObjectNode<D> emptyNode() {
         return new ObjectNode<>();
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }

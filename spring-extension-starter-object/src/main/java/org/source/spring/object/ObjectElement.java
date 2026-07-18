@@ -11,12 +11,12 @@ import org.source.utility.tree.define.EnhanceElement;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ObjectElement<V extends ObjectBodyData> extends EnhanceElement<String> {
+public class ObjectElement<D extends ObjectBodyData> extends EnhanceElement<String> {
 
     /**
      * 值
      */
-    private V data;
+    private D data;
 
     /**
      * spaceId
@@ -42,6 +42,6 @@ public class ObjectElement<V extends ObjectBodyData> extends EnhanceElement<Stri
 
     @Override
     public int compareTo(@Nullable EnhanceElement<String> o) {
-        return Element.comparator(this, (ObjectElement<V>) o, ObjectElement::getId);
+        return Element.comparator(this, (ObjectElement<D>) o, ObjectElement::getId);
     }
 }

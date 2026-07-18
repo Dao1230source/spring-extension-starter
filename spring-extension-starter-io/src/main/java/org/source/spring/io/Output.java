@@ -80,8 +80,9 @@ public class Output<T> {
                     .extraMessage(baseException.getExtraMessage()).cause(baseException.getCause())
                     .traceId(TraceContext.getTraceId()).timestamp(LocalDateTime.now()).build();
         }
-        return Output.<T>builder().code(CODE_FAILED).message(throwable.getMessage())
-                .traceId(TraceContext.getTraceId()).timestamp(LocalDateTime.now()).build();
+        return Output.<T>builder().code(BaseExceptionEnum.RUNTIME_EXCEPTION.getCode())
+                .message(BaseExceptionEnum.RUNTIME_EXCEPTION.getMessage()).extraMessage(throwable.getMessage())
+                .traceId(TraceContext.getTraceId()).timestamp(LocalDateTime.now()).cause(throwable).build();
     }
 
     public static <T> T getOrThrow(Output<T> output) {

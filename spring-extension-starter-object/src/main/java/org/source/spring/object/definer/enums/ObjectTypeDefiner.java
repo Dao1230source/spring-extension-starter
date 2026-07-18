@@ -1,9 +1,9 @@
 package org.source.spring.object.definer.enums;
 
 import org.source.spring.object.ObjectBodyData;
-import org.source.spring.object.definer.entity.ObjectBodyEntityDefiner;
-import org.source.spring.object.definer.entity.ObjectEntityDefiner;
-import org.source.spring.object.definer.entity.RelationEntityDefiner;
+import org.source.spring.object.definer.entity.ObjectBodyDefiner;
+import org.source.spring.object.definer.entity.ObjectDefiner;
+import org.source.spring.object.definer.entity.RelationDefiner;
 import org.source.spring.object.definer.processor.AbstractObjectProcessor;
 
 public interface ObjectTypeDefiner<D extends ObjectBodyData> {
@@ -27,8 +27,8 @@ public interface ObjectTypeDefiner<D extends ObjectBodyData> {
     /**
      * object processor
      */
-    <O extends ObjectEntityDefiner, B extends ObjectBodyEntityDefiner, R extends RelationEntityDefiner,
+    <O extends ObjectDefiner, B extends ObjectBodyDefiner, R extends RelationDefiner,
             T extends ObjectTypeDefiner<D>, P extends AbstractObjectProcessor<O, B, R, D, T>>
-    Class<P> getObjectProcessor();
+    Class<P> getObjectProcessorClass();
 
 }

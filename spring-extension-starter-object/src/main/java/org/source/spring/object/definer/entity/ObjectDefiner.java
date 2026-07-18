@@ -5,7 +5,7 @@ import org.source.spring.object.definer.enums.ObjectTypeDefiner;
 /**
  * 对应数据库表实体类
  */
-public interface ObjectEntityDefiner {
+public interface ObjectDefiner {
 
     Long getId();
 

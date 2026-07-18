@@ -4,7 +4,7 @@ import org.source.spring.object.ObjectBodyData;
 import org.source.spring.object.ObjectElement;
 import org.source.spring.object.definer.enums.ObjectExceptionEnum;
 import org.source.spring.object.definer.enums.ObjectTypeDefiner;
-import org.source.spring.object.definer.processor.AbstractObjectProcessor;
+import org.source.spring.object.definer.processor.ObjectProcessor;
 import org.source.utility.assign.Assign;
 import org.source.utility.enums.BaseExceptionEnum;
 
@@ -16,13 +16,15 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public interface ObjectTypeHandlerDefiner<D extends ObjectBodyData, T extends ObjectTypeDefiner<D>> {
+public interface ObjectTypeHandler<D extends ObjectBodyData, T extends ObjectTypeDefiner<D>> {
 
     Map<Integer, T> typeMap();
 
     Map<Class<? extends D>, T> classTypeMap();
 
-    <P extends AbstractObjectProcessor<?, ?, ?, D, T>> Map<Integer, P> typeProcessorMap();
+    Map<Class<? extends ObjectProcessor<?, ?, ?, D, T>>, ObjectProcessor<?, ?, ?, D, T>> classProcessorMap();
+
+    <P extends ObjectProcessor<?, ?, ?, D, T>> Map<Integer, P> typeProcessorMap();
 
     Map<Integer, Function<Collection<ObjectElement<D>>, Assign<ObjectElement<D>>>> typeAssignerMap();
 

@@ -2,11 +2,12 @@ package org.source.spring.object.definer.handler;
 
 import org.source.spring.object.ObjectBodyData;
 import org.source.spring.object.ObjectElement;
-import org.source.spring.object.definer.entity.ObjectBodyEntityDefiner;
+import org.source.spring.object.definer.entity.ObjectBodyDefiner;
 import org.source.spring.object.definer.enums.ObjectTypeDefiner;
-import org.source.spring.object.definer.processor.AbstractObjectProcessor;
+import org.source.spring.object.definer.processor.ObjectProcessor;
 import org.source.utility.assign.Assign;
 import org.source.utility.enums.BaseExceptionEnum;
+import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
 
 import java.lang.reflect.Constructor;
@@ -18,8 +19,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public abstract class AbstractObjectTypeHandler<D extends ObjectBodyData, T extends ObjectTypeDefiner<D>>
-        implements ObjectTypeHandlerDefiner<D, T> {
-    private final Map<Integer, AbstractObjectProcessor<?, ?, ?, D, T>> typeProcessorMap = new ConcurrentHashMap<>();
+        implements ObjectTypeHandler<D, T> {
+    private final Map<Class<? extends ObjectProcessor<?, ?, ?, D, T>>, ObjectProcessor<?, ?, ?, D, T>> classProcessorMap = new ConcurrentHashMap<>();
+    private final Map<Integer, ObjectProcessor<?, ?, ?, D, T>> typeProcessorMap = new ConcurrentHashMap<>();
     private final Map<Integer, Function<Collection<ObjectElement<D>>, Assign<ObjectElement<D>>>> typeAssignerMap = new ConcurrentHashMap<>();
     private final Map<Integer, Consumer<Collection<String>>> typeObjectRemoveMap = new ConcurrentHashMap<>();
     private final Map<Integer, T> typeMap = new ConcurrentHashMap<>();
@@ -28,13 +30,26 @@ public abstract class AbstractObjectTypeHandler<D extends ObjectBodyData, T exte
 
     protected abstract List<T> allObjectTypes();
 
-    protected abstract AbstractObjectProcessor<?, ?, ?, D, T> obtainProcessor(Class<? extends AbstractObjectProcessor<?, ?, ?, D, T>> objectProcessor);
+    protected abstract Map<Class<? extends ObjectProcessor<?, ?, ?, D, T>>, ObjectProcessor<?, ?, ?, D, T>> obtainClassProcessorMap();
+
+    @Override
+    public Map<Class<? extends ObjectProcessor<?, ?, ?, D, T>>, ObjectProcessor<?, ?, ?, D, T>> classProcessorMap() {
+        if (classProcessorMap.isEmpty()) {
+            Map<Class<? extends ObjectProcessor<?, ?, ?, D, T>>, ObjectProcessor<?, ?, ?, D, T>> classObjectProcessorMap = this.obtainClassProcessorMap();
+            // 校验所有 type 对应的 processor class 都获取了
+            this.allObjectTypes().forEach(t -> BaseExceptionEnum.NOT_EXISTS.isTrue(classObjectProcessorMap.containsKey(t.getObjectProcessorClass()),
+                    "type:{}-{}-{}的processor未注册", t.getType(), t.getDesc(), t.getObjectProcessorClass().getSimpleName()));
+            this.classProcessorMap.putAll(classObjectProcessorMap);
+        }
+        return classProcessorMap;
+    }
+
 
     @SuppressWarnings("unchecked")
     @Override
-    public Map<Integer, AbstractObjectProcessor<?, ?, ?, D, T>> typeProcessorMap() {
+    public Map<Integer, ObjectProcessor<?, ?, ?, D, T>> typeProcessorMap() {
         if (typeProcessorMap.isEmpty()) {
-            Streams.of(allObjectTypes()).forEach(t -> typeProcessorMap.put(t.getType(), this.obtainProcessor(t.getObjectProcessor())));
+            Streams.of(allObjectTypes()).forEach(t -> typeProcessorMap.put(t.getType(), this.classProcessorMap().get(t.getObjectProcessorClass())));
         }
         return typeProcessorMap;
     }
@@ -43,12 +58,13 @@ public abstract class AbstractObjectTypeHandler<D extends ObjectBodyData, T exte
     public Map<Integer, Function<Collection<ObjectElement<D>>, Assign<ObjectElement<D>>>> typeAssignerMap() {
         if (typeAssignerMap.isEmpty()) {
             this.typeProcessorMap().forEach((k, p) -> typeAssignerMap.put(k, es -> Assign.build(es)
-                    .addAcquire(p.getObjectBodyDbHandler()::findObjectBodies, ObjectBodyEntityDefiner::getObjectId)
+                    .addAcquire(p.getObjectBodyHandler()::findObjectBodies, ObjectBodyDefiner::getObjectId)
                     .throwException()
                     .addAction(ObjectElement::getId)
                     .addAssemble((e, t) -> {
                         T objectType = p.getObjectTypeHandler().getObjectType(e.getType());
-                        e.setData(p.convertToData(objectType, t));
+                        D data = Jsons.obj(t.getValue(), objectType.getValueClass());
+                        e.setData(data);
                         e.getData().setObjectId(t.getObjectId());
                     }).backAcquire().backAssign()));
         }
@@ -60,9 +76,9 @@ public abstract class AbstractObjectTypeHandler<D extends ObjectBodyData, T exte
         if (typeObjectRemoveMap.isEmpty()) {
             this.typeProcessorMap().forEach((k, processor) ->
                     typeObjectRemoveMap.put(k, objectIds -> {
-                        processor.getObjectDbHandler().removeObjects(objectIds);
-                        processor.getRelationDbHandler().removeRelations(objectIds);
-                        processor.getObjectBodyDbHandler().removeObjectBodies(objectIds);
+                        processor.getObjectHandler().removeObjects(objectIds);
+                        processor.getRelationHandler().removeRelations(objectIds);
+                        processor.getObjectBodyHandler().removeObjectBodies(objectIds);
                     }));
         }
         return typeObjectRemoveMap;

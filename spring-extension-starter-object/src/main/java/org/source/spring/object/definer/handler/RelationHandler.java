@@ -1,11 +1,11 @@
 package org.source.spring.object.definer.handler;
 
-import org.source.spring.object.definer.entity.RelationEntityDefiner;
+import org.source.spring.object.definer.entity.RelationDefiner;
 
 import java.util.Collection;
 import java.util.List;
 
-public interface RelationDbHandlerDefiner<R extends RelationEntityDefiner> {
+public interface RelationHandler<R extends RelationDefiner> {
     /**
      * relation
      */

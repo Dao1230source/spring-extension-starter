@@ -1,11 +1,11 @@
 package org.source.spring.object.definer.handler;
 
-import org.source.spring.object.definer.entity.ObjectBodyEntityDefiner;
+import org.source.spring.object.definer.entity.ObjectBodyDefiner;
 
 import java.util.Collection;
 import java.util.List;
 
-public interface ObjectBodyDbHandlerDefiner<B extends ObjectBodyEntityDefiner> {
+public interface ObjectBodyHandler<B extends ObjectBodyDefiner> {
 
     /**
      * object body

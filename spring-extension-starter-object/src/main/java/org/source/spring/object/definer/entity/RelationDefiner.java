@@ -1,41 +1,43 @@
 package org.source.spring.object.definer.entity;
 
+import org.source.spring.object.definer.enums.ObjectTypeDefiner;
+
 import java.time.LocalDateTime;
 
-public interface ObjectBodyEntityDefiner {
-
+public interface RelationDefiner {
 
     Long getId();
 
     void setId(Long id);
 
-
     /**
      * 对象ID，唯一
      */
-
     String getObjectId();
 
     void setObjectId(String objectId);
 
 
     /**
-     * name
+     * 类型 {@link ObjectTypeDefiner#getType()}
      */
+    Integer getType();
 
-    String getName();
-
-    void setName(String name);
-
+    void setType(Integer type);
 
     /**
-     * value
-     * <p>
-     * json 格式
+     * 父objectId
      */
-    String getValue();
+    String getParentObjectId();
 
-    void setValue(String value);
+    void setParentObjectId(String parentObjectId);
+
+    /**
+     * 排序字段
+     */
+    String getSorted();
+
+    void setSorted(String sorted);
 
     /**
      * 创建人
@@ -50,20 +52,5 @@ public interface ObjectBodyEntityDefiner {
     LocalDateTime getCreateTime();
 
     void setCreateTime(LocalDateTime createTime);
-
-
-    /**
-     * 更新人
-     */
-    String getUpdateUser();
-
-    void setUpdateUser(String updateUser);
-
-    /**
-     * 更新时间
-     */
-    LocalDateTime getUpdateTime();
-
-    void setUpdateTime(LocalDateTime updateTime);
 
 }

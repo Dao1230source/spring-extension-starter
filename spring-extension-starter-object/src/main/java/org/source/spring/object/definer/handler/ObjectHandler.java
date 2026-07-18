@@ -1,11 +1,11 @@
 package org.source.spring.object.definer.handler;
 
-import org.source.spring.object.definer.entity.ObjectEntityDefiner;
+import org.source.spring.object.definer.entity.ObjectDefiner;
 
 import java.util.Collection;
 import java.util.List;
 
-public interface ObjectDbHandlerDefiner<O extends ObjectEntityDefiner> {
+public interface ObjectHandler<O extends ObjectDefiner> {
     /**
      * object
      */
