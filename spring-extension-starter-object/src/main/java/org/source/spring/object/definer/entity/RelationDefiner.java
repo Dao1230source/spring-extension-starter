@@ -1,11 +1,13 @@
 package org.source.spring.object.definer.entity;
 
-import org.source.spring.object.definer.enums.ObjectTypeDefiner;
+import org.source.spring.object.enums.RelationTypeEnum;
 
 import java.time.LocalDateTime;
 
 public interface RelationDefiner {
-
+    /**
+     * @return 数据库的自增ID
+     */
     Long getId();
 
     void setId(Long id);
@@ -17,9 +19,8 @@ public interface RelationDefiner {
 
     void setObjectId(String objectId);
 
-
     /**
-     * 类型 {@link ObjectTypeDefiner#getType()}
+     * 类型 {@link RelationTypeEnum}
      */
     Integer getType();
 

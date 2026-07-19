@@ -4,7 +4,9 @@ import java.time.LocalDateTime;
 
 public interface ObjectBodyDefiner {
 
-
+    /**
+     * @return 数据库的自增ID
+     */
     Long getId();
 
     void setId(Long id);

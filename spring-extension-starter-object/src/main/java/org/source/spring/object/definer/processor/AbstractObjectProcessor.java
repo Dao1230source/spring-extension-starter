@@ -13,10 +13,15 @@ import org.source.spring.object.definer.entity.ObjectDefiner;
 import org.source.spring.object.definer.entity.RelationDefiner;
 import org.source.spring.object.definer.enums.ObjectExceptionEnum;
 import org.source.spring.object.definer.enums.ObjectTypeDefiner;
+import org.source.spring.object.domain.RelationOperate;
+import org.source.spring.object.domain.RelationUniqueKey;
+import org.source.spring.object.enums.RelateOperateEnum;
+import org.source.spring.object.enums.RelationTypeEnum;
 import org.source.spring.object.enums.StatusEnum;
 import org.source.spring.object.mapper.ObjectElementMapper;
 import org.source.utility.assign.Assign;
 import org.source.utility.assign.InterruptStrategyEnum;
+import org.source.utility.enums.BaseExceptionEnum;
 import org.source.utility.tree.EnhanceTree;
 import org.source.utility.tree.define.IdExtend;
 import org.source.utility.tree.define.Node;
@@ -55,7 +60,7 @@ public abstract class AbstractObjectProcessor<
             this.merge(ds);
             this.save();
         } finally {
-            this.afterFinal();
+            this.after();
         }
     }
 
@@ -104,20 +109,13 @@ public abstract class AbstractObjectProcessor<
                     if (Objects.isNull(k.getObject())) {
                         return List.<ObjectElement<D>>of();
                     }
-                    ObjectElement<D> data = new ObjectElement<>();
-                    O object = k.getObject();
-                    data.setSpaceId(object.getSpaceId());
-                    data.setType(object.getType());
-                    D d = this.getObjectTypeHandler().getEmptyData(object.getType());
-                    d.setObjectId(k.getObjectId());
-                    data.setData(d);
                     if (Objects.isNull(k.getRelations())) {
-                        return List.of(data);
+                        return List.of(this.toObjectElement(k));
                     }
                     return Streams.map(k.getRelations(), r -> {
-                        @SuppressWarnings("unchecked")
-                        ObjectElement<D> copy = (ObjectElement<D>) ObjectElementMapper.INSTANCE.copy((ObjectElement<ObjectBodyData>) data);
-                        return copy;
+                        ObjectElement<D> objectElement = this.toObjectElement(k);
+                        objectElement.getData().setParentObjectId(r.getParentObjectId());
+                        return objectElement;
                     }).collect(Collectors.toList());
                 }).flatMap(Collection::stream).toList())
                 .parallel().interruptStrategy(InterruptStrategyEnum.ANY)
@@ -126,6 +124,86 @@ public abstract class AbstractObjectProcessor<
                 .toList();
         // 组成 tree 结构
         return EnhanceTree.of(new ObjectNode<D>()).add(fullData);
+    }
+
+    private ObjectElement<D> toObjectElement(ObjectTemp<O, R> temp) {
+        ObjectElement<D> data = new ObjectElement<>();
+        O object = temp.getObject();
+        data.setSpaceId(object.getSpaceId());
+        data.setType(object.getType());
+        D d = this.getObjectTypeHandler().getEmptyData(object.getType());
+        d.setObjectId(temp.getObjectId());
+        data.setData(d);
+        data.setData(d);
+        data.setSpaceId(data.getSpaceId());
+        data.setType(data.getType());
+        return data;
+    }
+
+    @EqualsAndHashCode(callSuper = true)
+    @Data
+    static class RelationTemp<O, R> extends RelationOperate {
+        private O object;
+        private O parentObject;
+        private R relation;
+
+        public void valid() {
+            BaseExceptionEnum.NOT_EMPTY.notEmpty(this.getObjectId(), "关联操作时objectId必须不为空");
+            BaseExceptionEnum.NOT_EMPTY.notEmpty(this.getParentObjectId(), "关联操作时parentObjectId必须不为空");
+            BaseExceptionEnum.NOT_NULL.nonNull(this.getRelateOperate(), "关联操作时relateOperate必须不为空");
+        }
+
+        public static <O, R> RelationTemp<O, R> of(RelationOperate relate) {
+            RelationTemp<O, R> temp = new RelationTemp<>();
+            temp.setObjectId(relate.getObjectId());
+            temp.setParentObjectId(relate.getParentObjectId());
+            temp.setSorted(relate.getSorted());
+            temp.setRelateOperate(relate.getRelateOperate());
+            temp.valid();
+            return temp;
+        }
+    }
+
+    public void relationOperate(Collection<RelationOperate> relates) {
+        if (CollectionUtils.isEmpty(relates)) {
+            return;
+        }
+        List<RelationTemp<O, R>> relateTempList = Assign.build(relates)
+                .<RelationTemp<O, R>>cast(RelationTemp::of)
+                .name("查询objectId和parentObjectId对应的Object记录")
+                .addAcquire(this.getObjectHandler()::findObjects, O::getObjectId)
+                .addAction(RelationTemp::getObjectId)
+                .addAssemble(RelationTemp::setObject)
+                .backAcquire()
+                .addAction(RelationTemp::getParentObjectId)
+                .addAssemble(RelationTemp::setParentObject)
+                .backAcquire().backAssign()
+                .addBranch(k -> Objects.nonNull(k.getObject()) && Objects.nonNull(k.getParentObject()))
+                .name("查询需要删除的Relation记录")
+                .addAcquire(this.getRelationHandler()::findByRelateUniqueKeys, RelationUniqueKey::of)
+                .addAction(RelationUniqueKey::of)
+                .addAssemble(RelationTemp::setRelation)
+                .backAcquire()
+                .afterProcessor((e, kt) -> {
+                    if (Objects.nonNull(e.getRelation())) {
+                        BaseExceptionEnum.CIRCULAR_REFERENCE_EXCEPTION.isTrue(Objects.equals(e.getRelation().getObjectId() + e.getRelation().getParentObjectId(), e.getParentObjectId() + e.getObjectId()),
+                                "已有关联关系objectId:{},parentObjectId:{}，不可循环关联", e.getRelation().getObjectId(), e.getRelation().getParentObjectId());
+                    }
+                })
+                .backAssign().backUppermost()
+                .invoke().toList();
+        List<R> toAddList = Streams.retain(relateTempList, k -> RelateOperateEnum.ADD.name().equals(k.getRelateOperate())
+                        && Objects.nonNull(k.getObject()) && Objects.nonNull(k.getParentObject()))
+                .map(this::relateDataToRelation).toList();
+        if (CollectionUtils.isNotEmpty(toAddList)) {
+            this.getRelationHandler().saveRelations(toAddList);
+        }
+        List<Long> toDeleteList = Streams.retain(relateTempList, k -> Objects.nonNull(k.getRelation()))
+                .map(RelationTemp::getRelation)
+                .map(R::getId).toList();
+        if (CollectionUtils.isNotEmpty(toDeleteList)) {
+            this.getRelationHandler().removeByRelationIds(toDeleteList);
+        }
     }
 
     /**
@@ -254,7 +332,11 @@ public abstract class AbstractObjectProcessor<
     public void beforePersist() {
     }
 
-    public void afterFinal() {
+    public void after() {
+        this.clear();
+    }
+
+    public void clear() {
         this.getObjectTree().clear();
     }
 
@@ -287,7 +369,7 @@ public abstract class AbstractObjectProcessor<
                 objectBodyList.add(this.valueNodeToObjectBodyEntity(n));
             }
             if (StatusEnum.updateRelation(n.getStatus())) {
-                relationList.addAll(this.data2RelationEntity(n));
+                relationList.addAll(this.dataToRelation(n));
             }
         });
         return new ObjectNodesToEntitiesTemp<>(objectList, objectBodyList, relationList);
@@ -329,17 +411,21 @@ public abstract class AbstractObjectProcessor<
 
     }
 
-    public List<R> data2RelationEntity(ObjectNode<D> node) {
+    public List<R> dataToRelation(ObjectNode<D> node) {
         ObjectElement<D> element = node.getElementOrElseThrow();
         return node.findParents().stream().filter(p -> Objects.nonNull(p.getElement())).map(p -> {
             String parentObjectId = p.getElement().getId();
             R relation = this.getRelationHandler().newRelationEntity();
             relation.setCreateUser(this.getObjectUidHandler().getUserId());
             relation.setCreateTime(LocalDateTime.now());
+            Integer type;
             Map<String, Integer> relationTypeMap = element.getData().getRelationTypeMap();
             if (Objects.nonNull(relationTypeMap) && !relationTypeMap.isEmpty()) {
-                relation.setType(relationTypeMap.get(parentObjectId));
+                type = relationTypeMap.get(parentObjectId);
+            } else {
+                type = RelationTypeEnum.SUP_AND_SUB.getType();
             }
+            relation.setType(type);
             relation.setParentObjectId(parentObjectId);
             relation.setObjectId(element.getId());
             relation.setSorted(element.getData().getSorted());
@@ -350,6 +436,19 @@ public abstract class AbstractObjectProcessor<
 
     public void extendRelationEntity(R entity, ObjectElement<D> element) {
 
+    }
+
+    public R relateDataToRelation(RelationOperate operate) {
+        R relation = this.getRelationHandler().newRelationEntity();
+        relation.setCreateUser(this.getObjectUidHandler().getUserId());
+        relation.setCreateTime(LocalDateTime.now());
+        if (Objects.isNull(operate.getType())) {
+            relation.setType(RelationTypeEnum.SUP_AND_SUB.getType());
+        }
+        relation.setParentObjectId(operate.getParentObjectId());
+        relation.setObjectId(operate.getObjectId());
+        relation.setSorted(operate.getSorted());
+        return relation;
     }
 
     public void afterPersist() {
@@ -467,7 +566,7 @@ public abstract class AbstractObjectProcessor<
                 // 获取 relation 数据依赖于先获取到 object 数据
                 .dependBy()
                 // 根据 objectId 查询 relations ，按objectId 分组，因为一个对象可能有多个父级
-                .addAcquireOutGroup(this.getRelationHandler()::findRelationsByObjectIds, R::getObjectId)
+                .addAcquireOutGroup(this.getRelationHandler()::findByObjectIds, R::getObjectId)
                 .name("get relation by objectId")
                 .addAction(FindEntityAndToObjectElementTemp::getObjectId)
                 .addAssemble(FindEntityAndToObjectElementTemp::setRelations)
@@ -585,7 +684,7 @@ public abstract class AbstractObjectProcessor<
 
     protected Function<Collection<String>, Map<String, List<R>>> belongIdRelationsGroupMapping() {
         return ks -> {
-            List<R> relations = this.getRelationHandler().findRelationsByParentObjectIds(ks);
+            List<R> relations = this.getRelationHandler().findByParentObjectIds(ks);
             return Streams.groupBy(relations, R::getParentObjectId);
         };
     }

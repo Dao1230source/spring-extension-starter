@@ -13,10 +13,8 @@ public class ObjectBodyData {
     private String name;
     private String sorted;
 
-    @JsonIgnore
     @EqualsAndHashCode.Exclude
     private String objectId;
-    @JsonIgnore
     @EqualsAndHashCode.Exclude
     private @Nullable String parentObjectId;
     /**

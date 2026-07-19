@@ -13,19 +13,12 @@ public enum RelationTypeEnum implements RelationTypeDefiner {
     /**
      * 上下级
      */
-    SUP_AND_SUB(RelationScopeEnum.HIERARCHY, 1, "上下级"),
+    SUP_AND_SUB(1, "上下级"),
     /**
      * 如文件夹
      */
-    FOLDER(RelationScopeEnum.HIERARCHY, 2, "文件夹"),
+    FOLDER(2, "文件夹"),
     ;
-    private final RelationScopeEnum scopeEnum;
     private final Integer type;
     private final String desc;
-
-
-    @Override
-    public Integer getScope() {
-        return scopeEnum.getScope();
-    }
 }

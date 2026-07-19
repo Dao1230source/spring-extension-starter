@@ -77,7 +77,7 @@ public abstract class AbstractObjectTypeHandler<D extends ObjectBodyData, T exte
             this.typeProcessorMap().forEach((k, processor) ->
                     typeObjectRemoveMap.put(k, objectIds -> {
                         processor.getObjectHandler().removeObjects(objectIds);
-                        processor.getRelationHandler().removeRelations(objectIds);
+                        processor.getRelationHandler().removeByObjectIds(objectIds);
                         processor.getObjectBodyHandler().removeObjectBodies(objectIds);
                     }));
         }

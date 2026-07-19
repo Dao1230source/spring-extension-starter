@@ -7,6 +7,9 @@ import org.source.spring.object.definer.enums.ObjectTypeDefiner;
  */
 public interface ObjectDefiner {
 
+    /**
+     * @return 数据库的自增ID
+     */
     Long getId();
 
     void setId(Long id);
