@@ -11,13 +11,13 @@ import org.source.spring.object.definer.enums.RelationTypeDefiner;
 @Getter
 public enum RelationTypeEnum implements RelationTypeDefiner {
     /**
-     * 上下级
+     * 关联
      */
-    SUP_AND_SUB(1, "上下级"),
+    LINKS(1, "关联"),
     /**
-     * 如文件夹
+     * 组成部分
      */
-    FOLDER(2, "文件夹"),
+    PARTS(2, "组成部分"),
     ;
     private final Integer type;
     private final String desc;

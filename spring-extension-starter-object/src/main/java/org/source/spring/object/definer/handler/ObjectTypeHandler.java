@@ -1,69 +1,18 @@
 package org.source.spring.object.definer.handler;
 
-import org.source.spring.object.ObjectBodyData;
-import org.source.spring.object.ObjectElement;
-import org.source.spring.object.definer.enums.ObjectExceptionEnum;
+import org.source.spring.object.BodyData;
+import org.source.spring.object.definer.entity.BodyDefiner;
+import org.source.spring.object.definer.entity.ObjectDefiner;
+import org.source.spring.object.definer.entity.RelationDefiner;
 import org.source.spring.object.definer.enums.ObjectTypeDefiner;
-import org.source.spring.object.definer.processor.ObjectProcessor;
-import org.source.utility.assign.Assign;
-import org.source.utility.enums.BaseExceptionEnum;
+import org.source.spring.object.definer.processor.BodyProcessor;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.List;
 
-public interface ObjectTypeHandler<D extends ObjectBodyData, T extends ObjectTypeDefiner<D>> {
+public interface ObjectTypeHandler<D extends BodyData, T extends ObjectTypeDefiner<D>> {
 
-    Map<Integer, T> typeMap();
+    List<T> allObjectTypes();
 
-    Map<Class<? extends D>, T> classTypeMap();
-
-    Map<Class<? extends ObjectProcessor<?, ?, ?, D, T>>, ObjectProcessor<?, ?, ?, D, T>> classProcessorMap();
-
-    <P extends ObjectProcessor<?, ?, ?, D, T>> Map<Integer, P> typeProcessorMap();
-
-    Map<Integer, Function<Collection<ObjectElement<D>>, Assign<ObjectElement<D>>>> typeAssignerMap();
-
-    Map<Integer, Consumer<Collection<String>>> typeObjectRemoveMap();
-
-    /**
-     * @return 无参构造器
-     */
-    Map<Integer, Constructor<? extends D>> typeNoArgConstructorMap();
-
-    /**
-     * obtain type for object value
-     */
-    default T getObjectType(D d) {
-        T type = this.classTypeMap().get(d.getClass());
-        if (Objects.isNull(type)) {
-            throw ObjectExceptionEnum.OBJECT_VALUE_CLASS_NOT_DEFINED.newException("class:{}", d.getClass());
-        }
-        return type;
-    }
-
-    /**
-     * convert entity to value
-     */
-    default T getObjectType(Integer type) {
-        T objectType = this.typeMap().get(type);
-        if (Objects.isNull(objectType)) {
-            throw ObjectExceptionEnum.OBJECT_TYPE_NOT_DEFINED.newException("type:{}", type);
-        }
-        return objectType;
-    }
-
-    default D getEmptyData(Integer type) {
-        Constructor<? extends D> dConstructor = this.typeNoArgConstructorMap().get(type);
-        try {
-            return dConstructor.newInstance();
-        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw BaseExceptionEnum.NO_ARGS_CONSTRUCTOR_NEW_INSTANCE_ERROR.newException("type:{}", type);
-        }
-    }
-
+    <O extends ObjectDefiner, B extends BodyDefiner, R extends RelationDefiner, P extends BodyProcessor<O, B, R, D, T>>
+    P getSingleProcessor(Class<P> pClass);
 }

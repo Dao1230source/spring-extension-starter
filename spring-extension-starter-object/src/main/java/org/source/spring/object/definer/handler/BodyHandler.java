@@ -1,18 +1,18 @@
 package org.source.spring.object.definer.handler;
 
-import org.source.spring.object.definer.entity.ObjectBodyDefiner;
+import org.source.spring.object.definer.entity.BodyDefiner;
 
 import java.util.Collection;
 import java.util.List;
 
-public interface ObjectBodyHandler<B extends ObjectBodyDefiner> {
+public interface BodyHandler<B extends BodyDefiner> {
 
     /**
      * object body
      */
     B newObjectBodyEntity();
 
-    List<B> findObjectBodies(Collection<String> objectIds);
+    List<B> find(Collection<String> objectIds);
 
     /**
      * 通常 object body 的唯一键是 objectId，但实际业务新增时中可能会使用其他唯一键来查询是否已存在数据
@@ -23,8 +23,8 @@ public interface ObjectBodyHandler<B extends ObjectBodyDefiner> {
      */
     List<B> findObjectBodyByDataIds(Collection<String> ks);
 
-    void saveObjectBodies(Collection<B> objectBodies);
+    void save(Collection<B> objectBodies);
 
-    void removeObjectBodies(Collection<String> objectIds);
+    void removeByObjectIds(Collection<String> objectIds);
 
 }

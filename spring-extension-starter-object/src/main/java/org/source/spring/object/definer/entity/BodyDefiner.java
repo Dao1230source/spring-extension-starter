@@ -2,7 +2,7 @@ package org.source.spring.object.definer.entity;
 
 import java.time.LocalDateTime;
 
-public interface ObjectBodyDefiner {
+public interface BodyDefiner {
 
     /**
      * @return 数据库的自增ID

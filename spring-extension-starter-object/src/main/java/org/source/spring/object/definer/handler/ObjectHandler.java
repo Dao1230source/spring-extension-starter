@@ -9,11 +9,11 @@ public interface ObjectHandler<O extends ObjectDefiner> {
     /**
      * object
      */
-    O newObjectEntity();
+    O newObject();
 
-    List<O> findObjects(Collection<String> objectIds);
+    List<O> find(Collection<String> objectIds);
 
-    void saveObjects(Collection<O> objects);
+    void save(Collection<O> objects);
 
     /**
      * 逻辑删除
@@ -21,12 +21,12 @@ public interface ObjectHandler<O extends ObjectDefiner> {
      *
      * @param objectIds objectIds
      */
-    void deleteObjects(Collection<String> objectIds);
+    void delete(Collection<String> objectIds);
 
     /**
      * 物理删除
      *
      * @param objectIds objectIds
      */
-    void removeObjects(Collection<String> objectIds);
+    void remove(Collection<String> objectIds);
 }

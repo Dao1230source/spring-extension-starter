@@ -10,7 +10,7 @@ public interface RelationHandler<R extends RelationDefiner> {
     /**
      * relation
      */
-    R newRelationEntity();
+    R newRelation();
 
     List<R> findByObjectIds(Collection<String> objectIds);
 
@@ -19,6 +19,8 @@ public interface RelationHandler<R extends RelationDefiner> {
     void saveRelations(Collection<R> relations);
 
     void removeByObjectIds(Collection<String> objectIds);
+
+    void removeByParentObjectIds(Collection<String> objectIds);
 
     List<R> findByRelateUniqueKeys(Collection<RelationUniqueKey> relationUniqueKeys);
 

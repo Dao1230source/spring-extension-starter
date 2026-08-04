@@ -1,4 +1,4 @@
-package org.source.spring.object.definer.enums;
+package org.source.spring.object.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,7 +11,7 @@ public enum ObjectExceptionEnum implements EnumProcessor<BaseException> {
     /**
      * object
      */
-    OBJECT_MERGE_ERROR("AbstractObjectProcessor.merge() error"),
+    OBJECT_SAVE_ERROR("AbstractObjectProcessor.merge() error"),
     OBJECT_VALUE_CLASS_NOT_DEFINED("object value class not defined"),
     OBJECT_TYPE_NOT_DEFINED("object type not defined"),
     OBJECT_CANNOT_FIND_VALUE("cannot find value by id"),

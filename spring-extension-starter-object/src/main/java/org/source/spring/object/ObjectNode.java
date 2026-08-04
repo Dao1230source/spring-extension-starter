@@ -10,7 +10,7 @@ import java.util.Objects;
 
 @Setter
 @Getter
-public class ObjectNode<D extends ObjectBodyData> extends EnhanceNode<String, ObjectElement<D>, ObjectNode<D>> {
+public class ObjectNode<D extends BodyData> extends EnhanceNode<String, ObjectElement<D>, ObjectNode<D>> {
     private @Nullable StatusEnum status;
 
     @Override

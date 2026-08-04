@@ -3,7 +3,6 @@ package org.source.spring.object;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.jspecify.annotations.Nullable;
-import org.source.utility.tree.define.Element;
 import org.source.utility.tree.define.EnhanceElement;
 
 @EqualsAndHashCode(callSuper = false)
@@ -11,7 +10,7 @@ import org.source.utility.tree.define.EnhanceElement;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ObjectElement<D extends ObjectBodyData> extends EnhanceElement<String> {
+public class ObjectElement<D extends BodyData> extends EnhanceElement<String> {
 
     /**
      * 值
@@ -42,6 +41,6 @@ public class ObjectElement<D extends ObjectBodyData> extends EnhanceElement<Stri
 
     @Override
     public int compareTo(@Nullable EnhanceElement<String> o) {
-        return Element.comparator(this, (ObjectElement<D>) o, ObjectElement::getId);
+        return EnhanceElement.comparator(this, (ObjectElement<D>) o, ObjectElement::getId);
     }
 }
