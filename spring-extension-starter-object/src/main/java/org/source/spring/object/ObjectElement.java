@@ -17,16 +17,6 @@ public class ObjectElement<D extends BodyData> extends EnhanceElement<String> {
      */
     private D data;
 
-    /**
-     * spaceId
-     */
-    private String spaceId;
-
-    /**
-     * 对象类型
-     */
-    private Integer type;
-
     @JsonIgnore
     @Override
     public String getId() {

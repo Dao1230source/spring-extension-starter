@@ -1,8 +1,7 @@
 package org.source.spring.object.definer.processor;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.source.spring.object.BodyData;
 import org.source.spring.object.ObjectDispatcher;
 import org.source.spring.object.ObjectElement;
@@ -14,15 +13,14 @@ import org.source.spring.object.definer.enums.ObjectTypeDefiner;
 import org.source.spring.object.definer.handler.ObjectHandler;
 import org.source.spring.object.definer.handler.RelationHandler;
 import org.source.spring.object.domain.ObjectDetail;
-import org.source.spring.object.domain.RelationOperate;
-import org.source.spring.object.domain.RelationUniqueKey;
-import org.source.spring.object.enums.RelateOperateEnum;
-import org.source.spring.object.enums.RelationTypeEnum;
+import org.source.spring.object.domain.RelateResult;
+import org.source.spring.object.domain.RelationKey;
+import org.source.spring.object.domain.Relations;
 import org.source.utility.assign.Assign;
 import org.source.utility.assign.InterruptStrategyEnum;
-import org.source.utility.enums.BaseExceptionEnum;
 import org.source.utility.tree.EnhanceTree;
 import org.source.utility.utils.Streams;
+import org.source.utility.utils.Strings;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -149,82 +147,91 @@ public interface ObjectProcessor<O extends ObjectDefiner, R extends RelationDefi
         return getDetail(List.of(objectId)).stream().findFirst().orElse(null);
     }
 
-    @EqualsAndHashCode(callSuper = true)
-    @Data
-    class RelationTemp<O, R> extends RelationOperate {
-        private O object;
-        private O parentObject;
-        private R relation;
-
-        public void valid() {
-            BaseExceptionEnum.NOT_EMPTY.notEmpty(this.getObjectId(), "关联操作时objectId必须不为空");
-            BaseExceptionEnum.NOT_EMPTY.notEmpty(this.getParentObjectId(), "关联操作时parentObjectId必须不为空");
-            BaseExceptionEnum.NOT_NULL.nonNull(this.getRelateOperate(), "关联操作时relateOperate必须不为空");
-        }
-
-        public static <O, R> RelationTemp<O, R> of(RelationOperate relate) {
-            RelationTemp<O, R> temp = new RelationTemp<>();
-            temp.setObjectId(relate.getObjectId());
-            temp.setParentObjectId(relate.getParentObjectId());
-            temp.setSorted(relate.getSorted());
-            temp.setRelateOperate(relate.getRelateOperate());
-            temp.valid();
-            return temp;
-        }
-    }
-
-    default void saveRelation(Collection<RelationOperate> relates) {
+    /**
+     * 如果有不能关联的关系，返回，不操作其他数据
+     *
+     * @param relates Relations
+     * @return 不能关联的数据
+     */
+    default List<RelateResult<R>> relate(Collection<Relations> relates) {
         if (CollectionUtils.isEmpty(relates)) {
-            return;
+            return List.of();
         }
-        List<RelationTemp<O, R>> relateTempList = Assign.build(relates)
-                .<RelationTemp<O, R>>cast(RelationTemp::of)
-                .name("查询objectId和parentObjectId对应的Object记录")
-                .addAcquire(this.getObjectHandler()::find, O::getObjectId)
-                .addAction(RelationTemp::getObjectId)
-                .addAssemble(RelationTemp::setObject)
-                .backAcquire()
-                .addAction(RelationTemp::getParentObjectId)
-                .addAssemble(RelationTemp::setParentObject)
-                .backAcquire().backAssign()
-                .addBranch(k -> Objects.nonNull(k.getObject()) && Objects.nonNull(k.getParentObject()))
-                .name("查询需要删除的Relation记录")
-                .addAcquire(this.getRelationHandler()::findByRelateUniqueKeys, RelationUniqueKey::of)
-                .addAction(RelationUniqueKey::of)
-                .addAssemble(RelationTemp::setRelation)
-                .backAcquire()
-                .afterProcessor((e, kt) -> {
-                    if (Objects.nonNull(e.getRelation())) {
-                        BaseExceptionEnum.CIRCULAR_REFERENCE_EXCEPTION.isTrue(Objects.equals(e.getRelation().getObjectId() + e.getRelation().getParentObjectId(), e.getParentObjectId() + e.getObjectId()),
-                                "已有关联关系objectId:{},parentObjectId:{}，不可循环关联", e.getRelation().getObjectId(), e.getRelation().getParentObjectId());
+        List<RelateResult<R>> relateResultList = Assign.build(relates)
+                .cast(RelateResult::<R>of)
+                .peek(r -> {
+                    r.setCanRelate(true);
+                    if (Objects.isNull(r.getType())) {
+                        r.setType(RelationDefiner.DEFAULT_TYPE);
+                    }
+                    if (StringUtils.isEmpty(r.getSort())) {
+                        r.setSort(RelationDefiner.DEFAULT_SORT);
                     }
                 })
-                .backAssign().backUppermost()
+                .name("校验relation是否存在")
+                .addAcquire(this.getRelationHandler()::findByRelateUniqueKeys, RelationKey::of)
+                .addAction(RelationKey::of)
+                .backAcquire()
+                .afterProcessor((e, kt) -> {
+                    R r = kt.get(RelationKey.of(e));
+                    if (e.isAdd()) {
+                        if (Objects.nonNull(r)) {
+                            e.setCanRelate(false);
+                            e.setRelateResult(Strings.format("已存在关联关系：{}，不可重复新增", e.toPlainString()));
+                        } else {
+                            e.setRelation(this.relateDataToRelation(e));
+                        }
+                    }
+                    if (e.isDelete()) {
+                        if (Objects.isNull(r)) {
+                            e.setRelateResult(Strings.format("不存在关联关系：{}，无需删除", e.toPlainString()));
+                        } else {
+                            e.setRelation(r);
+                        }
+                    }
+                }).backAssign()
+                .dependBy()
+                .name("校验relation是否相互循环")
+                .addBranch(k -> k.isAdd() && k.isCanRelate())
+                .name("只校验新增且可关联的数据")
+                .addAcquire(this.getRelationHandler()::findByRelateUniqueKeys, RelationKey::of)
+                .addAction(k -> RelationKey.of(k).reversed())
+                .backAcquire()
+                .afterProcessor((e, kt) -> {
+                    RelationKey key = RelationKey.of(e);
+                    RelationKey reversedKey = key.reversed();
+                    R r = kt.get(reversedKey);
+                    if (Objects.nonNull(r)) {
+                        e.setRelateResult(Strings.format("已存在关联关系：{},不可相互循环关联：{}", reversedKey.toPlainString(), key.toPlainString()));
+                    }
+                }).backAssign()
+                .backUppermost()
                 .invoke().toList();
-        List<R> toAddList = Streams.retain(relateTempList, k -> RelateOperateEnum.ADD.name().equals(k.getRelateOperate())
-                        && Objects.nonNull(k.getObject()) && Objects.nonNull(k.getParentObject()))
-                .map(this::relateDataToRelation).toList();
+        // 如果有不能关联的，返回
+        List<RelateResult<R>> cannotRelateList = Streams.retain(relateResultList, k -> !k.isCanRelate()).toList();
+        if (CollectionUtils.isNotEmpty(cannotRelateList)) {
+            return cannotRelateList;
+        }
+        List<R> toAddList = Streams.retain(relateResultList, k -> k.isAdd() && k.isCanRelate()).map(this::relateDataToRelation).toList();
         if (CollectionUtils.isNotEmpty(toAddList)) {
             this.getRelationHandler().saveRelations(toAddList);
         }
-        List<Long> toDeleteList = Streams.retain(relateTempList, k -> Objects.nonNull(k.getRelation()))
-                .map(RelationTemp::getRelation)
-                .map(R::getId).toList();
+        List<Long> toDeleteList = Streams.retain(relateResultList, k -> k.isDelete() && k.isCanRelate())
+                .map(RelateResult::getRelation).map(R::getId).toList();
         if (CollectionUtils.isNotEmpty(toDeleteList)) {
             this.getRelationHandler().removeByRelationIds(toDeleteList);
         }
+        return List.of();
     }
 
-    default R relateDataToRelation(RelationOperate operate) {
+    default R relateDataToRelation(Relations relations) {
         R relation = this.getRelationHandler().newRelation();
+        relation.setParentObjectId(relations.getParentObjectId());
+        relation.setObjectId(relations.getObjectId());
+        relation.setType(relations.getType());
+        relation.setSort(relations.getSort());
         relation.setCreateUser(this.getUserId());
         relation.setCreateTime(LocalDateTime.now());
-        if (Objects.isNull(operate.getType())) {
-            relation.setType(RelationTypeEnum.LINKS.getType());
-        }
-        relation.setParentObjectId(operate.getParentObjectId());
-        relation.setObjectId(operate.getObjectId());
-        relation.setSorted(operate.getSorted());
         return relation;
     }
 

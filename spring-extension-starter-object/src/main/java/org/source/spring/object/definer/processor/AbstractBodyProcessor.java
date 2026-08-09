@@ -1,5 +1,6 @@
 package org.source.spring.object.definer.processor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.source.spring.object.BodyData;
@@ -12,6 +13,7 @@ import org.source.spring.object.definer.enums.ObjectTypeDefiner;
 import org.source.utility.tree.EnhanceTree;
 import org.source.utility.tree.define.IdDefiner;
 import org.source.utility.tree.define.Node;
+import org.source.utility.utils.Jsons;
 
 import java.util.function.Function;
 
@@ -21,6 +23,7 @@ public abstract class AbstractBodyProcessor<
         R extends RelationDefiner,
         D extends BodyData,
         T extends ObjectTypeDefiner<D>> implements BodyProcessor<O, B, R, D, T> {
+    private static final ObjectMapper BODY_SAVE_MAPPER = Jsons.getInstance().copy();
     @Getter
     private final EnhanceTree<String, ObjectElement<D>, ObjectNode<D>> objectTree = EnhanceTree.of(new ObjectNode<>());
 
@@ -29,4 +32,8 @@ public abstract class AbstractBodyProcessor<
     @Getter
     protected final IdDefiner<String, ObjectElement<D>, ObjectNode<D>> dataIdDefiner = new IdDefiner<>("data", objectIdGetter, objectParentIdGetter);
 
+    @Override
+    public ObjectMapper getBodySaveMapper() {
+        return BODY_SAVE_MAPPER;
+    }
 }

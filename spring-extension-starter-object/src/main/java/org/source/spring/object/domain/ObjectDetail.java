@@ -31,22 +31,22 @@ public class ObjectDetail<
     private @Nullable Collection<R> byParentObjectIdRelations;
 
     public ObjectElement<D> toObjectElement() {
-        if (Objects.isNull(this.object)) {
+        if (Objects.isNull(this.data)) {
             return null;
         }
         ObjectElement<D> objectElement = new ObjectElement<>();
         if (Objects.nonNull(object)) {
+            data.setObjectId(object.getObjectId());
             ObjectTypeDefiner<D> objectType = ObjectDispatcher.getByType(object.getType());
-            objectElement.setType(objectType.getType());
+            data.setType(objectType.getType());
+            data.setSpaceId(this.object.getSpaceId());
         }
-        if (Objects.nonNull(data)) {
-            if (Objects.nonNull(relation)) {
-                data.setParentObjectId(relation.getParentObjectId());
-                data.setRelationType(relation.getType());
-                data.setSorted(relation.getSorted());
-            }
-            objectElement.setData(data);
+        if (Objects.nonNull(relation)) {
+            data.setParentObjectId(relation.getParentObjectId());
+            data.setRelationType(relation.getType());
+            data.setSort(relation.getSort());
         }
+        objectElement.setData(data);
         return objectElement;
     }
 }

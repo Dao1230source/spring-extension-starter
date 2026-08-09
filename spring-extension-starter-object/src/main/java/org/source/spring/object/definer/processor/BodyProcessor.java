@@ -1,5 +1,11 @@
 package org.source.spring.object.definer.processor;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
@@ -30,10 +36,7 @@ import org.source.utility.utils.Jsons;
 import org.source.utility.utils.Streams;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public interface BodyProcessor<
         O extends ObjectDefiner,
@@ -71,6 +74,13 @@ public interface BodyProcessor<
     }
 
     /**
+     * 处理过程中 BodyData 携带了许多不必要的数据，序列化保存到 body 表 data 字段时，需要特殊处理忽略部分字段
+     *
+     * @return ObjectMapper
+     */
+    ObjectMapper getBodySaveMapper();
+
+    /**
      * 查询详情关系，简单类型详情只需要查询objectBody本身即可，但复杂类型比如列表。需要查询下属的对象组合一起作为详情
      *
      * @param objectIds objectIds
@@ -92,7 +102,7 @@ public interface BodyProcessor<
         } catch (Exception e) {
             this.getObjectTree().clear();
             log.error("AbstractObjectProcessor.save error", e);
-            throw ObjectExceptionEnum.OBJECT_SAVE_ERROR.newException(e);
+            throw ObjectExceptionEnum.SAVE_ERROR.newException(e);
         } finally {
             this.after();
         }
@@ -255,7 +265,7 @@ public interface BodyProcessor<
                             r.setObjectId(t.getObjectId());
                             r.setParentObjectId(t.getParentObjectId());
                             r.setType(RelationTypeEnum.LINKS.getType());
-                            r.setSorted("1");
+                            r.setSort("1");
                             detail.setRelation(r);
                         }
                         objectDetails.add(detail);
@@ -277,7 +287,7 @@ public interface BodyProcessor<
 
     default D bodyToData(O object, B body) {
         ObjectTypeDefiner<D> objectType = ObjectDispatcher.getByType(object.getType());
-        D d = Jsons.obj(body.getValue(), objectType.getDataClass());
+        D d = Jsons.obj(body.getData(), objectType.getDataClass());
         d.setObjectId(object.getObjectId());
         d.setName(body.getName());
         return d;
@@ -302,7 +312,6 @@ public interface BodyProcessor<
 
     default ObjectElement<D> dataToObjectElement(D data) {
         ObjectElement<D> objectElement = new ObjectElement<>();
-        objectElement.setType(ObjectDispatcher.getByClass(data.getClass()).getType());
         objectElement.setData(data);
         this.dataToObjectElementAdditional(objectElement, data);
         return objectElement;
@@ -393,10 +402,17 @@ public interface BodyProcessor<
     default O getObjectFromNode(ObjectNode<D> node) {
         O o = newObject();
         ObjectElement<D> element = node.getElementOrElseThrow();
+        D data = element.getData();
+        if (StringUtils.isEmpty(data.getSpaceId())) {
+            data.setSpaceId(this.getSpaceId());
+        }
+        if (Objects.isNull(data.getType())) {
+            data.setType(ObjectDispatcher.getByClass(data.getClass()).getType());
+        }
         o.setSpaceId(this.getSpaceId());
         o.setDeleted(Boolean.FALSE);
-        o.setObjectId(element.getId());
-        o.setType(element.getType());
+        o.setObjectId(data.getObjectId());
+        o.setType(data.getType());
         this.objectAdditional(o, element);
         return o;
     }
@@ -409,17 +425,62 @@ public interface BodyProcessor<
     }
 
     default B getBodyFromNode(ObjectNode<D> node) {
-        B objectBody = this.newBody();
+        B body = this.newBody();
         ObjectElement<D> element = node.getElementOrElseThrow();
-        objectBody.setCreateUser(this.getUserId());
-        objectBody.setCreateTime(LocalDateTime.now());
-        objectBody.setUpdateUser(this.getUserId());
-        objectBody.setUpdateTime(LocalDateTime.now());
-        objectBody.setObjectId(element.getId());
-        objectBody.setName(element.getData().getName());
-        objectBody.setValue(Jsons.str(element.getData()));
-        this.bodyAdditional(objectBody, element);
-        return objectBody;
+        D data = element.getData();
+        if (StringUtils.isEmpty(data.getCreateUser())) {
+            data.setCreateUser(this.getUserId());
+        }
+        if (Objects.isNull(data.getCreateTime())) {
+            data.setCreateTime(LocalDateTime.now());
+        }
+        if (StringUtils.isEmpty(data.getUpdateUser())) {
+            data.setUpdateUser(this.getUserId());
+        }
+        if (Objects.isNull(data.getUpdateTime())) {
+            data.setUpdateTime(LocalDateTime.now());
+        }
+        body.setObjectId(element.getId());
+        body.setName(element.getData().getName());
+        body.setCreateUser(data.getCreateUser());
+        body.setCreateTime(data.getCreateTime());
+        body.setUpdateUser(data.getUpdateUser());
+        body.setUpdateTime(data.getUpdateTime());
+        body.setData(this.bodyDataSerialize(data));
+        this.bodyAdditional(body, element);
+        return body;
+    }
+
+    /**
+     * bodyData 序列化为String 保存
+     *
+     * @param d data
+     * @return string
+     */
+    default String bodyDataSerialize(D d) {
+        ObjectMapper bodySaveMapper = this.getBodySaveMapper();
+        bodySaveMapper.addMixIn(BodyData.class, SaveBodyFilterMixIn.class);
+        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.serializeAllExcept(this.bodyDataSerializeIgnoreFields());
+        FilterProvider filters = new SimpleFilterProvider().addFilter("saveBodyFilter", filter);
+        try {
+            return bodySaveMapper.writer(filters).writeValueAsString(d);
+        } catch (JsonProcessingException e) {
+            throw BaseExceptionEnum.JSON_STRING_2_OBJECT_EXCEPTION.newException(e);
+        }
+    }
+
+    @JsonFilter("saveBodyFilter")
+    interface SaveBodyFilterMixIn {
+    }
+
+    /**
+     * bodyData 序列化为String 时忽略的字段
+     *
+     * @return set
+     */
+    default Set<String> bodyDataSerializeIgnoreFields() {
+        return Set.of("objectId", "spaceId", "type", "parentObjectId", "sorted", "relationType",
+                "createUser", "createTime", "updateUser", "updateTime");
     }
 
     default void bodyAdditional(B entity, ObjectElement<D> element) {
@@ -427,15 +488,22 @@ public interface BodyProcessor<
 
     default List<R> getRelationsFromNode(ObjectNode<D> node) {
         ObjectElement<D> element = node.getElementOrElseThrow();
-        return node.findParents().stream().filter(p -> Objects.nonNull(p.getElement())).map(p -> {
-            String parentObjectId = p.getElement().getId();
+        return node.findParents().stream().filter(p -> Objects.nonNull(p.getElement())).map(n -> {
+            D data = element.getData();
+            data.setParentObjectId(n.getElement().getId());
+            if (Objects.isNull(data.getRelationType())) {
+                data.setRelationType(RelationDefiner.DEFAULT_TYPE);
+            }
+            if (StringUtils.isEmpty(data.getSort())) {
+                data.setSort(RelationDefiner.DEFAULT_SORT);
+            }
             R relation = this.newRelation();
             relation.setCreateUser(this.getUserId());
             relation.setCreateTime(LocalDateTime.now());
-            relation.setType(Objects.requireNonNullElse(element.getData().getRelationType(), RelationTypeEnum.LINKS.getType()));
-            relation.setParentObjectId(parentObjectId);
-            relation.setObjectId(element.getId());
-            relation.setSorted(element.getData().getSorted());
+            relation.setType(data.getRelationType());
+            relation.setParentObjectId(data.getParentObjectId());
+            relation.setObjectId(data.getObjectId());
+            relation.setSort(data.getSort());
             this.relationAdditional(relation, element);
             return relation;
         }).toList();
@@ -482,8 +550,12 @@ public interface BodyProcessor<
                 .addAcquire(ks -> this.getBodyHandler().find(ks), B::getObjectId)
                 .name("查询body，如果data已经存在，不查询").throwException()
                 .addAction(k -> Objects.nonNull(k.getData()) ? null : k.getObjectId())
-                .addAssemble((e, t) -> {
-                    D d = this.bodyToData(Objects.requireNonNull(e.getObject()), t);
+                .addAssemble((e, b) -> {
+                    D d = this.bodyToData(Objects.requireNonNull(e.getObject()), b);
+                    d.setCreateUser(b.getCreateUser());
+                    d.setCreateTime(b.getCreateTime());
+                    d.setUpdateUser(b.getUpdateUser());
+                    d.setUpdateTime(b.getUpdateTime());
                     e.setData(d);
                 })
                 .backAcquire().backAssign();

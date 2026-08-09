@@ -5,6 +5,10 @@ import org.source.spring.object.enums.RelationTypeEnum;
 import java.time.LocalDateTime;
 
 public interface RelationDefiner {
+    Integer DEFAULT_TYPE = RelationTypeEnum.LINKS.getType();
+
+    String DEFAULT_SORT = "0";
+
     /**
      * @return 数据库的自增ID
      */
@@ -36,9 +40,9 @@ public interface RelationDefiner {
     /**
      * 排序字段
      */
-    String getSorted();
+    String getSort();
 
-    void setSorted(String sorted);
+    void setSort(String sort);
 
     /**
      * 创建人

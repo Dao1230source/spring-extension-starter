@@ -35,9 +35,9 @@ public interface BodyDefiner {
      * <p>
      * json 格式
      */
-    String getValue();
+    String getData();
 
-    void setValue(String value);
+    void setData(String data);
 
     /**
      * 创建人
